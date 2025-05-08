@@ -46,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Mukena Inventory</title>
+    <title>Login - Fashion Stock</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="../assets/css/style.css" rel="stylesheet">
     <style>
@@ -67,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="card shadow-sm">
                 <div class="text-center">
                     <img src="../assets/images/Logo.png" alt="Logo" width="200">
-                    <h3 class="mt-2">Mukena Inventory</h3>
+                    <h3 class="mt-2">Fashion Stock</h3>
                     <hr>
                     <h3>LOGIN</h3>
                 </div>

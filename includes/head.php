@@ -1,5 +1,5 @@
 <?php
-$base_url = '/mukena-inventory';
+$base_url = '/fashion-stock';
 ?>
 
 

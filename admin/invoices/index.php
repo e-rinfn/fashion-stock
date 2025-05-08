@@ -92,8 +92,9 @@ $invoices = $pdo->query("
                                         <td><?= htmlspecialchars($invoice['no_invoice']) ?></td>
                                         <td><?= date('d/m/Y', strtotime($invoice['tanggal_invoice'])) ?></td>
                                         <td>
-                                            <?= htmlspecialchars($invoice['customer_nama']) ?><br>
-                                            <small class="text-muted"><?= htmlspecialchars($invoice['customer_kontak']) ?></small>
+                                            <?= htmlspecialchars($invoice['customer_nama'] ?? '---'); ?><br>
+                                            <!-- <small class="text-muted"><?= htmlspecialchars($invoice['customer_kontak'] ?? '') ?></small> -->
+                                            <small class="text-muted"><?= htmlspecialchars($invoice['customer_kontak'] ?? ''); ?></small>
                                         </td>
                                         <td>Rp <?= number_format($invoice['total'], 0, ',', '.') ?></td>
                                         <td>Rp <?= number_format($invoice['dibayar'], 0, ',', '.') ?></td>
@@ -103,17 +104,17 @@ $invoices = $pdo->query("
                                                 <?= ucfirst(str_replace('_', ' ', $invoice['status_bayar'])) ?>
                                             </span>
                                         </td>
-                                        <td>
-                                            <a href="view.php?id=<?= $invoice['id'] ?>" class="btn m-1 btn-sm btn-info" title="Lihat">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
+                                        <td class="text-end">
                                             <?php if ($invoice['status_bayar'] !== 'lunas'): ?>
                                                 <a href="installments.php?id=<?= $invoice['id'] ?>" class="btn m-1 btn-sm btn-warning" title="Angsuran">
-                                                    <i class="fas fa-money-bill-wave"></i>
+                                                    <i class="bi bi-cash"></i>
                                                 </a>
                                             <?php endif; ?>
+                                            <a href="view.php?id=<?= $invoice['id'] ?>" class="btn m-1 btn-sm btn-info" title="Lihat">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
                                             <a href="print.php?id=<?= $invoice['id'] ?>" class="btn m-1 btn-sm btn-primary" title="Cetak" target="_blank">
-                                                <i class="fas fa-print"></i>
+                                                <i class="bi bi-printer"></i>
                                             </a>
                                         </td>
                                     </tr>

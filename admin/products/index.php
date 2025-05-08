@@ -91,13 +91,13 @@ $products = get_all_products();
                                             </td>
                                             <td class="text-center">
                                                 <a href="edit.php?id=<?= $product['id'] ?>" class="btn btn-sm btn-warning" title="Edit">
-                                                    <i class="fas fa-edit"></i>
+                                                    <i class="bi bi-pencil-square"></i>
                                                 </a>
                                                 <a href="#" class="btn btn-sm btn-danger btn-delete"
                                                     data-id="<?= $product['id'] ?>"
                                                     data-nama="<?= htmlspecialchars($product['nama']) ?>"
                                                     title="Hapus">
-                                                    <i class="fas fa-trash-alt"></i>
+                                                    <i class="bi bi-trash"></i>
                                                 </a>
 
                                             </td>

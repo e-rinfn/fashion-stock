@@ -17,7 +17,6 @@ if (!$supplier) {
 }
 
 $title = "Edit Supplier: " . htmlspecialchars($supplier['nama']);
-include '../../includes/header.php';
 
 // Proses form edit supplier
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

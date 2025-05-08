@@ -59,9 +59,7 @@ $transactions = $pdo->query("
 
             <!-- Content Start -->
             <div class="col-md-12 text-end">
-                <a href="add.php" class="btn btn-primary">
-                    <i class="fas fa-plus"></i> Tambah Barang Masuk
-                </a>
+                <a href="add.php" class="btn btn-primary">Tambah Barang Masuk</a>
             </div>
             <div class="page-content">
 
@@ -71,7 +69,7 @@ $transactions = $pdo->query("
                             <table class="table table-striped border table-hover" id="transactionsTable">
                                 <thead class="table-light">
                                     <tr class="text-center">
-                                        <th>#</th>
+                                        <th>No</th>
                                         <th>Kode Transaksi</th>
                                         <th>Tanggal</th>
                                         <th>Supplier</th>
@@ -83,7 +81,7 @@ $transactions = $pdo->query("
                                 <tbody>
                                     <?php foreach ($transactions as $index => $transaction): ?>
                                         <tr>
-                                            <td><?= $index + 1 ?></td>
+                                            <td class="text-center"><?= $index + 1 ?></td>
                                             <td><?= htmlspecialchars($transaction['kode_transaksi']) ?></td>
                                             <td><?= date('d/m/Y H:i', strtotime($transaction['tanggal'])) ?></td>
                                             <td><?= htmlspecialchars($transaction['supplier_nama'] ?? 'Produksi Sendiri') ?></td>
@@ -91,7 +89,7 @@ $transactions = $pdo->query("
                                             <td><?= htmlspecialchars($transaction['user_name']) ?></td>
                                             <td>
                                                 <a href="#" class="btn btn-sm btn-info" title="Detail" data-bs-toggle="modal" data-bs-target="#detailModal<?= $transaction['id'] ?>">
-                                                    <i class="fas fa-eye"></i>
+                                                    <i class="bi bi-eye"></i>
                                                 </a>
                                             </td>
                                         </tr>
@@ -145,11 +143,11 @@ $transactions = $pdo->query("
                                 <tbody>
                                     <?php
                                     $details = $pdo->query("
-                                SELECT td.*, p.nama as product_name 
-                                FROM transaction_details td
-                                JOIN products p ON td.product_id = p.id
-                                WHERE td.transaction_id = {$transaction['id']}
-                            ")->fetchAll();
+                                        SELECT td.*, p.nama as product_name 
+                                        FROM transaction_details td
+                                        JOIN products p ON td.product_id = p.id
+                                        WHERE td.transaction_id = {$transaction['id']}
+                                    ")->fetchAll();
 
                                     foreach ($details as $detail):
                                     ?>

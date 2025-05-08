@@ -81,14 +81,14 @@ $suppliers = $pdo->query("SELECT * FROM suppliers ORDER BY nama ASC")->fetchAll(
                                             <td><?= htmlspecialchars($supplier['email'] ?? '-') ?></td>
                                             <td class="text-center">
                                                 <a href="edit.php?id=<?= $supplier['id'] ?>" class="btn btn-sm btn-warning" title="Edit">
-                                                    <i class="fas fa-edit"></i>
+                                                    <i class="bi bi-pencil-square"></i>
                                                 </a>
                                                 <!-- Tombol Delete -->
                                                 <button class="btn btn-sm btn-danger btn-delete"
                                                     data-id="<?= $supplier['id'] ?>"
                                                     data-name="<?= htmlspecialchars($supplier['nama']) ?>"
                                                     title="Hapus">
-                                                    <i class="fas fa-trash-alt"></i>
+                                                    <i class="bi bi-trash"></i>
                                                 </button>
 
                                             </td>

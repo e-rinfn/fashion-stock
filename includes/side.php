@@ -1,5 +1,5 @@
 <?php
-$base_url = '/mukena-inventory';
+$base_url = '/fashion-stock';
 ?>
 
 <div id="sidebar" class="active">
@@ -80,7 +80,7 @@ $base_url = '/mukena-inventory';
                 </li>
                 <hr>
                 <li class="sidebar-item text-center mb-5">
-                    <a href="<?= $base_url ?>/admin/dashboard/index.php"
+                    <a href="<?= $base_url ?>/auth/logout.php"
                         class="sidebar-link text-white d-flex align-items-center px-3 py-2"
                         style="background-color: rgb(255, 67, 67); border-radius: 5px; transition: background-color 0.3s;">
                         <i class="bi bi-box-arrow-right me-2 text-white"></i>

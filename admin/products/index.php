@@ -58,9 +58,7 @@ $products = get_all_products();
 
 
                     <div class="col-md-12 text-end">
-                        <a href="add.php" class="btn btn-primary">
-                            <i class="fas fa-plus"></i> Tambah Produk
-                        </a>
+                        <a href="add.php" class="btn btn-primary">Tambah Produk</a>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">

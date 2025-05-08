@@ -1,0 +1,27 @@
+# Aktifkan mod rewrite
+
+RewriteEngine On
+
+# Redirect ke https jika tersedia
+
+RewriteCond %{HTTPS} off
+RewriteRule ^(.\*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Blok akses langsung ke file tertentu
+
+<FilesMatch "\.(env|log|htaccess|ini|sql)$">
+Order allow,deny
+Deny from all
+</FilesMatch>
+
+# Redirect semua request ke index.php jika file tidak ada
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [L]
+
+# Blok akses ke folder tertentu
+
+RedirectMatch 403 ^/config/?$
+RedirectMatch 403 ^/includes/?$
+RedirectMatch 403 ^/functions/?$

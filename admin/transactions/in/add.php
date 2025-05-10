@@ -128,9 +128,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         <!-- Barang akan ditambahkan di sini via JavaScript -->
                                     </div>
 
-                                    <button type="button" class="btn btn-secondary mt-3" id="add-product">
-                                        <i class="fas fa-plus"></i> Tambah Barang
-                                    </button>
+                                    <button type="button" class="btn btn-success mt-3" id="add-product">Tambah Barang</button>
                                 </div>
                             </div>
 
@@ -166,17 +164,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <?php endforeach; ?>
                     </select>
                 </div>
-                <div class="col-md-3">
-                    <input type="number" class="form-control quantity" name="products[0][quantity]" required>
-                    min="1" value="1" required>
+                <div class="col-md-2">
+                    <input type="number" class="form-control quantity" name="products[0][quantity]" min="1" value="1" required>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <input type="number" class="form-control harga" name="products[0][harga_beli]" required
                         step="100" min="0" required>
                 </div>
+                <div class="col-md-2">
+                    <input type="text" class="form-control subtotal" readonly>
+                </div>
                 <div class="col-md-1">
                     <button type="button" class="btn btn-danger btn-sm remove-product">
-                        <i class="fas fa-times"></i>
+                        hapus
                     </button>
                 </div>
             </div>
@@ -203,7 +203,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             });
 
-            // Event untuk update harga saat produk dipilih
+            // Event untuk update harga dan hitung subtotal
             productList.addEventListener('change', function(e) {
                 if (e.target.classList.contains('product-select')) {
                     const selectedOption = e.target.options[e.target.selectedIndex];
@@ -211,7 +211,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     const hargaInput = e.target.closest('.product-row').querySelector('.harga');
                     if (harga && hargaInput) {
                         hargaInput.value = harga;
+                        calculateSubtotal(e.target.closest('.product-row'));
                     }
+                }
+            });
+
+            // Event untuk hitung ulang subtotal saat quantity atau harga berubah
+            productList.addEventListener('input', function(e) {
+                if (e.target.classList.contains('quantity') || e.target.classList.contains('harga')) {
+                    calculateSubtotal(e.target.closest('.product-row'));
                 }
             });
 
@@ -219,6 +227,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 const clone = template.content.cloneNode(true);
                 productList.appendChild(clone);
                 updateProductIndexes();
+
+                // Set harga default untuk row baru
+                const newRow = productList.lastElementChild;
+                const select = newRow.querySelector('.product-select');
+                if (select.options.length > 1) {
+                    select.selectedIndex = 1; // Pilih produk pertama (setelah option kosong)
+                    const harga = select.options[select.selectedIndex].dataset.harga;
+                    newRow.querySelector('.harga').value = harga;
+                    calculateSubtotal(newRow);
+                }
             }
 
             function updateProductIndexes() {
@@ -227,10 +245,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // Update nama input untuk array PHP
                     const inputs = row.querySelectorAll('select, input');
                     inputs.forEach(input => {
-                        const name = input.name.replace(/products\[\d*\]/, `products[${index}]`);
+                        const name = input.name.replace(/products\[\d+\]/, `products[${index}]`);
                         input.name = name;
                     });
                 });
+            }
+
+            function calculateSubtotal(row) {
+                const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
+                const harga = parseFloat(row.querySelector('.harga').value) || 0;
+                const subtotal = quantity * harga;
+
+                const subtotalInput = row.querySelector('.subtotal');
+                subtotalInput.value = formatCurrency(subtotal);
+            }
+
+            function formatCurrency(amount) {
+                return 'Rp ' + amount.toFixed(0).replace(/\d(?=(\d{3})+$)/g, '$&.');
             }
         });
     </script>

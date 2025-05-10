@@ -1,13 +1,6 @@
 <?php
 
-// Untuk pengembangan
-//$base_url = '/fashion-stock';
-
-// Untuk localhost
-//$base_url = 'https://192.68.0.115:8082';
-
-// Untuk deployment ke server online
-$base_url = 'https://irvi.erinfn.my.id';
+include_once __DIR__ . '/../config/config.php';
 
 ?>
 

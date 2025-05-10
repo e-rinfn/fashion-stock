@@ -40,6 +40,9 @@ $transactions = $stmt->fetchAll();
             <div class="page-heading">
                 <h3>JUDUL HALAMAN</h3>
             </div>
+
+
+
             <!-- Content title end -->
             <?php if (isset($_SESSION['success'])): ?>
                 <div class="alert alert-success"><?= $_SESSION['success'] ?></div>
@@ -47,144 +50,50 @@ $transactions = $stmt->fetchAll();
             <?php endif; ?>
             <!-- Content Start -->
 
+
+            <div class="col-md-12 text-end">
+                <a href="add.php" class="btn btn-primary">Tambah Penjualan</a>
+            </div>
+
             <div class="page-content">
 
-                <section class="row">
-                    <div class="col-md-6">
-                        <div class="card mb-4">
-                            <div class="card-header">Informasi Transaksi</div>
-                            <div class="card-body">
-                                <table class="table table-borderless">
-                                    <tr>
-                                        <th width="40%">No. Transaksi</th>
-                                        <td><?= htmlspecialchars($transaction['kode_transaksi']) ?></td>
-                                    </tr>
-                                    <tr>
-                                        <th>Tanggal</th>
-                                        <td><?= date('d/m/Y H:i', strtotime($transaction['tanggal'])) ?></td>
-                                    </tr>
-                                    <tr>
-                                        <th>Customer</th>
-                                        <td><?= htmlspecialchars($transaction['customer_nama'] ?? '-') ?></td>
-                                    </tr>
-                                    <tr>
-                                        <th>Kontak</th>
-                                        <td><?= htmlspecialchars($transaction['customer_kontak'] ?? '-') ?></td>
-                                    </tr>
-                                    <tr>
-                                        <th>Admin</th>
-                                        <td><?= htmlspecialchars($transaction['full_name']) ?></td>
-                                    </tr>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
 
-                    <div class="col-md-6">
-                        <div class="card mb-4">
-                            <div class="card-header">Informasi Pembayaran</div>
-                            <div class="card-body">
-                                <table class="table table-borderless">
-                                    <tr>
-                                        <th width="40%">No. Invoice</th>
-                                        <td><?= $transaction['no_invoice'] ?? '-' ?></td>
-                                    </tr>
-                                    <tr>
-                                        <th>Total</th>
-                                        <td>Rp <?= number_format($transaction['total'], 0, ',', '.') ?></td>
-                                    </tr>
-                                    <tr>
-                                        <th>Metode Bayar</th>
-                                        <td>
-                                            <?= strtoupper($transaction['metode_bayar']) ?>
-                                            (<?= strtoupper(str_replace('_', ' ', $transaction['status_bayar'])) ?>)
-                                        </td>
-                                    </tr>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
 
-                </section>
-                <div class="card mb-4">
-                    <div class="card-header">Daftar Barang</div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>Kode</th>
-                                        <th>Nama Barang</th>
-                                        <th>Harga</th>
-                                        <th>Qty</th>
-                                        <th>Subtotal</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($details as $item): ?>
-                                        <tr>
-                                            <td><?= htmlspecialchars($item['kode_barang']) ?></td>
-                                            <td><?= htmlspecialchars($item['product_name']) ?></td>
-                                            <td>Rp <?= number_format($item['harga_satuan'], 0, ',', '.') ?></td>
-                                            <td><?= $item['quantity'] ?></td>
-                                            <td>Rp <?= number_format($item['subtotal'], 0, ',', '.') ?></td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                                <tfoot>
-                                    <tr>
-                                        <th colspan="4" class="text-end">Total</th>
-                                        <th>Rp <?= number_format($transaction['total'], 0, ',', '.') ?></th>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped border table-hover" id="suppliersTable">
+                            <thead class="table-light">
+                                <tr class="text-center">
+                                    <th>No</th>
+                                    <th>No. Transaksi</th>
+                                    <th>Tanggal</th>
+                                    <th>Customer</th>
+                                    <th>Invoice</th>
+                                    <th>Total</th>
+                                    <th>Admin</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody> <?php $no = 1;
+                                    foreach ($transactions as $trx): ?> <tr>
+                                        <td class="text-center"><?= $no++ ?></td>
+                                        <td><?= htmlspecialchars($trx['kode_transaksi']) ?></td>
+                                        <td><?= date('d/m/Y H:i', strtotime($trx['tanggal'])) ?></td>
+                                        <td><?= htmlspecialchars($trx['customer_nama'] ?? '-') ?></td>
+                                        <td><?= $trx['no_invoice'] ?? '-' ?></td>
+                                        <td>Rp <?= number_format($trx['total'], 0, ',', '.') ?></td>
+                                        <td><?= htmlspecialchars($trx['full_name']) ?></td>
+                                        <td> <a href="detail.php?id=<?= $trx['id'] ?>" class="btn btn-sm btn-info"> <i class="bi bi-eye"></i> </a> </td>
+                                    </tr> <?php endforeach; ?> </tbody>
+                        </table>
                     </div>
                 </div>
 
-                <?php if (!empty($installments)): ?>
-                    <div class="card">
-                        <div class="card-header">Jadwal Angsuran</div>
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-striped">
-                                    <thead>
-                                        <tr>
-                                            <th>No</th>
-                                            <th>Jumlah</th>
-                                            <th>Jatuh Tempo</th>
-                                            <th>Status</th>
-                                            <th>Tanggal Bayar</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php foreach ($installments as $index => $angsuran): ?>
-                                            <tr>
-                                                <td><?= $index + 1 ?></td>
-                                                <td>Rp <?= number_format($angsuran['jumlah'], 0, ',', '.') ?></td>
-                                                <td><?= date('d/m/Y', strtotime($angsuran['tanggal_jatuh_tempo'])) ?></td>
-                                                <td>
-                                                    <span class="badge bg-<?= $angsuran['status'] === 'lunas' ? 'success' : 'warning' ?>">
-                                                        <?= strtoupper(str_replace('_', ' ', $angsuran['status'])) ?>
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <?= $angsuran['tanggal_bayar'] ? date('d/m/Y', strtotime($angsuran['tanggal_bayar'])) : '-' ?>
-                                                </td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                <?php endif; ?>
-
             </div>
+
+            <!-- Content End -->
         </div>
-        <!-- Content End -->
-    </div>
-    <!-- main content end -->
+        <!-- main content end -->
 
     </div>
 

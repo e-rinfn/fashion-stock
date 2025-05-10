@@ -91,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                             <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                                 <a href="index.php" class="btn btn-secondary me-md-2">Kembali</a>
-                                <button type="submit" class="btn btn-warning">Perbarui</button>
+                                <button type="submit" class="btn btn-primary">Simpan</button>
                             </div>
                         </form>
                     </div>

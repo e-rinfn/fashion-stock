@@ -55,9 +55,7 @@ $suppliers = $pdo->query("SELECT * FROM suppliers ORDER BY nama ASC")->fetchAll(
                     <?php endif; ?>
 
                     <div class="col-md-12 text-end">
-                        <a href="add.php" class="btn btn-primary">
-                            <i class="fas fa-plus"></i> Tambah Supplier
-                        </a>
+                        <a href="add.php" class="btn btn-primary">Tambah Supplier</a>
                     </div>
 
                     <div class="card-body">

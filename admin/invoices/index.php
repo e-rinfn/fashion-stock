@@ -106,9 +106,9 @@ $invoices = $pdo->query("
                                         </td>
                                         <td class="text-end">
                                             <?php if ($invoice['status_bayar'] !== 'lunas'): ?>
-                                                <a href="installments.php?id=<?= $invoice['id'] ?>" class="btn m-1 btn-sm btn-warning" title="Angsuran">
+                                                <!-- <a href="installments.php?id=<?= $invoice['id'] ?>" class="btn m-1 btn-sm btn-warning" title="Angsuran">
                                                     <i class="bi bi-cash"></i>
-                                                </a>
+                                                </a> -->
                                             <?php endif; ?>
                                             <a href="view.php?id=<?= $invoice['id'] ?>" class="btn m-1 btn-sm btn-info" title="Lihat">
                                                 <i class="bi bi-eye"></i>

@@ -1,13 +1,6 @@
 <?php
 
-// Untuk pengembangan
-//$base_url = '/fashion-stock';
-
-// Untuk localhost
-//$base_url = 'https://192.68.0.115:8082';
-
-// Untuk deployment ke server online
-$base_url = 'https://irvi.erinfn.my.id';
+include_once __DIR__ . '/../config/config.php';
 
 
 $current_page = $_SERVER['REQUEST_URI'];
@@ -73,7 +66,7 @@ $is_transaksi_active = strpos($current_page, '/admin/transactions/in') !== false
                 </li>
 
                 <li class="sidebar-title">Laporan</li>
-                <li class="sidebar-item">
+                <li class="sidebar-item <?= strpos($current_page, '/admin/invoices') !== false ? 'active' : '' ?>">
                     <a href="<?= $base_url ?>/admin/invoices/index.php" class='sidebar-link'>
                         <i class="bi bi-box"></i>
                         <span>INVOICES</span>

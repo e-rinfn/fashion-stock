@@ -14,7 +14,7 @@ function isActive($path)
 <nav class="pc-sidebar">
     <div class="navbar-wrapper">
         <div class="p-3">
-            <a href="../dashboard/index.html"
+            <a href="<?= $base_url ?>/admin/index.php"
                 class="b-brand text-primary d-inline-flex align-items-center gap-2 text-decoration-none">
 
                 <!-- Logo -->

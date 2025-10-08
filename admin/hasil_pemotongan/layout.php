@@ -3,41 +3,43 @@ require_once '../includes/header.php';
 require_once '../../config/database.php';
 require_once '../../config/functions.php';
 
-// Ambil data hutang
-$sql = "SELECT h.*, 
-               CASE 
-                   WHEN h.jenis_karyawan = 'pemotong' THEN p.nama_pemotong 
-                   ELSE j.nama_penjahit 
-               END as nama_karyawan
-        FROM hutang_upah h
-        LEFT JOIN pemotong p ON h.jenis_karyawan = 'pemotong' AND h.id_karyawan = p.id_pemotong
-        LEFT JOIN penjahit j ON h.jenis_karyawan = 'penjahit' AND h.id_karyawan = j.id_penjahit
-        ORDER BY h.periode DESC, h.jenis_karyawan";
+function dateIndo($tanggal)
+{
+    $bulanIndo = [
+        1 => 'Januari',
+        'Februari',
+        'Maret',
+        'April',
+        'Mei',
+        'Juni',
+        'Juli',
+        'Agustus',
+        'September',
+        'Oktober',
+        'November',
+        'Desember'
+    ];
+    $tanggal = date('Y-m-d', strtotime($tanggal));
+    $pecah = explode('-', $tanggal);
+    return $pecah[2] . ' ' . $bulanIndo[(int)$pecah[1]] . ' ' . $pecah[0];
+}
 
-$hutang = query($sql);
+$id_hutang = intval($_GET['id']);
+$detail = getDetailHutang($id_hutang);
 
-// Proses pembayaran
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['bayar_hutang'])) {
-    $id_hutang = intval($_POST['id_hutang']);
-    $tanggal_bayar = $conn->real_escape_string($_POST['tanggal_bayar']);
-    $jumlah_bayar = floatval($_POST['jumlah_bayar']);
-    $metode_bayar = $conn->real_escape_string($_POST['metode_bayar']);
-    $keterangan = $conn->real_escape_string($_POST['keterangan']);
+// Ambil riwayat pembayaran
+$pembayaran = query("SELECT * FROM pembayaran_upah_2 WHERE id_hutang = $id_hutang ORDER BY tanggal_bayar DESC");
 
-    // Validasi
-    $detail_hutang = getDetailHutang($id_hutang);
-    if ($jumlah_bayar <= 0) {
-        $error = "Jumlah pembayaran harus lebih dari 0";
-    } elseif ($jumlah_bayar > $detail_hutang['sisa_hutang']) {
-        $error = "Jumlah pembayaran tidak boleh melebihi sisa hutang";
+// Proses batal pembayaran
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['batal_pembayaran'])) {
+    $id_pembayaran = intval($_POST['id_pembayaran']);
+
+    if (batalPembayaranUpah($id_pembayaran)) {
+        $_SESSION['success'] = "Pembayaran berhasil dibatalkan";
+        header("Location: detail_hutang.php?id=$id_hutang");
+        exit();
     } else {
-        if (bayarHutangUpah($id_hutang, $tanggal_bayar, $jumlah_bayar, $metode_bayar, $keterangan)) {
-            $_SESSION['success'] = "Pembayaran berhasil dicatat";
-            header("Location: hutang_upah.php");
-            exit();
-        } else {
-            $error = "Gagal mencatat pembayaran";
-        }
+        $error = "Gagal membatalkan pembayaran";
     }
 }
 ?>
@@ -133,167 +135,113 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['bayar_hutang'])) {
             <div class="row">
 
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2>Manajemen Hutang Upah</h2>
+                    <h2>Detail Produksi</h2>
                     <div>
-                        <a href="hutang_upah.php" class="btn btn-warning me-2">
-                            <i class="ti ti-report-money"></i> Daftar Upah
-                        </a>
-                        <a href="upah_settings.php" class="btn btn-info me-2">
-                            <i class="ti ti-settings"></i> Setting Tarif Upah
-                        </a>
-                        <a href="new.php" class="btn btn-primary">
-                            <i class="ti ti-circle-plus"></i> Tambah Produksi
+                        <a href="hutang_upah.php" class="btn btn-secondary me-2">
+                            <i class="ti ti-arrow-back"></i> Kembali
                         </a>
                     </div>
                 </div>
+            </div>
 
-                <!-- Filter Form -->
-                <form method="GET" class="row g-3 mb-3">
-                    <div class="col-md-4">
-                        <label class="form-label">Filter Produk</label>
-                        <select name="id_produk" class="form-select">
-                            <option value="0">Semua Produk</option>
-                            <?php foreach ($produk as $p): ?>
-                                <option value="<?= $p['id_produk'] ?>" <?= ($id_produk == $p['id_produk']) ? 'selected' : '' ?>>
-                                    <?= htmlspecialchars($p['nama_produk']) ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Filter Status</label>
-                        <select name="status" class="form-select">
-                            <option value="all" <?= ($status == 'all') ? 'selected' : '' ?>>Semua Status</option>
-                            <option value="diproses" <?= ($status == 'diproses') ? 'selected' : '' ?>>Diproses</option>
-                            <option value="selesai" <?= ($status == 'selesai') ? 'selected' : '' ?>>Selesai</option>
-                        </select>
-                    </div>
-                    <div class="col-md-4 d-flex align-items-end">
-                        <button type="submit" class="btn btn-primary me-2">
-                            <i class="ti ti-filter"></i> Filter
-                        </button>
-                        <?php if ($id_produk > 0 || $status != 'all'): ?>
-                            <a href="list.php" class="btn btn-secondary">
-                                <i class="ti ti-rotate"></i> Reset
-                            </a>
-                        <?php endif; ?>
-                    </div>
-                </form>
-
-                <div class="card p-3">
-                    <div class="table-responsive">
-                        <table class="table table-bordered">
-                            <thead>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>Informasi Hutang</h5>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-bordered">
                                 <tr>
                                     <th>Periode</th>
-                                    <th>Karyawan</th>
-                                    <th>Jenis</th>
-                                    <th>Total Upah</th>
-                                    <th>Total Dibayar</th>
-                                    <th>Sisa Hutang</th>
-                                    <th>Status</th>
-                                    <th>Aksi</th>
+                                    <td><?= date('F Y', strtotime($detail['periode'])) ?></td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($hutang as $h): ?>
-                                    <tr>
-                                        <td><?= date('F Y', strtotime($h['periode'])) ?></td>
-                                        <td><?= htmlspecialchars($h['nama_karyawan']) ?></td>
-                                        <td>
-                                            <span class="badge bg-<?= $h['jenis_karyawan'] == 'pemotong' ? 'warning' : 'info' ?>">
-                                                <?= ucfirst($h['jenis_karyawan']) ?>
-                                            </span>
-                                        </td>
-                                        <td><?= formatRupiah($h['total_upah']) ?></td>
-                                        <td><?= formatRupiah($h['total_dibayar']) ?></td>
-                                        <td class="<?= $h['sisa_hutang'] > 0 ? 'text-danger fw-bold' : '' ?>">
-                                            <?= formatRupiah($h['sisa_hutang']) ?>
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-<?= $h['status'] == 'lunas' ? 'success' : 'warning' ?>">
-                                                <?= ucfirst($h['status']) ?>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <button class="btn btn-sm btn-primary btn-bayar"
-                                                data-id="<?= $h['id_hutang'] ?>"
-                                                data-nama="<?= htmlspecialchars($h['nama_karyawan']) ?>"
-                                                data-sisa="<?= $h['sisa_hutang'] ?>"
-                                                <?= $h['sisa_hutang'] <= 0 ? 'disabled' : '' ?>>
-                                                Bayar
-                                            </button>
-                                            <a href="detail_hutang.php?id=<?= $h['id_hutang'] ?>" class="btn btn-sm btn-info">
-                                                Detail
-                                            </a>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
+                                <tr>
+                                    <th>Karyawan</th>
+                                    <td><?= htmlspecialchars($detail['nama_karyawan']) ?></td>
+                                </tr>
+                                <tr>
+                                    <th>Jenis</th>
+                                    <td><?= ucfirst($detail['jenis_karyawan']) ?></td>
+                                </tr>
+                                <tr>
+                                    <th>Total Upah</th>
+                                    <td><?= formatRupiah($detail['total_upah']) ?></td>
+                                </tr>
+                                <tr>
+                                    <th>Total Dibayar</th>
+                                    <td><?= formatRupiah($detail['total_dibayar']) ?></td>
+                                </tr>
+                                <tr>
+                                    <th>Sisa Hutang</th>
+                                    <td class="text-danger fw-bold"><?= formatRupiah($detail['sisa_hutang']) ?></td>
+                                </tr>
+                                <tr>
+                                    <th>Status</th>
+                                    <td>
+                                        <span class="badge bg-<?= $detail['status'] == 'lunas' ? 'success' : 'warning' ?>">
+                                            <?= ucfirst($detail['status']) ?>
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5>Riwayat Pembayaran</h5>
+                            <span class="badge bg-primary"><?= count($pembayaran) ?> Pembayaran</span>
+                        </div>
+                        <div class="card-body">
+                            <?php if (empty($pembayaran)): ?>
+                                <p class="text-muted">Belum ada pembayaran</p>
+                            <?php else: ?>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Tanggal</th>
+                                                <th>Jumlah</th>
+                                                <th>Metode</th>
+                                                <th>Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php foreach ($pembayaran as $bayar): ?>
+                                                <tr>
+                                                    <td><?= dateIndo($bayar['tanggal_bayar']) ?></td>
+                                                    <td><?= formatRupiah($bayar['jumlah_bayar']) ?></td>
+                                                    <td>
+                                                        <span class="badge bg-secondary">
+                                                            <?= ucfirst($bayar['metode_bayar']) ?>
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <form method="POST" style="display: inline;">
+                                                            <input type="hidden" name="id_pembayaran" value="<?= $bayar['id_pembayaran'] ?>">
+                                                            <button type="submit" name="batal_pembayaran"
+                                                                class="btn btn-sm btn-outline-danger"
+                                                                onclick="return confirm('Yakin ingin membatalkan pembayaran ini?')">
+                                                                <i class="ti ti-x"></i> Batal
+                                                            </button>
+                                                        </form>
+                                                    </td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            <?php endif; ?>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- Modal Pembayaran -->
-    <div class="modal fade" id="modalBayar" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <form method="POST">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Bayar Hutang Upah</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <input type="hidden" name="id_hutang" id="bayar_id_hutang">
-
-                        <div class="mb-3">
-                            <label>Karyawan</label>
-                            <input type="text" class="form-control" id="bayar_nama_karyawan" readonly>
-                        </div>
-
-                        <div class="mb-3">
-                            <label>Sisa Hutang</label>
-                            <input type="text" class="form-control" id="bayar_sisa_hutang" readonly>
-                        </div>
-
-                        <div class="mb-3">
-                            <label>Tanggal Bayar *</label>
-                            <input type="date" name="tanggal_bayar" class="form-control" value="<?= date('Y-m-d') ?>" required>
-                        </div>
-
-                        <div class="mb-3">
-                            <label>Jumlah Bayar *</label>
-                            <input type="number" name="jumlah_bayar" class="form-control" min="1" step="0.01" required>
-                        </div>
-
-                        <div class="mb-3">
-                            <label>Metode Bayar</label>
-                            <select name="metode_bayar" class="form-control" required>
-                                <option value="tunai">Tunai</option>
-                                <option value="transfer">Transfer</option>
-                                <option value="e-wallet">E-Wallet</option>
-                            </select>
-                        </div>
-
-                        <div class="mb-3">
-                            <label>Keterangan</label>
-                            <textarea name="keterangan" class="form-control" rows="3"></textarea>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                        <button type="submit" name="bayar_hutang" class="btn btn-primary">Simpan Pembayaran</button>
-                    </div>
-                </form>
-            </div>
-        </div>
     </div>
-
-
-
     <!-- [ Main Content ] end -->
 
     <?php include '../includes/footer.php'; ?>
@@ -302,32 +250,5 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['bayar_hutang'])) {
 <!-- [Body] end -->
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const modalBayar = new bootstrap.Modal(document.getElementById('modalBayar'));
-
-        document.querySelectorAll('.btn-bayar').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const id = this.dataset.id;
-                const nama = this.dataset.nama;
-                const sisa = this.dataset.sisa;
-
-                document.getElementById('bayar_id_hutang').value = id;
-                document.getElementById('bayar_nama_karyawan').value = nama;
-                document.getElementById('bayar_sisa_hutang').value = formatRupiah(sisa);
-
-                // Set max value untuk input jumlah bayar
-                document.querySelector('input[name="jumlah_bayar"]').max = sisa;
-
-                modalBayar.show();
-            });
-        });
-
-        function formatRupiah(amount) {
-            return 'Rp ' + Number(amount).toLocaleString('id-ID');
-        }
-    });
-</script>
 
 </html>

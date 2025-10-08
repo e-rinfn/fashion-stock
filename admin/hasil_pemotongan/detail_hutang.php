@@ -44,22 +44,105 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['batal_pembayaran'])) {
 }
 ?>
 
-<div class="pc-container">
-    <div class="pc-content">
-        <div class="row">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2>Detail Hutang Upah</h2>
-                <a href="hutang_upah.php" class="btn btn-secondary">Kembali</a>
+<style>
+    .swal2-container {
+        z-index: 99999 !important;
+    }
+
+    .badge-produksi {
+        background-color: #0d6efd;
+    }
+
+    .modal-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .btn-group-actions {
+        display: flex;
+        gap: 5px;
+        flex-wrap: nowrap;
+    }
+
+    .btn-group-actions .btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    .upah-column {
+        background-color: #e8f5e8 !important;
+        font-weight: bold;
+    }
+
+    .table th {
+        font-size: 0.8rem;
+    }
+
+    .table td {
+        font-size: 0.8rem;
+    }
+
+    .tarif-info {
+        font-size: 0.7rem;
+        color: #6c757d;
+    }
+</style>
+
+<!-- [Body] Start -->
+
+<body data-pc-preset="preset-1" data-pc-direction="ltr" data-pc-theme="light">
+    <!-- [ Pre-loader ] start -->
+    <div class="loader-bg">
+        <div class="loader-track">
+            <div class="loader-fill"></div>
+        </div>
+    </div>
+    <!-- [ Pre-loader ] End -->
+
+    <!-- Sidebar Start -->
+    <?php include_once '../includes/sidebar.php'; ?>
+    <!-- Sidebar End -->
+
+    <!-- [ Header Topbar ] start -->
+    <header class="pc-header">
+        <div class="header-wrapper">
+            <!-- [Mobile Media Block] start -->
+            <div class="me-auto pc-mob-drp">
+                <ul class="list-unstyled">
+                    <!-- ======= Menu collapse Icon ===== -->
+                    <li class="pc-h-item pc-sidebar-collapse">
+                        <a href="#" class="pc-head-link ms-0" id="sidebar-hide">
+                            <i class="ti ti-menu-2"></i>
+                        </a>
+                    </li>
+                    <li class="pc-h-item pc-sidebar-popup">
+                        <a href="#" class="pc-head-link ms-0" id="mobile-collapse">
+                            <i class="ti ti-menu-2"></i>
+                        </a>
+                    </li>
+                </ul>
             </div>
+            <!-- [Mobile Media Block end] -->
 
-            <?php if (isset($error)): ?>
-                <div class="alert alert-danger"><?= $error ?></div>
-            <?php endif; ?>
+        </div>
+    </header>
+    <!-- [ Header ] end -->
+    <!-- [ Main Content ] start -->
+    <div class="pc-container">
+        <div class="pc-content">
 
-            <?php if (isset($_SESSION['success'])): ?>
-                <div class="alert alert-success"><?= $_SESSION['success'] ?></div>
-                <?php unset($_SESSION['success']); ?>
-            <?php endif; ?>
+            <!-- [ Main Content ] start -->
+            <div class="row">
+
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2>Detail Produksi</h2>
+                    <div>
+                        <a href="hutang_upah.php" class="btn btn-secondary me-2">
+                            <i class="ti ti-arrow-back"></i> Kembali
+                        </a>
+                    </div>
+                </div>
+            </div>
 
             <div class="row">
                 <div class="col-md-6">
@@ -158,6 +241,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['batal_pembayaran'])) {
             </div>
         </div>
     </div>
-</div>
+    </div>
+    <!-- [ Main Content ] end -->
 
-<?php include_once '../includes/footer.php'; ?>
+    <?php include '../includes/footer.php'; ?>
+
+</body>
+<!-- [Body] end -->
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+</html>

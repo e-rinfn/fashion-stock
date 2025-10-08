@@ -30,7 +30,7 @@
                             data-bs-auto-close="outside"
                             aria-expanded="false">
                             <img
-                                src="<?= $base_url ?>assets/img/Logo.png"
+                                src="<?= $base_url ?>/assets/img/Logo.png"
                                 alt="user-image"
                                 class="user-avtar" />
                             <span> <?= htmlspecialchars($_SESSION['nama_lengkap'] ?? $_SESSION['username']) ?></span>
@@ -41,7 +41,7 @@
                                 <div class="d-flex mb-1">
                                     <div class="flex-shrink-0">
                                         <img
-                                            src="<?= $base_url ?>assets/img/Logo.png"
+                                            src="<?= $base_url ?>/assets/img/Logo.png"
                                             alt="user-image"
                                             class="user-avtar wid-35" />
                                     </div>

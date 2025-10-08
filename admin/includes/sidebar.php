@@ -47,28 +47,28 @@ function isActive($path)
                     <a href="#!" class="pc-link"><span class="pc-micon"><i class="ti ti-menu"></i></span><span class="pc-mtext">Master Data</span><span class="pc-arrow"><i data-feather="chevron-right"></i></span></a>
                     <ul class="pc-submenu">
                         <li class="pc-item <?= isActive('/admin/bahan_baku') ?>">
-                            <a class="pc-link" href="<?= $base_url ?>admin/bahan_baku/list.php">Bahan</a>
+                            <a class="pc-link" href="<?= $base_url ?>/admin/bahan_baku/list.php">Bahan</a>
                         </li>
                         <li class="pc-item <?= isActive('/admin/produk') ?>">
-                            <a class="pc-link" href="<?= $base_url ?>admin/produk/list.php">Produk</a>
+                            <a class="pc-link" href="<?= $base_url ?>/admin/produk/list.php">Produk</a>
                         </li>
                         <li class="pc-item <?= isActive('/admin/pemotong') ?>">
-                            <a class="pc-link" href="<?= $base_url ?>admin/pemotong/list.php">Pemotong</a>
+                            <a class="pc-link" href="<?= $base_url ?>/admin/pemotong/list.php">Pemotong</a>
                         </li>
                         <li class="pc-item <?= isActive('/admin/penjahit') ?>">
-                            <a class="pc-link" href="<?= $base_url ?>admin/penjahit/list.php">Penjahit</a>
+                            <a class="pc-link" href="<?= $base_url ?>/admin/penjahit/list.php">Penjahit</a>
                         </li>
                         <li class="pc-item <?= isActive('/admin/reseller') ?>">
-                            <a class="pc-link" href="<?= $base_url ?>admin/reseller/list.php">Reseller</a>
+                            <a class="pc-link" href="<?= $base_url ?>/admin/reseller/list.php">Reseller</a>
                         </li>
                         <li class="pc-item <?= isActive('/admin/supplier') ?>">
-                            <a class="pc-link" href="<?= $base_url ?>admin/supplier/list.php">Supplier</a>
+                            <a class="pc-link" href="<?= $base_url ?>/admin/supplier/list.php">Supplier</a>
                         </li>
                         <!-- <li class="pc-item <?= isActive('/admin/upah') ?>">
-                            <a class="pc-link" href="<?= $base_url ?>admin/upah/index.php">Tarif Upah</a>
+                            <a class="pc-link" href="<?= $base_url ?>/admin/upah/index.php">Tarif Upah</a>
                         </li> -->
                         <li class="pc-item <?= isActive('/admin/upah') ?>">
-                            <a class="pc-link" href="<?= $base_url ?>admin/upah/hutang_upah.php">Tarif Upah</a>
+                            <a class="pc-link" href="<?= $base_url ?>/admin/upah/hutang_upah.php">Tarif Upah</a>
                         </li>
                     </ul>
                 </li>
@@ -101,10 +101,10 @@ function isActive($path)
                     <a href="#!" class="pc-link"><span class="pc-micon"><i class="ti ti-shopping-cart"></i></span><span class="pc-mtext">Beli</span><span class="pc-arrow"><i data-feather="chevron-right"></i></span></a>
                     <ul class="pc-submenu">
                         <li class="pc-item <?= isActive('/admin/pembelian_bahan') ?>">
-                            <a class="pc-link" href="<?= $base_url ?>admin/pembelian_bahan/list.php">Bahan</a>
+                            <a class="pc-link" href="<?= $base_url ?>/admin/pembelian_bahan/list.php">Bahan</a>
                         </li>
                         <li class="pc-item <?= isActive('/admin/pembelian_produk') ?>">
-                            <a class="pc-link" href="<?= $base_url ?>admin/pembelian_produk/list.php">Produk</a>
+                            <a class="pc-link" href="<?= $base_url ?>/admin/pembelian_produk/list.php">Produk</a>
                         </li>
                     </ul>
                 </li>
@@ -113,10 +113,10 @@ function isActive($path)
                     <a href="#!" class="pc-link"><span class="pc-micon"><i class="ti ti-shopping-cart-plus"></i></span><span class="pc-mtext">Jual</span><span class="pc-arrow"><i data-feather="chevron-right"></i></span></a>
                     <ul class="pc-submenu">
                         <li class="pc-item <?= isActive('/admin/penjualan_bahan') ?>">
-                            <a class="pc-link" href="<?= $base_url ?>admin/penjualan_bahan/list.php">Bahan</a>
+                            <a class="pc-link" href="<?= $base_url ?>/admin/penjualan_bahan/list.php">Bahan</a>
                         </li>
                         <li class="pc-item <?= isActive('/admin/penjualan_produk') ?>">
-                            <a class="pc-link" href="<?= $base_url ?>admin/penjualan_produk/list.php">Produk</a>
+                            <a class="pc-link" href="<?= $base_url ?>/admin/penjualan_produk/list.php">Produk</a>
                         </li>
                     </ul>
                 </li>

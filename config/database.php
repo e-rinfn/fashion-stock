@@ -1,15 +1,22 @@
 <?php
-require_once __DIR__ . '/functions.php';
+$host = "localhost";
+$user = "root";
+$pass = "";
+$db   = "irveena3";
 
-$host     = $_ENV['DB_HOST'];
-$dbname   = $_ENV['DB_NAME'];
-$username = $_ENV['DB_USER'];
-$password = $_ENV['DB_PASS'];
+$conn = new mysqli($host, $user, $pass, $db);
 
-try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
-    // Set error mode
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch (PDOException $e) {
-    die("Database connection failed: " . $e->getMessage());
+if ($conn->connect_error) {
+    die("Koneksi gagal: " . $conn->connect_error);
+}
+
+function query($sql)
+{
+    global $conn;
+    $result = $conn->query($sql);
+    $rows = [];
+    while ($row = $result->fetch_assoc()) {
+        $rows[] = $row;
+    }
+    return $rows;
 }

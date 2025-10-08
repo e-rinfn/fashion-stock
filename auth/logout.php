@@ -1,10 +1,14 @@
 <?php
+require_once '../config/database.php';
+include_once '../config/config.php';
+
+// Mulai session terlebih dahulu
 session_start();
 
 // Hapus semua data session
-$_SESSION = array();
+$_SESSION = [];
 
-// Hapus session cookie
+// Hapus session cookie jika ada
 if (ini_get("session.use_cookies")) {
     $params = session_get_cookie_params();
     setcookie(
@@ -18,9 +22,9 @@ if (ini_get("session.use_cookies")) {
     );
 }
 
-// Hancurkan session
+// Akhiri session
 session_destroy();
 
 // Redirect ke halaman login
-header('Location: login.php');
-exit;
+header("Location: {$base_url}/auth/login.php");
+exit();

@@ -71,7 +71,7 @@ if (isset($_POST['login'])) {
 <!-- [Head] start -->
 
 <head>
-  <title>Login | Irveena Inventory</title>
+  <title>irveena</title>
   <!-- [Meta] -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">

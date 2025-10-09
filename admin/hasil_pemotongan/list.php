@@ -425,6 +425,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 </form>
 
                 <div class="card p-3">
+
+                    <!-- Tampilkan pesan error atau success -->
+                    <?php if (isset($_SESSION['error'])): ?>
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <?= htmlspecialchars($_SESSION['error']) ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        <?php unset($_SESSION['error']); ?>
+                    <?php endif; ?>
+
+                    <?php if (isset($_SESSION['success'])): ?>
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <?= htmlspecialchars($_SESSION['success']) ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        <?php unset($_SESSION['success']); ?>
+                    <?php endif; ?>
+                    <!-- /Tampilkan pesan error atau success -->
+
                     <div class="table-responsive">
                         <table class="table table-sm table-bordered table-hover align-middle">
                             <thead class="table-light">

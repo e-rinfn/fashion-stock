@@ -25,7 +25,7 @@ function isActive($path)
                     alt="logo" />
 
                 <!-- Teks di samping logo -->
-                <span class="fw-bold fs-4 text-dark">Irveena Fashion</span>
+                <span class="fw-bold fs-5 text-dark">IRVEENA <br>FASHION STOCK</span>
             </a>
         </div>
         <hr>
@@ -68,7 +68,7 @@ function isActive($path)
                             <a class="pc-link" href="<?= $base_url ?>/admin/upah/index.php">Tarif Upah</a>
                         </li> -->
                         <li class="pc-item <?= isActive('/admin/upah') ?>">
-                            <a class="pc-link" href="<?= $base_url ?>/admin/upah/hutang_upah.php">Tarif Upah</a>
+                            <a class="pc-link" href="<?= $base_url ?>/admin/upah/upah_settings.php">Tarif Upah</a>
                         </li>
                     </ul>
                 </li>

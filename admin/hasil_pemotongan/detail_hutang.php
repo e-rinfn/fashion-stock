@@ -135,7 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['batal_pembayaran'])) {
             <div class="row">
 
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2>Detail Produksi</h2>
+                    <h2>Detail Hutang</h2>
                     <div>
                         <a href="hutang_upah.php" class="btn btn-secondary me-2">
                             <i class="ti ti-arrow-back"></i> Kembali
@@ -152,12 +152,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['batal_pembayaran'])) {
                         </div>
                         <div class="card-body">
                             <table class="table table-bordered">
-                                <tr>
+                                <tr hidden>
                                     <th>Periode</th>
                                     <td><?= date('F Y', strtotime($detail['periode'])) ?></td>
                                 </tr>
                                 <tr>
-                                    <th>Karyawan</th>
+                                    <th>Nama Karyawan</th>
                                     <td><?= htmlspecialchars($detail['nama_karyawan']) ?></td>
                                 </tr>
                                 <tr>
@@ -176,7 +176,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['batal_pembayaran'])) {
                                     <th>Sisa Hutang</th>
                                     <td class="text-danger fw-bold"><?= formatRupiah($detail['sisa_hutang']) ?></td>
                                 </tr>
-                                <tr>
+                                <tr hidden>
                                     <th>Status</th>
                                     <td>
                                         <span class="badge bg-<?= $detail['status'] == 'lunas' ? 'success' : 'warning' ?>">
@@ -202,7 +202,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['batal_pembayaran'])) {
                                 <div class="table-responsive">
                                     <table class="table table-sm table-striped">
                                         <thead>
-                                            <tr>
+                                            <tr class="text-center">
                                                 <th>Tanggal</th>
                                                 <th>Jumlah</th>
                                                 <th>Metode</th>
@@ -214,21 +214,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['batal_pembayaran'])) {
                                                 <tr>
                                                     <td><?= dateIndo($bayar['tanggal_bayar']) ?></td>
                                                     <td><?= formatRupiah($bayar['jumlah_bayar']) ?></td>
-                                                    <td>
+                                                    <td class="text-center">
                                                         <span class="badge bg-secondary">
                                                             <?= ucfirst($bayar['metode_bayar']) ?>
                                                         </span>
                                                     </td>
-                                                    <td>
-                                                        <form method="POST" style="display: inline;">
+                                                    <td class="text-center">
+                                                        <form method="POST" class="form-batal" style="display:inline;">
                                                             <input type="hidden" name="id_pembayaran" value="<?= $bayar['id_pembayaran'] ?>">
-                                                            <button type="submit" name="batal_pembayaran"
-                                                                class="btn btn-sm btn-outline-danger"
-                                                                onclick="return confirm('Yakin ingin membatalkan pembayaran ini?')">
+                                                            <button type="button" class="btn btn-sm btn-outline-danger btn-batal">
                                                                 <i class="ti ti-x"></i> Batal
                                                             </button>
                                                         </form>
                                                     </td>
+
                                                 </tr>
                                             <?php endforeach; ?>
                                         </tbody>
@@ -250,5 +249,51 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['batal_pembayaran'])) {
 <!-- [Body] end -->
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    $(document).ready(function() {
+        // Konfirmasi sebelum batal pembayaran
+        $('.btn-batal').on('click', function() {
+            const form = $(this).closest('form');
+            Swal.fire({
+                title: 'Batalkan Pembayaran?',
+                text: "Tindakan ini tidak dapat dibatalkan!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Ya, Batalkan!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+
+        // Notifikasi sukses atau error dari PHP session
+        <?php if (isset($_SESSION['success'])): ?>
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil!',
+                text: '<?= $_SESSION['success'] ?>',
+                timer: 2500,
+                showConfirmButton: false
+            });
+            <?php unset($_SESSION['success']); ?>
+        <?php elseif (isset($_SESSION['error'])): ?>
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal!',
+                text: '<?= $_SESSION['error'] ?>',
+                timer: 2500,
+                showConfirmButton: false
+            });
+            <?php unset($_SESSION['error']); ?>
+        <?php endif; ?>
+    });
+</script>
 
 </html>

@@ -19,7 +19,7 @@ if ($_SESSION['role'] !== 'admin') {
 <!-- [Head] start -->
 
 <head>
-    <title>Home | Mantis Bootstrap 5 Admin Template</title>
+    <title>irveena</title>
     <!-- [Meta] -->
     <meta charset="utf-8" />
     <meta

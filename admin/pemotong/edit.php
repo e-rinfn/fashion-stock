@@ -89,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                         <div class="">
                             <button type="submit" class="btn btn-primary">
-                                <i class="ti ti-file-plus"></i> Simpan
+                                <i class="ti ti-file-plus"></i> Simpan Perubahan
                             </button>
                             <a href="list.php" class="btn btn-secondary">
                                 <i class="ti ti-arrow-back"></i> Batal

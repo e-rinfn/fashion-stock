@@ -186,11 +186,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <div class="row">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h2>Manajemen Hutang Upah</h2>
-                    <div>
-                        <a href="upah_settings.php" class="btn btn-info me-2">
-                            <i class="ti ti-settings"></i> Setting Tarif Upah
-                        </a>
-                    </div>
                 </div>
 
                 <!-- Filter Form -->
@@ -258,20 +253,30 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     </form>
                 </div>
 
-                <?php if (isset($error)): ?>
-                    <div class="alert alert-danger"><?= $error ?></div>
-                <?php endif; ?>
-
-                <?php if (isset($_SESSION['success'])): ?>
-                    <div class="alert alert-success"><?= $_SESSION['success'] ?></div>
-                    <?php unset($_SESSION['success']); ?>
-                <?php endif; ?>
-
                 <div class="card p-3">
+
+                    <!-- Tampilkan pesan error atau success -->
+                    <?php if (isset($_SESSION['error'])): ?>
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <?= htmlspecialchars($_SESSION['error']) ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        <?php unset($_SESSION['error']); ?>
+                    <?php endif; ?>
+
+                    <?php if (isset($_SESSION['success'])): ?>
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <?= htmlspecialchars($_SESSION['success']) ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        <?php unset($_SESSION['success']); ?>
+                    <?php endif; ?>
+                    <!-- /Tampilkan pesan error atau success -->
+
                     <div class="table-responsive">
                         <table class="table table-bordered table-striped">
                             <thead class="table-light">
-                                <tr>
+                                <tr class="text-center">
                                     <th>Periode</th>
                                     <th>Karyawan</th>
                                     <th>Jenis</th>
@@ -307,7 +312,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                                     <?= ucfirst($h['sisa_hutang'] <= 0 ? 'lunas' : 'Belum Lunas') ?>
                                                 </span>
                                             </td>
-                                            <td>
+                                            <td class="text-center">
                                                 <div class="btn-group-actions">
                                                     <button class="btn btn-sm btn-primary btn-bayar"
                                                         data-id="<?= $h['id_hutang'] ?>"

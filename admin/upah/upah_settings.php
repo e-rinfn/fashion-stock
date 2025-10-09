@@ -24,7 +24,7 @@ function dateIndo($tanggal)
 
 
 // Ambil semua tarif upah
-$tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif, berlaku_sejak DESC");
+$tarif_upah = query("SELECT * FROM tarif_upah ORDER BY berlaku_sejak DESC");
 
 // Tambah tarif baru
 if (isset($_POST['tambah_tarif'])) {
@@ -119,9 +119,6 @@ if (isset($_GET['hapus'])) {
                         <button type="submit" name="tambah_tarif" class="btn btn-primary">
                             <i class="ti ti-circle-plus"></i> Tambah Tarif
                         </button>
-                        <a href="list.php" class="btn btn-secondary me-2">
-                            <i class="ti ti-arrow-back"></i> Kembali
-                        </a>
                     </div>
                 </form>
 
@@ -135,6 +132,7 @@ if (isset($_GET['hapus'])) {
                             <table class="table table-bordered">
                                 <thead>
                                     <tr class="text-center">
+                                        <th>No</th>
                                         <th>Jenis Tarif</th>
                                         <th>Tarif per Unit</th>
                                         <th>Berlaku Sejak</th>
@@ -144,8 +142,12 @@ if (isset($_GET['hapus'])) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php foreach ($tarif_upah as $tarif): ?>
+                                    <?php
+                                    $no = 1;
+                                    foreach ($tarif_upah as $tarif):
+                                    ?>
                                         <tr>
+                                            <td class="text-center"><?= $no++ ?></td>
                                             <td class="text-center">
                                                 <span class="badge bg-<?= $tarif['jenis_tarif'] == 'pemotongan' ? 'warning' : 'info' ?>">
                                                     <?= ucfirst($tarif['jenis_tarif']) ?>
@@ -166,6 +168,7 @@ if (isset($_GET['hapus'])) {
                                     <?php endforeach; ?>
                                 </tbody>
                             </table>
+
                         </div>
                     </div>
                 </div>

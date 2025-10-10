@@ -277,7 +277,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <table class="table table-bordered table-striped">
                             <thead class="table-light">
                                 <tr class="text-center">
-                                    <th>Periode</th>
+                                    <!-- <th>Periode</th> -->
                                     <th>Karyawan</th>
                                     <th>Jenis</th>
                                     <th>Total Upah</th>
@@ -295,9 +295,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 <?php else: ?>
                                     <?php foreach ($hutang as $h): ?>
                                         <tr>
-                                            <td><?= date('F Y', strtotime($h['periode'])) ?></td>
+                                            <!-- <td><?= date('F Y', strtotime($h['periode'])) ?></td> -->
                                             <td><?= htmlspecialchars($h['nama_karyawan']) ?></td>
-                                            <td>
+                                            <td class="text-center">
                                                 <span class="badge bg-<?= $h['jenis_karyawan'] == 'pemotong' ? 'warning' : 'info' ?>">
                                                     <?= ucfirst($h['jenis_karyawan']) ?>
                                                 </span>
@@ -307,7 +307,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                             <td class="<?= $h['sisa_hutang'] > 0 ? 'text-danger fw-bold' : '' ?>">
                                                 <?= formatRupiah($h['sisa_hutang']) ?>
                                             </td>
-                                            <td>
+                                            <td class="text-center">
                                                 <span class="badge bg-<?= $h['sisa_hutang'] <= 0 ? 'success' : 'warning' ?>">
                                                     <?= ucfirst($h['sisa_hutang'] <= 0 ? 'lunas' : 'Belum Lunas') ?>
                                                 </span>

@@ -27,7 +27,14 @@ function dateIndo($tanggal)
 $id_hutang = intval($_GET['id']);
 $detail = getDetailHutang($id_hutang);
 
-// Ambil riwayat pembayaran
+// Cek apakah data hutang ditemukan
+if (!$detail) {
+    $_SESSION['error'] = "Data hutang tidak ditemukan";
+    header("Location: hutang_upah.php");
+    exit();
+}
+
+// Ambil riwayat pembayaran - GUNAKAN TABEL pembayaran_upah_2
 $pembayaran = query("SELECT * FROM pembayaran_upah_2 WHERE id_hutang = $id_hutang ORDER BY tanggal_bayar DESC");
 
 // Proses batal pembayaran
@@ -39,7 +46,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['batal_pembayaran'])) {
         header("Location: detail_hutang.php?id=$id_hutang");
         exit();
     } else {
-        $error = "Gagal membatalkan pembayaran";
+        $_SESSION['error'] = "Gagal membatalkan pembayaran";
+        header("Location: detail_hutang.php?id=$id_hutang");
+        exit();
     }
 }
 ?>
@@ -220,14 +229,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['batal_pembayaran'])) {
                                                         </span>
                                                     </td>
                                                     <td class="text-center">
-                                                        <form method="POST" class="form-batal" style="display:inline;">
+                                                        <form method="POST" class="d-inline">
                                                             <input type="hidden" name="id_pembayaran" value="<?= $bayar['id_pembayaran'] ?>">
-                                                            <button type="button" class="btn btn-sm btn-outline-danger btn-batal">
+                                                            <input type="hidden" name="batal_pembayaran" value="1">
+                                                            <button type="button" class="btn btn-sm btn-outline-danger btn-batal"
+                                                                data-tanggal="<?= dateIndo($bayar['tanggal_bayar']) ?>"
+                                                                data-jumlah="<?= formatRupiah($bayar['jumlah_bayar']) ?>">
                                                                 <i class="ti ti-x"></i> Batal
                                                             </button>
                                                         </form>
                                                     </td>
-
                                                 </tr>
                                             <?php endforeach; ?>
                                         </tbody>
@@ -257,15 +268,31 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['batal_pembayaran'])) {
         // Konfirmasi sebelum batal pembayaran
         $('.btn-batal').on('click', function() {
             const form = $(this).closest('form');
+            const tanggal = $(this).data('tanggal');
+            const jumlah = $(this).data('jumlah');
+
             Swal.fire({
                 title: 'Batalkan Pembayaran?',
-                text: "Tindakan ini tidak dapat dibatalkan!",
+                html: `
+                    <div class="text-start">
+                        <p>Apakah Anda yakin ingin membatalkan pembayaran berikut?</p>
+                        <div class="alert alert-warning">
+                            <strong>Tanggal:</strong> ${tanggal}<br>
+                            <strong>Jumlah:</strong> ${jumlah}
+                        </div>
+                        <p class="text-danger mb-0">
+                            <i class="ti ti-alert-triangle"></i> 
+                            Tindakan ini akan mengembalikan status hutang dan tidak dapat dibatalkan.
+                        </p>
+                    </div>
+                `,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
                 cancelButtonColor: '#6c757d',
                 confirmButtonText: 'Ya, Batalkan!',
-                cancelButtonText: 'Batal'
+                cancelButtonText: 'Batal',
+                reverseButtons: true
             }).then((result) => {
                 if (result.isConfirmed) {
                     form.submit();

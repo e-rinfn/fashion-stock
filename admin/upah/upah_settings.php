@@ -111,8 +111,7 @@ if (isset($_GET['hapus'])) {
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Keterangan</label>
-                            <input type="text" name="keterangan" class="form-control"
-                                placeholder="Contoh: Kenaikan tarif 2024">
+                            <input type="text" name="keterangan" class="form-control">
                         </div>
                     </div>
                     <div class="mt-3">

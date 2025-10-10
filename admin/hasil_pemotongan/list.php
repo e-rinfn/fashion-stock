@@ -198,6 +198,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 
     // Batal Penjahitan
+    // if (isset($_POST['batal_penjahitan'])) {
+    //     $id_hasil_potong_fix = intval($_POST['id_hasil_potong_fix']);
+
+    //     // Ambil data sebelum dibatalkan
+    //     $produksi_data = query("SELECT id_produk, total_hasil_jahit, id_penjahit, tanggal_hasil_jahit FROM hasil_potong_fix WHERE id_hasil_potong_fix = $id_hasil_potong_fix")[0];
+    //     $id_produk = $produksi_data['id_produk'];
+    //     $total_hasil_jahit = $produksi_data['total_hasil_jahit'];
+    //     $id_penjahit = $produksi_data['id_penjahit'];
+    //     $tanggal_hasil_jahit = $produksi_data['tanggal_hasil_jahit'];
+
+    //     $conn->autocommit(FALSE);
+    //     try {
+
     if (isset($_POST['batal_penjahitan'])) {
         $id_hasil_potong_fix = intval($_POST['id_hasil_potong_fix']);
 
@@ -207,6 +220,29 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $total_hasil_jahit = $produksi_data['total_hasil_jahit'];
         $id_penjahit = $produksi_data['id_penjahit'];
         $tanggal_hasil_jahit = $produksi_data['tanggal_hasil_jahit'];
+
+        // CEK APAKAH UPAH SUDAH DIBERIKAN
+        $periode = date('Y-m-01', strtotime($tanggal_hasil_jahit));
+        $check_upah_dibayar = $conn->prepare("
+            SELECT COUNT(*) as total_pembayaran 
+            FROM pembayaran_upah_2 pu
+            JOIN hutang_upah hu ON pu.id_hutang = hu.id_hutang
+            WHERE hu.id_karyawan = ? 
+            AND hu.jenis_karyawan = 'penjahit' 
+            AND hu.periode = ?
+            AND hu.total_dibayar > 0
+        ");
+        $check_upah_dibayar->bind_param("is", $id_penjahit, $periode);
+        $check_upah_dibayar->execute();
+        $result_upah = $check_upah_dibayar->get_result();
+        $upah_dibayar = $result_upah->fetch_assoc()['total_pembayaran'] > 0;
+        $check_upah_dibayar->close();
+
+        if ($upah_dibayar) {
+            $_SESSION['error'] = "Tidak dapat membatalkan penjahitan karena upah penjahit untuk produksi ini sudah dibayar. Silakan batalkan pembayaran upah penjahitan terlebih dahulu.";
+            header("Location: list.php");
+            exit();
+        }
 
         $conn->autocommit(FALSE);
         try {
@@ -382,9 +418,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h2>Master Data Produksi</h2>
                     <div>
-                        <a href="hutang_upah.php" class="btn btn-warning me-2">
-                            <i class="ti ti-report-money"></i> Daftar Upah
-                        </a>
                         <a href="new.php" class="btn btn-primary">
                             <i class="ti ti-circle-plus"></i> Tambah Produksi
                         </a>
@@ -448,11 +481,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <table class="table table-sm table-bordered table-hover align-middle">
                             <thead class="table-light">
                                 <tr class="text-center">
-                                    <th class="align-middle" style="width: 30px;">No</th>
+                                    <!-- <th class="align-middle" style="width: 30px;">No</th> -->
+                                    <th class="bg-warning text-white align-middle">Seri</th>
                                     <th class="bg-warning text-white align-middle">Pemotong</th>
                                     <th class="bg-warning text-white align-middle">Tgl Potong</th>
                                     <th class="bg-warning text-white align-middle">Produk</th>
-                                    <th class="bg-warning text-white align-middle">Seri</th>
                                     <th class="bg-warning text-white align-middle">Hasil Potong</th>
                                     <th class="upah-column align-middle">Upah Pemotong</th>
                                     <th class="align-middle">Status</th>
@@ -474,14 +507,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     <?php $no = 1; ?>
                                     <?php foreach ($all_data as $data): ?>
                                         <tr>
-                                            <td class="text-center"><?= $no++ ?></td>
+                                            <!-- <td class="text-center"><?= $no++ ?></td> -->
+                                            <td class="text-center"><?= htmlspecialchars($data['seri']) ?></td>
                                             <td>
                                                 <?= htmlspecialchars($data['pemotong']) ?>
                                                 <br><small class="tarif-info"><?= formatRupiah($data['rate_pemotong']) ?>/pcs</small>
                                             </td>
                                             <td><?= dateIndo($data['tanggal']) ?></td>
                                             <td><?= htmlspecialchars($data['produk']) ?></td>
-                                            <td class="text-center"><?= htmlspecialchars($data['seri']) ?></td>
                                             <td class="text-center"><?= $data['total_hasil'] ?> Pcs</td>
                                             <td class="text-center upah-column">
                                                 <?= formatRupiah($data['upah_pemotong']) ?>
@@ -535,7 +568,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                                             <i class="ti ti-pencil"></i>
                                                         </button>
 
-                                                        <button class="btn btn-sm btn-danger btn-batal" data-id="<?= $data['id'] ?>" title="Batalkan Produksi">
+                                                        <!-- <button class="btn btn-sm btn-danger btn-batal" data-id="<?= $data['id'] ?>" title="Batalkan Produksi">
+                                                            <i class="ti ti-trash"></i>
+                                                        </button> -->
+
+                                                        <!-- <button class="btn btn-sm btn-danger btn-batal"
+                                                            data-id="<?= $data['id'] ?>"
+                                                            data-pemotong="<?= htmlspecialchars($data['pemotong']) ?>"
+                                                            title="Batalkan Produksi">
+                                                            <i class="ti ti-trash"></i>
+                                                        </button> -->
+
+                                                        <button class="btn btn-sm btn-danger btn-batal"
+                                                            data-id="<?= $data['id'] ?>"
+                                                            data-pemotong="<?= htmlspecialchars($data['pemotong']) ?>"
+                                                            data-seri="<?= htmlspecialchars($data['seri']) ?>"
+                                                            title="Batalkan Produksi">
                                                             <i class="ti ti-trash"></i>
                                                         </button>
 
@@ -839,21 +887,85 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         });
 
         // Tombol Batal Penjahitan
+        // document.querySelectorAll('.btn-batal-penjahitan').forEach(button => {
+        //     button.addEventListener('click', function() {
+        //         const id = this.getAttribute('data-id');
+        //         const produk = this.getAttribute('data-produk');
+        //         const seri = this.getAttribute('data-seri');
+
+        //         // Set nilai modal batal
+        //         document.getElementById('batal_modal_id').value = id;
+        //         document.getElementById('batal_modal_produk').textContent = produk;
+        //         document.getElementById('batal_modal_seri').textContent = seri;
+
+        //         // Tampilkan modal konfirmasi
+        //         modalBatalPenjahitan.show();
+        //     });
+        // });
+
+        // Tombol Batal Penjahitan dengan validasi
         document.querySelectorAll('.btn-batal-penjahitan').forEach(button => {
             button.addEventListener('click', function() {
                 const id = this.getAttribute('data-id');
                 const produk = this.getAttribute('data-produk');
                 const seri = this.getAttribute('data-seri');
+                const penjahit = this.getAttribute('data-penjahit');
 
-                // Set nilai modal batal
-                document.getElementById('batal_modal_id').value = id;
-                document.getElementById('batal_modal_produk').textContent = produk;
-                document.getElementById('batal_modal_seri').textContent = seri;
+                // Cek apakah upah sudah dibayar via AJAX
+                checkUpahStatus(id).then(upahDibayar => {
+                    if (upahDibayar) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Tidak Dapat Membatalkan',
+                            html: `
+                        <div class="text-start">
+                            <p><strong>Penjahitan tidak dapat dibatalkan!</strong></p>
+                            <p>Upah untuk penjahit <strong>${penjahit}</strong> pada produksi ini sudah dibayar.</p>
+                            <p class="text-danger mb-3">
+                                <i class="ti ti-alert-triangle"></i> 
+                                Silakan batalkan pembayaran upah terlebih dahulu di menu <strong>Hutang Upah</strong>.
+                            </p>
+                            <div class="d-grid">
+                                <a href="hutang_upah.php" class="btn btn-warning">
+                                    <i class="ti ti-report-money"></i> Ke Menu Hutang Upah
+                                </a>
+                            </div>
+                        </div>
+                    `,
+                            confirmButtonText: 'Mengerti',
+                            showCancelButton: false
+                        });
+                    } else {
+                        // Set nilai modal batal
+                        document.getElementById('batal_modal_id').value = id;
+                        document.getElementById('batal_modal_produk').textContent = produk;
+                        document.getElementById('batal_modal_seri').textContent = seri;
 
-                // Tampilkan modal konfirmasi
-                modalBatalPenjahitan.show();
+                        // Tampilkan modal konfirmasi
+                        modalBatalPenjahitan.show();
+                    }
+                }).catch(error => {
+                    console.error('Error checking upah status:', error);
+                    // Fallback ke modal biasa jika error
+                    document.getElementById('batal_modal_id').value = id;
+                    document.getElementById('batal_modal_produk').textContent = produk;
+                    document.getElementById('batal_modal_seri').textContent = seri;
+                    modalBatalPenjahitan.show();
+                });
             });
         });
+
+        // Fungsi untuk mengecek status pembayaran upah
+        async function checkUpahStatus(idProduksi) {
+            try {
+                const response = await fetch(`check_upah_status.php?id_produksi=${idProduksi}`);
+                const data = await response.json();
+                return data.upah_dibayar || false;
+            } catch (error) {
+                console.error('Error checking upah status:', error);
+                return false;
+            }
+        }
 
         // Validasi form penjahitan
         document.getElementById('formPenjahitan').addEventListener('submit', function(e) {
@@ -881,6 +993,87 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 });
                 inputTotalJahit.focus();
             }
+        });
+    });
+
+    // Fungsi untuk mengecek status pembayaran upah pemotong berdasarkan seri
+    async function checkUpahPemotongStatus(idProduksi) {
+        try {
+            const response = await fetch(`check_upah_pemotong_status.php?id_produksi=${idProduksi}`);
+            const data = await response.json();
+            return data.upah_dibayar || false;
+        } catch (error) {
+            console.error('Error checking upah pemotong status:', error);
+            return false;
+        }
+    }
+
+    // Tombol batal produksi dengan validasi upah pemotong berdasarkan seri
+    document.querySelectorAll('.btn-batal').forEach(button => {
+        button.addEventListener('click', function() {
+            const id = this.getAttribute('data-id');
+            const pemotong = this.getAttribute('data-pemotong');
+            const seri = this.getAttribute('data-seri'); // Tambahkan atribut ini
+
+            // Cek apakah upah pemotong sudah dibayar untuk seri ini via AJAX
+            checkUpahPemotongStatus(id).then(upahDibayar => {
+                if (upahDibayar) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Tidak Dapat Membatalkan',
+                        html: `
+                <div class="text-start">
+                    <p><strong>Produksi tidak dapat dibatalkan!</strong></p>
+                    <p>Upah untuk pemotong <strong>${pemotong}</strong> pada produksi <strong>Seri ${seri}</strong> sudah dibayar.</p>
+                    <p class="text-danger mb-3">
+                        <i class="ti ti-alert-triangle"></i> 
+                        Silakan batalkan pembayaran upah terlebih dahulu di menu <strong>Hutang Upah</strong>.
+                    </p>
+                    <div class="d-grid">
+                        <a href="../hutang_upah/list.php" class="btn btn-warning">
+                            <i class="ti ti-report-money"></i> Ke Menu Hutang Upah
+                        </a>
+                    </div>
+                </div>
+            `,
+                        confirmButtonText: 'Mengerti',
+                        showCancelButton: false
+                    });
+                } else {
+                    // Jika upah belum dibayar untuk seri ini, tampilkan konfirmasi pembatalan
+                    Swal.fire({
+                        title: 'Yakin ingin membatalkan produksi ini?',
+                        html: `<p>Produksi <strong>Seri ${seri}</strong> akan dibatalkan.</p><p>Tindakan ini tidak dapat dikembalikan!</p>`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: 'Ya, batalkan!',
+                        cancelButtonText: 'Batal'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.location.href = 'batal_pemotongan.php?id=' + id;
+                        }
+                    });
+                }
+            }).catch(error => {
+                console.error('Error checking upah status:', error);
+                // Fallback ke konfirmasi biasa jika error
+                Swal.fire({
+                    title: 'Yakin ingin membatalkan produksi ini?',
+                    html: `<p>Produksi <strong>Seri ${seri}</strong> akan dibatalkan.</p><p>Tindakan ini tidak dapat dikembalikan!</p>`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Ya, batalkan!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = 'batal.php?id=' + id;
+                    }
+                });
+            });
         });
     });
 </script>

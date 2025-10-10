@@ -42,50 +42,13 @@ if (!isset($_GET['id']) || empty($_GET['id'])) {
 $id_hasil_potong_fix = intval($_GET['id']);
 
 // Ambil data produksi yang akan dibatalkan
-$produksi_data = query("SELECT hp.*, p.nama_pemotong 
-                       FROM hasil_potong_fix hp
-                       JOIN pemotong p ON hp.id_pemotong = p.id_pemotong
-                       WHERE hp.id_hasil_potong_fix = $id_hasil_potong_fix")[0];
+$produksi_data = query("SELECT * FROM hasil_potong_fix WHERE id_hasil_potong_fix = $id_hasil_potong_fix")[0];
 
 if (!$produksi_data) {
     $_SESSION['error'] = "Data produksi tidak ditemukan";
     header("Location: list.php");
     exit();
 }
-
-// ===== VALIDASI: CEK APAKAH UPAH PEMOTONG SUDAH DIBERIKAN =====
-$id_pemotong = $produksi_data['id_pemotong'];
-$tanggal_potong = $produksi_data['tanggal_hasil_potong'];
-$periode = date('Y-m-01', strtotime($tanggal_potong));
-
-$check_upah_dibayar = $conn->prepare("
-    SELECT COUNT(*) as total_pembayaran 
-    FROM pembayaran_upah_2 pu
-    JOIN hutang_upah hu ON pu.id_hutang = hu.id_hutang
-    WHERE hu.id_karyawan = ? 
-    AND hu.jenis_karyawan = 'pemotong' 
-    AND hu.periode = ?
-    AND hu.total_dibayar > 0
-");
-
-if (!$check_upah_dibayar) {
-    $_SESSION['error'] = "Error preparing statement: " . $conn->error;
-    header("Location: list.php");
-    exit();
-}
-
-$check_upah_dibayar->bind_param("is", $id_pemotong, $periode);
-$check_upah_dibayar->execute();
-$result_upah = $check_upah_dibayar->get_result();
-$upah_dibayar = $result_upah->fetch_assoc()['total_pembayaran'] > 0;
-$check_upah_dibayar->close();
-
-if ($upah_dibayar) {
-    $_SESSION['error'] = "Tidak dapat membatalkan produksi karena upah pemotong '" . $produksi_data['nama_pemotong'] . "' untuk produksi ini sudah dibayar. Silakan batalkan pembayaran upah pemotongan terlebih dahulu di menu Hutang Upah.";
-    header("Location: list.php");
-    exit();
-}
-// ===== END VALIDASI =====
 
 // Mulai transaksi
 $conn->begin_transaction();

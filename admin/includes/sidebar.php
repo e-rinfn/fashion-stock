@@ -85,10 +85,22 @@ function isActive($path)
                     </ul>
                 </li>
 
+                <li class="pc-item pc-caption">
+                    <label>PRODUKSI</label>
+                    <i class="ti ti-dashboard"></i>
+                </li>
+
                 <li class="pc-item <?= isActive('/hasil_pemotongan') ?>">
                     <a href="<?= $base_url ?>/admin/hasil_pemotongan/list.php" class="pc-link">
                         <span class="pc-micon"><i class="ti ti-settings"></i></span>
-                        <span class="pc-mtext">Produksi</span>
+                        <span class="pc-mtext">Proses Produksi</span>
+                    </a>
+                </li>
+
+                <li class="pc-item <?= isActive('/upah_produksi') ?>">
+                    <a href="<?= $base_url ?>/admin/upah_produksi/hutang_upah.php" class="pc-link">
+                        <span class="pc-micon"><i class="ti ti-report-money"></i></span>
+                        <span class="pc-mtext">Upah Produksi</span>
                     </a>
                 </li>
 

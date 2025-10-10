@@ -28,7 +28,6 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
         return $row['tarif_per_unit'];
     }
 
-    // Default value jika tidak ada tarif
     return 700.00;
 }
 
@@ -53,19 +52,26 @@ if (!$produksi_data) {
     exit();
 }
 
-// ===== VALIDASI: CEK APAKAH UPAH PEMOTONG SUDAH DIBERIKAN =====
+// ===== VALIDASI: CEK APAKAH UPAH PEMOTONG SUDAH DIBERIKAN UNTUK PRODUKSI INI =====
 $id_pemotong = $produksi_data['id_pemotong'];
 $tanggal_potong = $produksi_data['tanggal_hasil_potong'];
-$periode = date('Y-m-01', strtotime($tanggal_potong));
+$seri = $produksi_data['seri'];
+$total_hasil = $produksi_data['total_hasil'];
 
+// Hitung upah untuk produksi ini
+$tarif_pemotong = getTarifUpah('pemotongan', $tanggal_potong);
+$upah_produksi_ini = $total_hasil * $tarif_pemotong;
+
+// Cek apakah ada pembayaran upah yang terkait dengan seri produksi ini
 $check_upah_dibayar = $conn->prepare("
-    SELECT COUNT(*) as total_pembayaran 
+    SELECT 
+        COUNT(pu.id_pembayaran) as total_pembayaran_terkait
     FROM pembayaran_upah_2 pu
     JOIN hutang_upah hu ON pu.id_hutang = hu.id_hutang
     WHERE hu.id_karyawan = ? 
     AND hu.jenis_karyawan = 'pemotong' 
-    AND hu.periode = ?
-    AND hu.total_dibayar > 0
+    AND hu.periode = DATE_FORMAT(?, '%Y-%m-01')
+    AND (pu.keterangan LIKE ? OR hu.total_dibayar >= ?)
 ");
 
 if (!$check_upah_dibayar) {
@@ -74,14 +80,15 @@ if (!$check_upah_dibayar) {
     exit();
 }
 
-$check_upah_dibayar->bind_param("is", $id_pemotong, $periode);
+$search_seri = "%" . $seri . "%";
+$check_upah_dibayar->bind_param("issd", $id_pemotong, $tanggal_potong, $search_seri, $upah_produksi_ini);
 $check_upah_dibayar->execute();
 $result_upah = $check_upah_dibayar->get_result();
-$upah_dibayar = $result_upah->fetch_assoc()['total_pembayaran'] > 0;
+$pembayaran_terkait = $result_upah->fetch_assoc()['total_pembayaran_terkait'] > 0;
 $check_upah_dibayar->close();
 
-if ($upah_dibayar) {
-    $_SESSION['error'] = "Tidak dapat membatalkan produksi karena upah pemotong '" . $produksi_data['nama_pemotong'] . "' untuk produksi ini sudah dibayar. Silakan batalkan pembayaran upah pemotongan terlebih dahulu di menu Hutang Upah.";
+if ($pembayaran_terkait) {
+    $_SESSION['error'] = "Tidak dapat membatalkan produksi Seri '$seri' karena upah pemotong '" . $produksi_data['nama_pemotong'] . "' untuk produksi ini sudah dibayar. Silakan batalkan pembayaran upah pemotongan terlebih dahulu di menu Hutang Upah.";
     header("Location: list.php");
     exit();
 }
@@ -143,17 +150,15 @@ try {
                 $sisa_hutang_baru = $hutang['sisa_hutang'] - $upah_penjahit;
 
                 if ($total_upah_baru <= 0) {
-                    // Hapus record hutang jika total upah menjadi 0
                     $delete_hutang = $conn->prepare("DELETE FROM hutang_upah WHERE id_hutang = ?");
                     $delete_hutang->bind_param("i", $hutang['id_hutang']);
                     if (!$delete_hutang->execute()) {
                         throw new Exception("Gagal menghapus hutang upah penjahit");
                     }
                 } else {
-                    // Update hutang yang sudah ada
-                    $update_hutang = $conn->prepare("UPDATE hutang_upah SET total_upah = ?, sisa_hutang = ? 
+                    $update_hutang = $conn->prepare("UPDATE hutang_upah SET sisa_hutang = ? 
                                                   WHERE id_hutang = ?");
-                    $update_hutang->bind_param("ddi", $total_upah_baru, $sisa_hutang_baru, $hutang['id_hutang']);
+                    $update_hutang->bind_param("di", $sisa_hutang_baru, $hutang['id_hutang']);
                     if (!$update_hutang->execute()) {
                         throw new Exception("Gagal update hutang upah penjahit");
                     }
@@ -162,7 +167,7 @@ try {
         }
     }
 
-    // 5. Hapus hutang upah pemotong
+    // 5. Hapus hutang upah pemotong untuk produksi ini
     $periode_pemotong = date('Y-m-01', strtotime($produksi_data['tanggal_hasil_potong']));
     $tarif_pemotong = getTarifUpah('pemotongan', $produksi_data['tanggal_hasil_potong']);
     $upah_pemotong = $produksi_data['total_hasil'] * $tarif_pemotong;
@@ -180,14 +185,12 @@ try {
         $sisa_hutang_baru_pemotong = $hutang_pemotong['sisa_hutang'] - $upah_pemotong;
 
         if ($total_upah_baru_pemotong <= 0) {
-            // Hapus record hutang jika total upah menjadi 0
             $delete_hutang_pemotong = $conn->prepare("DELETE FROM hutang_upah WHERE id_hutang = ?");
             $delete_hutang_pemotong->bind_param("i", $hutang_pemotong['id_hutang']);
             if (!$delete_hutang_pemotong->execute()) {
                 throw new Exception("Gagal menghapus hutang upah pemotong");
             }
         } else {
-            // Update hutang yang sudah ada
             $update_hutang_pemotong = $conn->prepare("UPDATE hutang_upah SET total_upah = ?, sisa_hutang = ? 
                                                    WHERE id_hutang = ?");
             $update_hutang_pemotong->bind_param("ddi", $total_upah_baru_pemotong, $sisa_hutang_baru_pemotong, $hutang_pemotong['id_hutang']);
@@ -220,21 +223,13 @@ try {
     // Commit transaksi
     $conn->commit();
 
-    // Log aktivitas
-    error_log("Produksi dibatalkan - ID: $id_hasil_potong_fix, Produk: {$produksi_data['id_produk']}, Seri: {$produksi_data['seri']}");
-
-    $_SESSION['success'] = "Produksi berhasil dibatalkan. Stok bahan telah dikembalikan." .
+    $_SESSION['success'] = "Produksi Seri '$seri' berhasil dibatalkan. Stok bahan telah dikembalikan." .
         ($produksi_data['total_hasil_jahit'] > 0 ? " Stok produk dikurangi {$produksi_data['total_hasil_jahit']} pcs." : "");
 } catch (Exception $e) {
-    // Rollback transaksi jika terjadi error
     $conn->rollback();
-
-    // Log error
     error_log("Error batal produksi - ID: $id_hasil_potong_fix - " . $e->getMessage());
-
     $_SESSION['error'] = "Gagal membatalkan produksi: " . $e->getMessage();
 }
 
-// Redirect kembali ke halaman list
 header("Location: list.php");
 exit();

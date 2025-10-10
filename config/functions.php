@@ -125,6 +125,7 @@ function bayarHutangUpah($id_hutang, $tanggal_bayar, $jumlah_bayar, $metode_baya
 }
 
 // Fungsi untuk mendapatkan detail hutang
+// Fungsi untuk mendapatkan detail hutang
 function getDetailHutang($id_hutang)
 {
     global $conn;
@@ -145,7 +146,9 @@ function getDetailHutang($id_hutang)
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("i", $id_hutang);
     $stmt->execute();
-    return $stmt->get_result()->fetch_assoc();
+    $result = $stmt->get_result();
+
+    return $result->fetch_assoc();
 }
 
 // Fungsi untuk membatalkan pembayaran
@@ -155,7 +158,7 @@ function batalPembayaranUpah($id_pembayaran)
 
     $conn->autocommit(FALSE);
     try {
-        // 1. Ambil data pembayaran
+        // 1. Ambil data pembayaran dari tabel pembayaran_upah_2
         $sql_pembayaran = "SELECT * FROM pembayaran_upah_2 WHERE id_pembayaran = ?";
         $stmt_pembayaran = $conn->prepare($sql_pembayaran);
         $stmt_pembayaran->bind_param("i", $id_pembayaran);
@@ -169,7 +172,7 @@ function batalPembayaranUpah($id_pembayaran)
         $id_hutang = $pembayaran['id_hutang'];
         $jumlah_bayar = $pembayaran['jumlah_bayar'];
 
-        // 2. Hapus pembayaran
+        // 2. Hapus pembayaran dari tabel pembayaran_upah_2
         $sql_hapus = "DELETE FROM pembayaran_upah_2 WHERE id_pembayaran = ?";
         $stmt_hapus = $conn->prepare($sql_hapus);
         $stmt_hapus->bind_param("i", $id_pembayaran);

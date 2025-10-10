@@ -277,25 +277,28 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <table class="table table-bordered table-striped">
                             <thead class="table-light">
                                 <tr class="text-center">
-                                    <!-- <th>Periode</th> -->
-                                    <th>Karyawan</th>
-                                    <th>Jenis</th>
-                                    <th>Total Upah</th>
-                                    <th>Total Dibayar</th>
-                                    <th>Sisa Hutang</th>
-                                    <th>Status</th>
-                                    <th>Aksi</th>
+                                    <th style="width: 5%;">No</th>
+                                    <th style="width: 12%;">Periode</th>
+                                    <th style="width: 15%;">Karyawan</th>
+                                    <th style="width: 10%;">Jenis</th>
+                                    <th style="width: 13%;">Total Upah</th>
+                                    <th style="width: 13%;">Total Dibayar</th>
+                                    <th style="width: 13%;">Sisa Hutang</th>
+                                    <th style="width: 10%;">Status</th>
+                                    <th style="width: 9%;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php if (empty($hutang)): ?>
                                     <tr>
-                                        <td colspan="8" class="text-center text-muted">Tidak ada data hutang upah</td>
+                                        <td colspan="9" class="text-center text-muted">Tidak ada data hutang upah</td>
                                     </tr>
                                 <?php else: ?>
+                                    <?php $no = 1; ?>
                                     <?php foreach ($hutang as $h): ?>
                                         <tr>
-                                            <!-- <td><?= date('F Y', strtotime($h['periode'])) ?></td> -->
+                                            <td class="text-center"><?= $no++; ?></td>
+                                            <td><?= date('F Y', strtotime($h['periode'])) ?></td>
                                             <td><?= htmlspecialchars($h['nama_karyawan']) ?></td>
                                             <td class="text-center">
                                                 <span class="badge bg-<?= $h['jenis_karyawan'] == 'pemotong' ? 'warning' : 'info' ?>">
@@ -309,7 +312,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                             </td>
                                             <td class="text-center">
                                                 <span class="badge bg-<?= $h['sisa_hutang'] <= 0 ? 'success' : 'warning' ?>">
-                                                    <?= ucfirst($h['sisa_hutang'] <= 0 ? 'lunas' : 'Belum Lunas') ?>
+                                                    <?= ucfirst($h['sisa_hutang'] <= 0 ? 'Lunas' : 'Belum Lunas') ?>
                                                 </span>
                                             </td>
                                             <td class="text-center">
@@ -332,6 +335,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 <?php endif; ?>
                             </tbody>
                         </table>
+
                     </div>
                 </div>
             </div>

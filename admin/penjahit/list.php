@@ -43,7 +43,7 @@ $penjahit = query($sql);
                             <i class="ti ti-report-money"></i> Upah Penjahit
                         </a> -->
                         <a href="add.php" class="btn btn-success">
-                            <i class="ti ti-file-plus"></i> Tambah Penjahit
+                            <i class="ti ti-circle-plus"></i> Tambah Penjahit
                         </a>
                     </div>
                 </div>
@@ -70,11 +70,11 @@ $penjahit = query($sql);
                         <table class="table table-striped table-bordered table-hover">
                             <thead class="table-light text-center">
                                 <tr>
-                                    <th>No</th>
-                                    <th>Nama Penjahit</th>
-                                    <th>Kontak</th>
-                                    <th>Alamat</th>
-                                    <th>Aksi</th>
+                                    <th style="width: 5%;">No</th>
+                                    <th style="width: 25%;">Nama Penjahit</th>
+                                    <th style="width: 20%;">Kontak</th>
+                                    <th style="width: 35%;">Alamat</th>
+                                    <th style="width: 15%;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -91,13 +91,13 @@ $penjahit = query($sql);
                                             <td><?= htmlspecialchars($pj['kontak']) ?></td>
                                             <td><?= htmlspecialchars($pj['alamat']) ?></td>
                                             <td class="text-center">
-                                                <a href="edit.php?id=<?= $pj['id_penjahit'] ?>" class="btn btn-sm btn-primary me-1">
-                                                    <i class="ti ti-pencil"></i> Edit
+                                                <a href="edit.php?id=<?= $pj['id_penjahit'] ?>" class="btn btn-sm btn-primary">
+                                                    <i class="ti ti-pencil"></i>
                                                 </a>
                                                 <a href="javascript:void(0);"
                                                     class="btn btn-sm btn-danger btn-hapus"
                                                     data-id="<?= $pj['id_penjahit'] ?>">
-                                                    <i class="ti ti-trash"></i> Hapus
+                                                    <i class="ti ti-trash"></i>
                                                 </a>
                                             </td>
                                         </tr>

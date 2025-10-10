@@ -86,11 +86,11 @@ function dateIndo($tanggal)
                         <table class="table table-striped table-bordered table-hover">
                             <thead class="table-light text-center">
                                 <tr>
-                                    <th>No</th>
-                                    <th>Nama Reseller</th>
-                                    <th>Kontak</th>
-                                    <th>Tanggal Bergabung</th>
-                                    <th>Aksi</th>
+                                    <th style="width: 5%;">No</th>
+                                    <th style="width: 25%;">Nama Reseller</th>
+                                    <th style="width: 20%;">Kontak</th>
+                                    <th style="width: 35%;">Tanggal Bergabung</th>
+                                    <th style="width: 15%;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -111,11 +111,11 @@ function dateIndo($tanggal)
                                             <td><?= htmlspecialchars($row['kontak']) ?></td>
                                             <td class="text-end"><?= dateIndo($row['tanggal_bergabung']) ?></td>
                                             <td class="text-center">
-                                                <a href="edit.php?id=<?= $row['id_reseller'] ?>" class="btn btn-sm btn-primary me-1">
-                                                    <i class="ti ti-pencil"></i> Edit
+                                                <a href="edit.php?id=<?= $row['id_reseller'] ?>" class="btn btn-sm btn-primary">
+                                                    <i class="ti ti-pencil"></i>
                                                 </a>
                                                 <a href="#" class="btn btn-sm btn-danger btn-delete" data-id="<?= $row['id_reseller'] ?>">
-                                                    <i class="ti ti-trash"></i> Hapus
+                                                    <i class="ti ti-trash"></i>
                                                 </a>
                                             </td>
                                         </tr>

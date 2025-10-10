@@ -418,7 +418,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h2>Master Data Produksi</h2>
                     <div>
-                        <a href="new.php" class="btn btn-primary">
+                        <a href="new.php" class="btn btn-success">
                             <i class="ti ti-circle-plus"></i> Tambah Produksi
                         </a>
                     </div>

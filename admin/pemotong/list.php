@@ -72,11 +72,11 @@ $pemotong = query($sql);
                         <table class="table table-striped table-bordered table-hover">
                             <thead class="table-light text-center">
                                 <tr>
-                                    <th>No</th>
-                                    <th>Nama Pemotong</th>
-                                    <th>Alamat</th>
-                                    <th>Kontak</th>
-                                    <th>Aksi</th>
+                                    <th style="width: 5%;">No</th>
+                                    <th style="width: 25%;">Nama Pemotong</th>
+                                    <th style="width: 20%;">Kontak</th>
+                                    <th style="width: 35%;">Alamat</th>
+                                    <th style="width: 15%;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -90,16 +90,16 @@ $pemotong = query($sql);
                                         <tr>
                                             <td class="text-center"><?= $no++; ?></td>
                                             <td><?= htmlspecialchars($ptg['nama_pemotong']); ?></td>
-                                            <td><?= htmlspecialchars($ptg['alamat']); ?></td>
                                             <td><?= htmlspecialchars($ptg['kontak']); ?></td>
+                                            <td><?= htmlspecialchars($ptg['alamat']); ?></td>
                                             <td class="text-center">
-                                                <a href="edit.php?id=<?= $ptg['id_pemotong']; ?>" class="btn btn-sm btn-primary me-1">
-                                                    <i class="ti ti-pencil"></i> Edit
+                                                <a href="edit.php?id=<?= $ptg['id_pemotong']; ?>" class="btn btn-sm btn-primary">
+                                                    <i class="ti ti-pencil"></i>
                                                 </a>
                                                 <a href="delete.php?id=<?= $ptg['id_pemotong']; ?>"
                                                     class="btn btn-sm btn-danger btn-delete"
                                                     data-id="<?= $ptg['id_pemotong']; ?>">
-                                                    <i class="ti ti-trash"></i> Hapus
+                                                    <i class="ti ti-trash"></i>
                                                 </a>
                                             </td>
                                         </tr>
@@ -107,6 +107,7 @@ $pemotong = query($sql);
                                 <?php endif; ?>
                             </tbody>
                         </table>
+
                     </div>
                 </div>
             </div>

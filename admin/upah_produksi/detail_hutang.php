@@ -290,8 +290,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['batal_pembayaran'])) {
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
                 cancelButtonColor: '#6c757d',
-                confirmButtonText: 'Ya, Batalkan!',
                 cancelButtonText: 'Batal',
+                confirmButtonText: 'Ya, Batalkan!',
                 reverseButtons: true
             }).then((result) => {
                 if (result.isConfirmed) {

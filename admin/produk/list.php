@@ -69,12 +69,12 @@ $produk = query($sql);
                         <table class="table table-striped table-bordered table-hover">
                             <thead class="table-light text-center">
                                 <tr>
-                                    <th scope="col">No</th>
-                                    <th scope="col">Nama Produk</th>
-                                    <th scope="col">Stok</th>
-                                    <th scope="col">Harga Per Pcs</th>
-                                    <th scope="col" style="width: 250px;">Deskripsi</th>
-                                    <th scope="col">Aksi</th>
+                                    <th style="width: 5%;">No</th>
+                                    <th style="width: 25%;">Nama Produk</th>
+                                    <th style="width: 20%;">Stok</th>
+                                    <th style="width: 35%;">Harga Per Pcs</th>
+                                    <!-- <th style="width: 250px;">Deskripsi</th> -->
+                                    <th style="width: 15%;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -90,16 +90,16 @@ $produk = query($sql);
                                             <td><?= htmlspecialchars($p['nama_produk']) ?></td>
                                             <td class="text-end"><?= $p['stok'] ?></td>
                                             <td class="text-end"><?= formatRupiah($p['harga_jual']) ?></td>
-                                            <td><?= htmlspecialchars(substr($p['deskripsi'], 0, 50)) ?>...</td>
+                                            <!-- <td><?= htmlspecialchars(substr($p['deskripsi'], 0, 50)) ?>...</td> -->
                                             <td>
                                                 <div class="text-center">
                                                     <a href="edit.php?id=<?= $p['id_produk'] ?>" class="btn btn-sm btn-primary">
-                                                        <i class="ti ti-pencil"></i> Edit
+                                                        <i class="ti ti-pencil"></i>
                                                     </a>
                                                     <a href="#"
                                                         class="btn btn-sm btn-danger btn-hapus"
                                                         data-id="<?= $p['id_produk'] ?>">
-                                                        <i class="ti ti-trash"></i> Hapus
+                                                        <i class="ti ti-trash"></i>
                                                     </a>
                                                 </div>
                                             </td>

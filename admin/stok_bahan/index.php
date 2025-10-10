@@ -108,12 +108,12 @@ $bahan = query($sql);
                         <table class="table table-bordered table-hover align-middle">
                             <thead class="table-light text-center">
                                 <tr>
-                                    <th scope="col">No</th>
-                                    <th scope="col">Nama Bahan</th>
-                                    <th scope="col">Stok</th>
-                                    <th scope="col">Satuan</th>
-                                    <th scope="col">Harga Per Satuan</th>
-                                    <!-- <th scope="col">Supplier</th> -->
+                                    <th style="width: 5%;">No</th>
+                                    <th style="width: 25%;">Nama Bahan</th>
+                                    <th style="width: 20%;">Stok</th>
+                                    <th style="width: 35%;">Satuan</th>
+                                    <th style="width: 15%;">Harga Per Satuan</th>
+                                    <!-- <th>Supplier</th> -->
                                 </tr>
                             </thead>
                             <tbody>

@@ -108,11 +108,11 @@ $produk = query($sql);
                         <table class="table table-bordered table-hover align-middle">
                             <thead class="table-light text-center">
                                 <tr>
-                                    <th scope="col">No</th>
-                                    <th scope="col">Nama Produk</th>
-                                    <th scope="col">Stok</th>
-                                    <th scope="col">Harga Per Pcs</th>
-                                    <th scope="col">Deskripsi</th>
+                                    <th style="width: 5%;">No</th>
+                                    <th style="width: 25%;">Nama Produk</th>
+                                    <th style="width: 20%;">Stok</th>
+                                    <th style="width: 15%;">Harga Per Pcs</th>
+                                    <th style="width: 35%;">Deskripsi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -121,7 +121,7 @@ $produk = query($sql);
                                     <tr>
                                         <td class="text-center"><?= $no++ ?></td>
                                         <td><?= htmlspecialchars($p['nama_produk']) ?></td>
-                                        <td class="text-center"><?= $p['stok'] ?></td>
+                                        <td class="text-end"><?= $p['stok'] ?></td>
                                         <td><?= formatRupiah($p['harga_jual']) ?></td>
                                         <td>
                                             <span class="deskripsi-truncated"

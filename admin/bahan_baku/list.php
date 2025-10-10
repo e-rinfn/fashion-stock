@@ -154,12 +154,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <table class="table table-striped table-bordered table-hover">
                             <thead class="table-light text-center">
                                 <tr>
-                                    <th>No</th>
-                                    <th>Nama Bahan</th>
-                                    <th>Stok</th>
-                                    <th>Satuan</th>
-                                    <th>Harga/Satuan</th>
-                                    <th>Aksi</th>
+                                    <th style="width: 5%;">No</th>
+                                    <th style="width: 25%;">Nama Bahan</th>
+                                    <th style="width: 20%;">Stok</th>
+                                    <th style="width: 10%;">Satuan</th>
+                                    <th style="width: 25%;">Harga Per Satuan</th>
+                                    <th style="width: 15%;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -174,16 +174,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                             <td class="text-center"><?= $no++; ?></td>
                                             <td><?= htmlspecialchars($bahan['nama_bahan']); ?></td>
                                             <td class="text-end"><?= number_format($bahan['jumlah_stok']); ?></td>
-                                            <td class="text-center"><?= htmlspecialchars($bahan['satuan']); ?></td>
+                                            <td><?= htmlspecialchars($bahan['satuan']); ?></td>
                                             <td class="text-end"><?= formatRupiah($bahan['harga_per_satuan']); ?></td>
                                             <td class="text-center">
-                                                <a href="edit.php?id=<?= $bahan['id_bahan']; ?>" class="btn btn-primary btn-sm me-1 mb-1">
-                                                    <i class="ti ti-pencil"></i> Edit
+                                                <a href="edit.php?id=<?= $bahan['id_bahan']; ?>" class="btn btn-primary btn-sm">
+                                                    <i class="ti ti-pencil"></i>
                                                 </a>
                                                 <a href="delete.php?id=<?= $bahan['id_bahan']; ?>"
-                                                    class="btn btn-danger btn-sm me-1 mb-1 btn-delete"
+                                                    class="btn btn-danger btn-sm btn-delete"
                                                     data-id="<?= $bahan['id_bahan']; ?>">
-                                                    <i class="ti ti-trash"></i> Hapus
+                                                    <i class="ti ti-trash"></i>
                                                 </a>
                                             </td>
                                         </tr>

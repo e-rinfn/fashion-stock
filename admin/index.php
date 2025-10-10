@@ -1,6 +1,28 @@
 <?php
 require_once '../config/functions.php';
 require_once './includes/header.php';
+
+function dateIndo($tanggal)
+{
+    $bulanIndo = [
+        1 => 'Januari',
+        'Februari',
+        'Maret',
+        'April',
+        'Mei',
+        'Juni',
+        'Juli',
+        'Agustus',
+        'September',
+        'Oktober',
+        'November',
+        'Desember'
+    ];
+    $tanggal = date('Y-m-d', strtotime($tanggal));
+    $pecah = explode('-', $tanggal);
+    return $pecah[2] . ' ' . $bulanIndo[(int)$pecah[1]] . ' ' . $pecah[0];
+}
+
 ?>
 
 
@@ -150,10 +172,10 @@ require_once './includes/header.php';
                     <div class="card">
                         <div class="row row-bordered g-0">
                             <div class="col-12">
-                                <h5 class="card-header m-0 me-2 pb-3">Aktivitas Terakhir</h5>
+                                <h5 class="card-header m-0 me-2">Aktivitas Terakhir</h5>
 
                                 <!-- <div class="table-responsive text-nowrap px-3 pb-3"> -->
-                                <div class="table-responsive text-nowrap px-3 pb-3 mb-4" style="max-height: 300px; overflow-y: auto;">
+                                <div class="table-responsive text-nowrap px-3 pb-3 mb-3 mt-3" style="max-height: 400px; overflow-y: auto;">
                                     <table class="table table-striped table-bordered align-middle">
                                         <thead class="table-light">
                                             <tr class="text-center">
@@ -219,7 +241,7 @@ require_once './includes/header.php';
                                             } else {
                                                 foreach ($activities as $activity) {
                                                     echo "<tr>";
-                                                    echo "<td>" . date('d M Y H:i', strtotime($activity['waktu'])) . "</td>";
+                                                    echo "<td>" . dateIndo($activity['waktu']) . "</td>";
                                                     echo "<td>" . htmlspecialchars($activity['aktivitas']) . "</td>";
                                                     echo "<td>" . htmlspecialchars($activity['detail']) . "</td>";
                                                     echo "</tr>";

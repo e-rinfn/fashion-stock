@@ -795,25 +795,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         document.getElementById('modal_tanggal_jahit').addEventListener('change', hitungPerkiraanUpah);
 
         // Tombol batal produksi
-        document.querySelectorAll('.btn-batal').forEach(button => {
-            button.addEventListener('click', function() {
-                const id = this.getAttribute('data-id');
-                Swal.fire({
-                    title: 'Yakin ingin membatalkan produksi ini?',
-                    text: "Tindakan ini tidak dapat dikembalikan!",
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#d33',
-                    cancelButtonColor: '#6c757d',
-                    confirmButtonText: 'Ya, batalkan!',
-                    cancelButtonText: 'Batal'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        window.location.href = 'batal.php?id=' + id;
-                    }
-                });
-            });
-        });
+        // document.querySelectorAll('.btn-batal').forEach(button => {
+        //     button.addEventListener('click', function() {
+        //         const id = this.getAttribute('data-id');
+        //         Swal.fire({
+        //             title: 'Yakin ingin membatalkan produksi ini?',
+        //             text: "Tindakan ini tidak dapat dikembalikan!",
+        //             icon: 'warning',
+        //             showCancelButton: true,
+        //             confirmButtonColor: '#d33',
+        //             cancelButtonColor: '#6c757d',
+        //             confirmButtonText: 'Ya, batalkan!',
+        //             cancelButtonText: 'Batal'
+        //         }).then((result) => {
+        //             if (result.isConfirmed) {
+        //                 window.location.href = 'batal.php?id=' + id;
+        //             }
+        //         });
+        //     });
+        // });
 
         // Tombol Input Penjahitan (Baru)
         document.querySelectorAll('.btn-input-penjahitan').forEach(button => {

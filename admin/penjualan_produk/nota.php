@@ -24,25 +24,25 @@ function dateIndo($tanggal)
     return $pecah[2] . ' ' . $bulanIndo[(int)$pecah[1]] . ' ' . $pecah[0];
 }
 
-$id_penjualan_bahan = isset($_GET['id']) ? intval($_GET['id']) : 0;
+$id_penjualan = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
-$penjualan_bahan = query("SELECT p.*, r.nama_reseller, r.alamat as alamat_reseller 
-                    FROM penjualan_bahan p
+$penjualan = query("SELECT p.*, r.nama_reseller, r.alamat as alamat_reseller 
+                    FROM penjualan p
                     JOIN reseller r ON p.id_reseller = r.id_reseller
-                    WHERE p.id_penjualan_bahan = $id_penjualan_bahan")[0] ?? null;
+                    WHERE p.id_penjualan = $id_penjualan")[0] ?? null;
 
-if (!$penjualan_bahan) {
-    die('Data penjualan bahan tidak ditemukan.');
+if (!$penjualan) {
+    die('Data penjualan tidak ditemukan.');
 }
 
-$detail = query("SELECT d.*, pr.nama_bahan 
-                FROM detail_penjualan_bahan d
-                JOIN bahan_baku pr ON d.id_bahan = pr.id_bahan
-                WHERE d.id_penjualan_bahan = $id_penjualan_bahan");
+$detail = query("SELECT d.*, pr.nama_produk 
+                FROM detail_penjualan d
+                JOIN produk pr ON d.id_produk = pr.id_produk
+                WHERE d.id_penjualan = $id_penjualan");
 
 $total_cicilan = 0;
-if ($penjualan_bahan['status_pembayaran'] == 'cicilan') {
-    $cicilan = query("SELECT SUM(jumlah_cicilan_penjualan_bahan) as total FROM cicilan_penjualan_bahan WHERE id_penjualan_bahan = $id_penjualan_bahan AND status = 'lunas'")[0];
+if ($penjualan['status_pembayaran'] == 'cicilan') {
+    $cicilan = query("SELECT SUM(jumlah_cicilan) as total FROM cicilan WHERE id_penjualan = $id_penjualan AND status = 'lunas'")[0];
     $total_cicilan = $cicilan['total'] ?? 0;
 }
 
@@ -65,40 +65,40 @@ $pdf->Ln(5);
 
 // Judul
 $pdf->SetFont('helvetica', 'B', 11);
-$pdf->Cell(0, 6, 'NOTA PENJUALAN BAHAN BAKU', 0, 1, 'C');
+$pdf->Cell(0, 6, 'NOTA PENJUALAN PRODUK', 0, 1, 'C');
 $pdf->SetFont('helvetica', '', 9);
 $pdf->Ln(5);
 
-// Informasi Penjualan bahan dan Reseller
+// Informasi Penjualan dan Reseller
 $pdf->SetFont('helvetica', '', 9);
 $pdf->Cell(40, 5, 'No. Nota', 0, 0);
 $pdf->Cell(3, 5, ':', 0, 0);
-$pdf->Cell(60, 5, '# ' . $penjualan_bahan['id_penjualan_bahan'], 0, 1);
+$pdf->Cell(60, 5, '# ' . $penjualan['id_penjualan'], 0, 1);
 
 $pdf->Cell(40, 5, 'Tanggal Penjualan', 0, 0);
 $pdf->Cell(3, 5, ':', 0, 0);
-$pdf->Cell(60, 5, dateIndo($penjualan_bahan['tanggal_penjualan_bahan']), 0, 1);
+$pdf->Cell(60, 5, dateIndo($penjualan['tanggal_penjualan']), 0, 1);
 
 $pdf->Cell(40, 5, 'Status', 0, 0);
 $pdf->Cell(3, 5, ':', 0, 0);
-$pdf->Cell(60, 5, $penjualan_bahan['status_pembayaran'], 0, 1);
+$pdf->Cell(60, 5, $penjualan['status_pembayaran'], 0, 1);
 
 $pdf->Cell(40, 5, 'Dibayar', 0, 0);
 $pdf->Cell(3, 5, ':', 0, 0);
 
 if ($total_cicilan > 0) {
-    $pdf->Cell(60, 5, formatRupiah($total_cicilan) . ' dari ' . formatRupiah($penjualan_bahan['total_harga']), 0, 1);
+    $pdf->Cell(60, 5, formatRupiah($total_cicilan) . ' dari ' . formatRupiah($penjualan['total_harga']), 0, 1);
 } else {
-    $pdf->Cell(60, 5, '- dari ' . formatRupiah($penjualan_bahan['total_harga']), 0, 1);
+    $pdf->Cell(60, 5, '- dari ' . formatRupiah($penjualan['total_harga']), 0, 1);
 }
 
 $pdf->Cell(40, 5, 'Reseller', 0, 0);
 $pdf->Cell(3, 5, ':', 0, 0);
-$pdf->Cell(60, 5, $penjualan_bahan['nama_reseller'], 0, 1);
+$pdf->Cell(60, 5, $penjualan['nama_reseller'], 0, 1);
 
 $pdf->Cell(40, 5, 'Alamat', 0, 0);
 $pdf->Cell(3, 5, ':', 0, 0);
-$pdf->Cell(60, 5, $penjualan_bahan['alamat_reseller'], 0, 1);
+$pdf->Cell(60, 5, $penjualan['alamat_reseller'], 0, 1);
 $pdf->Ln(5);
 
 // Tabel Produk
@@ -112,7 +112,7 @@ $pdf->Cell(30, 7, 'Subtotal', 1, 1, 'R');
 $pdf->SetFont('helvetica', '', 10);
 foreach ($detail as $i => $d) {
     $pdf->Cell(10, 7, $i + 1, 1, 0, 'C');
-    $pdf->Cell(50, 7, $d['nama_bahan'], 1);
+    $pdf->Cell(50, 7, $d['nama_produk'], 1);
     $pdf->Cell(25, 7, formatRupiah($d['harga_satuan']), 1, 0, 'R');
     $pdf->Cell(15, 7, $d['jumlah'], 1, 0, 'C');
     $pdf->Cell(30, 7, formatRupiah($d['subtotal']), 1, 1, 'R');
@@ -120,7 +120,7 @@ foreach ($detail as $i => $d) {
 
 $pdf->SetFont('helvetica', 'B', 10);
 $pdf->Cell(100, 7, 'Total', 1);
-$pdf->Cell(30, 7, formatRupiah($penjualan_bahan['total_harga']), 1, 1, 'R');
+$pdf->Cell(30, 7, formatRupiah($penjualan['total_harga']), 1, 1, 'R');
 $pdf->Ln(4);
 
 // Footer
@@ -128,5 +128,5 @@ $pdf->SetFont('helvetica', '', 9);
 $pdf->Cell(0, 6, 'Terima kasih telah berbelanja!', 0, 1, 'C');
 
 // Output PDF ke browser
-$pdf->Output('nota_penjualan_bahan' . $id_penjualan_bahan . '.pdf', 'I');
+$pdf->Output('nota_penjualan_' . $id_penjualan . '.pdf', 'I');
 exit();

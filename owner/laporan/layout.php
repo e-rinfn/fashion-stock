@@ -268,7 +268,7 @@ usort($all_data, function ($a, $b) {
                             <i class="ti ti-filter"></i> Filter
                         </button>
                         <?php if ($id_produk > 0 || $status != 'all' || !empty($start_date) || !empty($end_date)): ?>
-                            <a href="produksi.php" class="btn btn-secondary me-2">
+                            <a href="layout.php" class="btn btn-secondary me-2">
                                 <i class="ti ti-rotate"></i> Reset
                             </a>
                         <?php endif; ?>

@@ -1,2 +1,4 @@
 # file System
 .env
+/vendor
+/node_modules

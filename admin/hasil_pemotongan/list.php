@@ -62,6 +62,8 @@ $penjahit = query("SELECT * FROM penjahit");
 // Cek filter yang diterapkan
 $id_produk = isset($_GET['id_produk']) ? (int)$_GET['id_produk'] : 0;
 $status = isset($_GET['status']) ? $_GET['status'] : 'all';
+$start_date = isset($_GET['start_date']) ? $_GET['start_date'] : '';
+$end_date = isset($_GET['end_date']) ? $_GET['end_date'] : '';
 
 // Query untuk mengambil data produksi
 $sql = "SELECT h.*, p.nama_produk, pem.nama_pemotong, 
@@ -81,6 +83,15 @@ if ($id_produk > 0) {
 // Filter status
 if ($status != 'all') {
     $sql .= " AND h.status_potong = '$status'";
+}
+
+// Filter periode
+if (!empty($start_date)) {
+    $sql .= " AND h.tanggal_hasil_potong >= '$start_date'";
+}
+
+if (!empty($end_date)) {
+    $sql .= " AND h.tanggal_hasil_potong <= '$end_date'";
 }
 
 $sql .= " ORDER BY h.tanggal_hasil_potong DESC";
@@ -426,7 +437,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                 <!-- Filter Form -->
                 <form method="GET" class="row g-3 mb-3">
-                    <div class="col-md-4">
+                    <div class="col-md-2">
                         <label class="form-label">Filter Produk</label>
                         <select name="id_produk" class="form-select">
                             <option value="0">Semua Produk</option>
@@ -437,7 +448,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-2">
                         <label class="form-label">Filter Status</label>
                         <select name="status" class="form-select">
                             <option value="all" <?= ($status == 'all') ? 'selected' : '' ?>>Semua Status</option>
@@ -445,15 +456,28 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <option value="selesai" <?= ($status == 'selesai') ? 'selected' : '' ?>>Selesai</option>
                         </select>
                     </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Tanggal Mulai</label>
+                        <input type="date" name="start_date" class="form-control" value="<?= htmlspecialchars($start_date) ?>">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Tanggal Akhir</label>
+                        <input type="date" name="end_date" class="form-control" value="<?= htmlspecialchars($end_date) ?>">
+                    </div>
                     <div class="col-md-4 d-flex align-items-end">
                         <button type="submit" class="btn btn-primary me-2">
                             <i class="ti ti-filter"></i> Filter
                         </button>
-                        <?php if ($id_produk > 0 || $status != 'all'): ?>
-                            <a href="list.php" class="btn btn-secondary">
+                        <?php if ($id_produk > 0 || $status != 'all' || !empty($start_date) || !empty($end_date)): ?>
+                            <a href="list.php" class="btn btn-secondary me-2">
                                 <i class="ti ti-rotate"></i> Reset
                             </a>
                         <?php endif; ?>
+
+                        <!-- Tombol Print PDF -->
+                        <button type="button" class="btn btn-danger" id="btnPrintPDF">
+                            <i class="ti ti-file-text"></i> Print PDF
+                        </button>
                     </div>
                 </form>
 
@@ -1075,6 +1099,51 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 });
             });
         });
+    });
+</script>
+
+<script>
+    $(document).ready(function() {
+        // Print PDF
+        $('#btnPrintPDF').click(function() {
+            // Ambil parameter filter
+            const id_produk = $('select[name="id_produk"]').val();
+            const status = $('select[name="status"]').val();
+            const start_date = $('input[name="start_date"]').val();
+            const end_date = $('input[name="end_date"]').val();
+
+            // Buat URL untuk print PDF dengan parameter filter
+            let url = 'print_laporan_produksi.php?id_produk=' + id_produk +
+                '&status=' + status +
+                '&start_date=' + start_date +
+                '&end_date=' + end_date;
+
+            // Buka di tab baru
+            window.open(url, '_blank');
+        });
+
+        // Set default date range (30 hari terakhir)
+        function setDefaultDateRange() {
+            const endDate = new Date();
+            const startDate = new Date();
+            startDate.setDate(startDate.getDate() - 30);
+
+            // Format to YYYY-MM-DD
+            const formatDate = (date) => {
+                return date.toISOString().split('T')[0];
+            };
+
+            // Only set if dates are empty
+            if (!$('input[name="start_date"]').val()) {
+                $('input[name="start_date"]').val(formatDate(startDate));
+            }
+            if (!$('input[name="end_date"]').val()) {
+                $('input[name="end_date"]').val(formatDate(endDate));
+            }
+        }
+
+        // Panggil fungsi set default date range
+        setDefaultDateRange();
     });
 </script>
 

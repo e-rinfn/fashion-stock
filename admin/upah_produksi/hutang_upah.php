@@ -3,6 +3,31 @@ require_once '../includes/header.php';
 require_once '../../config/database.php';
 require_once '../../config/functions.php';
 
+function bulanTahunIndo($tanggal)
+{
+    $bulanIndo = [
+        1 => 'Januari',
+        'Februari',
+        'Maret',
+        'April',
+        'Mei',
+        'Juni',
+        'Juli',
+        'Agustus',
+        'September',
+        'Oktober',
+        'November',
+        'Desember'
+    ];
+
+    $timestamp = strtotime($tanggal);
+    $bulan = $bulanIndo[(int)date('n', $timestamp)];
+    $tahun = date('Y', $timestamp);
+
+    return $bulan . ' ' . $tahun;
+}
+
+
 // Ambil data untuk filter
 $pemotong = query("SELECT * FROM pemotong ORDER BY nama_pemotong");
 $penjahit = query("SELECT * FROM penjahit ORDER BY nama_penjahit");
@@ -298,7 +323,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     <?php foreach ($hutang as $h): ?>
                                         <tr>
                                             <td class="text-center"><?= $no++; ?></td>
-                                            <td><?= date('F Y', strtotime($h['periode'])) ?></td>
+                                            <td><?= bulanTahunIndo($h['periode']) ?></td>
                                             <td><?= htmlspecialchars($h['nama_karyawan']) ?></td>
                                             <td class="text-center">
                                                 <span class="badge bg-<?= $h['jenis_karyawan'] == 'pemotong' ? 'warning' : 'info' ?>">

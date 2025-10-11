@@ -158,10 +158,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_password'])) {
                                             <input type="text" class="form-control"
                                                 value="<?= htmlspecialchars(ucfirst($user['role'])) ?>" disabled>
                                         </div>
-                                        <button type="submit" name="update_profile" class="btn btn-primary">
-                                            <i class="ti ti-file-plus"></i> Simpan Perubahan
-                                        </button>
-
+                                        <div class="text-center">
+                                            <button type="submit" name="update_profile" class="btn btn-primary">
+                                                <i class="ti ti-file-plus"></i> Simpan Perubahan
+                                            </button>
+                                        </div>
                                     </form>
                                 </div>
                             </div>
@@ -209,9 +210,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_password'])) {
                                                 </button>
                                             </div>
                                         </div>
-                                        <button type="submit" name="update_password" class="btn btn-info">
-                                            <i class="ti ti-file-plus"></i> Ubah Password
-                                        </button>
+                                        <div class="text-center">
+                                            <button type="submit" name="update_password" class="btn btn-info">
+                                                <i class="ti ti-file-plus"></i> Ubah Password
+                                            </button>
+                                        </div>
                                     </form>
                                 </div>
                             </div>

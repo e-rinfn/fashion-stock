@@ -144,13 +144,12 @@ foreach ($detail as $d) {
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h2>Detail Produksi</h2>
                     <div>
-                        <a href="list.php" class="btn btn-secondary me-2">
-                            <i class="ti ti-arrow-back"></i> Kembali
-                        </a>
-                        <a href="edit.php?id=<?= $id_hasil_potong_fix ?>" class="btn btn-warning me-2">
+                        <a href="edit.php?id=<?= $id_hasil_potong_fix ?>" class="btn btn-warning m-1">
                             <i class="ti ti-pencil"></i> Edit Produksi
                         </a>
-
+                        <a href="list.php" class="btn btn-secondary m-1">
+                            <i class="ti ti-arrow-back"></i> Kembali
+                        </a>
                     </div>
                 </div>
             </div>

@@ -235,6 +235,7 @@ try {
     $_SESSION['error'] = "Gagal membatalkan produksi: " . $e->getMessage();
 }
 
+
 // Redirect kembali ke halaman list
 header("Location: list.php");
 exit();

@@ -27,7 +27,6 @@ function bulanTahunIndo($tanggal)
     return $bulan . ' ' . $tahun;
 }
 
-
 // Ambil data untuk filter
 $pemotong = query("SELECT * FROM pemotong ORDER BY nama_pemotong");
 $penjahit = query("SELECT * FROM penjahit ORDER BY nama_penjahit");
@@ -37,6 +36,7 @@ $jenis_karyawan = isset($_GET['jenis_karyawan']) ? $_GET['jenis_karyawan'] : 'al
 $id_karyawan = isset($_GET['id_karyawan']) ? intval($_GET['id_karyawan']) : 0;
 $status_hutang = isset($_GET['status_hutang']) ? $_GET['status_hutang'] : 'all';
 $periode = isset($_GET['periode']) ? $_GET['periode'] : '';
+$search_karyawan = isset($_GET['search_karyawan']) ? $_GET['search_karyawan'] : '';
 
 // Build query dengan filter
 $sql = "SELECT h.*, 
@@ -57,7 +57,15 @@ if ($jenis_karyawan != 'all') {
     $params[] = $jenis_karyawan;
 }
 
-// Filter karyawan spesifik
+// Filter pencarian karyawan
+if (!empty($search_karyawan)) {
+    $sql .= " AND (p.nama_pemotong LIKE ? OR j.nama_penjahit LIKE ?)";
+    $search_param = "%" . $search_karyawan . "%";
+    $params[] = $search_param;
+    $params[] = $search_param;
+}
+
+// Filter karyawan spesifik (jika menggunakan ID)
 if ($id_karyawan > 0) {
     if ($jenis_karyawan == 'pemotong') {
         $sql .= " AND h.jenis_karyawan = 'pemotong' AND h.id_karyawan = ?";
@@ -184,6 +192,44 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         padding: 15px;
         margin-bottom: 20px;
     }
+
+    .search-input-group {
+        position: relative;
+    }
+
+    .search-results {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #ced4da;
+        border-top: none;
+        border-radius: 0 0 0.375rem 0.375rem;
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 1000;
+        display: none;
+    }
+
+    .search-result-item {
+        padding: 8px 12px;
+        cursor: pointer;
+        border-bottom: 1px solid #f8f9fa;
+    }
+
+    .search-result-item:hover {
+        background-color: #f8f9fa;
+    }
+
+    .search-result-item:last-child {
+        border-bottom: none;
+    }
+
+    .search-result-item small {
+        color: #6c757d;
+        font-size: 0.8em;
+    }
 </style>
 
 <!-- [Body] Start -->
@@ -215,7 +261,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                 <!-- Filter Form -->
                 <div class="filter-section">
-                    <form method="GET" class="row g-3">
+                    <form method="GET" class="row">
                         <div class="col-md-3">
                             <label class="form-label">Jenis Karyawan</label>
                             <select name="jenis_karyawan" class="form-select" id="jenisKaryawanSelect">
@@ -226,28 +272,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         </div>
 
                         <div class="col-md-3">
-                            <label class="form-label">Nama Karyawan</label>
-                            <select name="id_karyawan" class="form-select" id="karyawanSelect">
-                                <option value="0">Semua Karyawan</option>
-                                <?php if ($jenis_karyawan == 'pemotong' || $jenis_karyawan == 'all'): ?>
-                                    <?php foreach ($pemotong as $p): ?>
-                                        <option value="<?= $p['id_pemotong'] ?>"
-                                            <?= ($id_karyawan == $p['id_pemotong']) ? 'selected' : '' ?>
-                                            data-jenis="pemotong">
-                                            <?= htmlspecialchars($p['nama_pemotong']) ?> (Pemotong)
-                                        </option>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
-                                <?php if ($jenis_karyawan == 'penjahit' || $jenis_karyawan == 'all'): ?>
-                                    <?php foreach ($penjahit as $j): ?>
-                                        <option value="<?= $j['id_penjahit'] ?>"
-                                            <?= ($id_karyawan == $j['id_penjahit']) ? 'selected' : '' ?>
-                                            data-jenis="penjahit">
-                                            <?= htmlspecialchars($j['nama_penjahit']) ?> (Penjahit)
-                                        </option>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
-                            </select>
+                            <label class="form-label">Cari Karyawan</label>
+                            <div class="search-input-group">
+                                <input type="text"
+                                    name="search_karyawan"
+                                    class="form-control"
+                                    id="searchKaryawan"
+                                    placeholder="Ketik nama karyawan..."
+                                    value="<?= htmlspecialchars($search_karyawan) ?>"
+                                    autocomplete="off">
+                                <input type="hidden" name="id_karyawan" id="selectedKaryawanId" value="<?= $id_karyawan ?>">
+                                <div class="search-results" id="searchResults"></div>
+                            </div>
                         </div>
 
                         <div class="col-md-2">
@@ -259,17 +295,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             </select>
                         </div>
 
-
                         <div hidden class="col-md-2">
                             <label class="form-label">Periode</label>
                             <input type="month" name="periode" class="form-control" value="<?= $periode ?>">
                         </div>
 
-                        <div class="col-md-2 d-flex align-items-end">
+                        <div class="col-md-4 d-flex align-items-end">
                             <button type="submit" class="btn btn-primary me-2">
                                 <i class="ti ti-filter"></i> Filter
                             </button>
-                            <?php if ($jenis_karyawan != 'all' || $id_karyawan > 0 || $status_hutang != 'all' || !empty($periode)): ?>
+                            <?php if ($jenis_karyawan != 'all' || !empty($search_karyawan) || $status_hutang != 'all' || !empty($periode)): ?>
                                 <a href="hutang_upah.php" class="btn btn-secondary">
                                     <i class="ti ti-rotate"></i> Reset
                                 </a>
@@ -430,33 +465,104 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <!-- [Body] end -->
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const modalBayar = new bootstrap.Modal(document.getElementById('modalBayar'));
-
-        // Dynamic dropdown karyawan berdasarkan jenis
+        const searchInput = document.getElementById('searchKaryawan');
+        const searchResults = document.getElementById('searchResults');
+        const selectedKaryawanId = document.getElementById('selectedKaryawanId');
         const jenisSelect = document.getElementById('jenisKaryawanSelect');
-        const karyawanSelect = document.getElementById('karyawanSelect');
 
-        jenisSelect.addEventListener('change', function() {
-            const selectedJenis = this.value;
-            const options = karyawanSelect.querySelectorAll('option');
+        // Data karyawan untuk pencarian
+        const karyawanData = [
+            <?php if ($jenis_karyawan == 'pemotong' || $jenis_karyawan == 'all'): ?>
+                <?php foreach ($pemotong as $p): ?> {
+                        id: <?= $p['id_pemotong'] ?>,
+                        nama: "<?= htmlspecialchars($p['nama_pemotong']) ?>",
+                        jenis: "pemotong",
+                        display: "<?= htmlspecialchars($p['nama_pemotong']) ?> (Pemotong)"
+                    },
+                <?php endforeach; ?>
+            <?php endif; ?>
+            <?php if ($jenis_karyawan == 'penjahit' || $jenis_karyawan == 'all'): ?>
+                <?php foreach ($penjahit as $j): ?> {
+                        id: <?= $j['id_penjahit'] ?>,
+                        nama: "<?= htmlspecialchars($j['nama_penjahit']) ?>",
+                        jenis: "penjahit",
+                        display: "<?= htmlspecialchars($j['nama_penjahit']) ?> (Penjahit)"
+                    },
+                <?php endforeach; ?>
+            <?php endif; ?>
+        ];
 
-            options.forEach(option => {
-                if (option.value === "0") {
-                    option.style.display = '';
-                } else {
-                    const optionJenis = option.getAttribute('data-jenis');
-                    if (selectedJenis === 'all' || optionJenis === selectedJenis) {
-                        option.style.display = '';
-                    } else {
-                        option.style.display = 'none';
-                    }
-                }
+        // Filter data berdasarkan jenis karyawan
+        function getFilteredKaryawanData() {
+            const selectedJenis = jenisSelect.value;
+            if (selectedJenis === 'all') {
+                return karyawanData;
+            }
+            return karyawanData.filter(k => k.jenis === selectedJenis);
+        }
+
+        // Pencarian karyawan
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
+            const filteredData = getFilteredKaryawanData();
+
+            if (searchTerm.length < 2) {
+                searchResults.style.display = 'none';
+                selectedKaryawanId.value = '';
+                return;
+            }
+
+            const results = filteredData.filter(karyawan =>
+                karyawan.nama.toLowerCase().includes(searchTerm) ||
+                karyawan.display.toLowerCase().includes(searchTerm)
+            );
+
+            displaySearchResults(results);
+        });
+
+        // Tampilkan hasil pencarian
+        function displaySearchResults(results) {
+            searchResults.innerHTML = '';
+
+            if (results.length === 0) {
+                searchResults.innerHTML = '<div class="search-result-item text-muted">Tidak ditemukan</div>';
+                searchResults.style.display = 'block';
+                return;
+            }
+
+            results.forEach(karyawan => {
+                const div = document.createElement('div');
+                div.className = 'search-result-item';
+                div.innerHTML = `
+                    <div>${karyawan.display}</div>
+                `;
+                div.addEventListener('click', function() {
+                    searchInput.value = karyawan.nama;
+                    selectedKaryawanId.value = karyawan.id;
+                    searchResults.style.display = 'none';
+                });
+                searchResults.appendChild(div);
             });
 
-            // Reset ke semua karyawan
-            karyawanSelect.value = "0";
+            searchResults.style.display = 'block';
+        }
+
+        // Sembunyikan hasil pencarian ketika klik di luar
+        document.addEventListener('click', function(e) {
+            if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                searchResults.style.display = 'none';
+            }
+        });
+
+        // Reset pencarian ketika jenis karyawan berubah
+        jenisSelect.addEventListener('change', function() {
+            searchInput.value = '';
+            selectedKaryawanId.value = '';
+            searchResults.style.display = 'none';
         });
 
         // Modal pembayaran

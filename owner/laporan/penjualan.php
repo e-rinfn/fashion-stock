@@ -182,7 +182,6 @@ $totalPenjualan = query("SELECT SUM(total_harga) as total FROM penjualan
     </script>
 
 
-
 </body>
 <!-- [Body] end -->
 

@@ -73,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
 
                 if (!isset($error)) {
                     $total_harga = 0;
-                    $total_hasil = 0; // Variabel untuk total hasil
+                    $total_hasil = 0;
 
                     foreach ($items as $item) {
                         $id_bahan = intval($item['id_bahan']);
@@ -91,10 +91,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
                         }
 
                         $total_harga += $harga * $qty;
-                        $total_hasil += $qty; // Hitung total hasil dari quantity
+                        $total_hasil += $qty;
                     }
 
-                    // Ambil nilai total_hasil dari form jika ada, jika tidak gunakan perhitungan
+                    // Ambil nilai total_hasil dari form jika ada
                     if (isset($_POST['total_hasil']) && !empty($_POST['total_hasil'])) {
                         $total_hasil = intval($_POST['total_hasil']);
                     }
@@ -102,10 +102,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
                     if (!isset($error)) {
                         $conn->autocommit(FALSE);
                         try {
-                            // Gunakan prepared statement untuk insert utama
+                            // Insert hasil potong utama
                             $stmt = $conn->prepare("INSERT INTO hasil_potong_fix (id_produk, id_pemotong, seri, tanggal_hasil_potong, total_hasil, total_harga, status_potong) 
-                              VALUES (?, ?, ?, ?, ?, ?, ?)");
-
+                                  VALUES (?, ?, ?, ?, ?, ?, ?)");
                             $stmt->bind_param("iissids", $id_produk, $id_pemotong, $seri, $tanggal_hasil_potong, $total_hasil, $total_harga, $status_potong);
 
                             if (!$stmt->execute()) {
@@ -115,26 +114,29 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
                             $id_hasil_potong_fix = $stmt->insert_id;
                             $stmt->close();
 
-                            // Gunakan prepared statement untuk detail
+                            // HITUNG UPAH PEMOTONG DI SINI (SEKALI SAJA)
+                            $tarif_pemotong = getTarifUpah('pemotongan', $tanggal_hasil_potong);
+                            $upah_pemotong = $total_hasil * $tarif_pemotong;
+
+                            // CATAT HUTANG UPAH DI SINI (SEKALI SAJA)
+                            if (!catatHutangUpah($id_pemotong, 'pemotong', $tanggal_hasil_potong, $upah_pemotong)) {
+                                throw new Exception("Gagal mencatat hutang upah pemotong");
+                            }
+
+                            // Insert detail dan update stok
                             $stmt_detail = $conn->prepare("INSERT INTO detail_hasil_potong_fix (id_hasil_potong_fix, id_bahan, id_produk, id_pemotong, jumlah, harga_satuan, subtotal) 
-                                     VALUES (?, ?, ?, ?, ?, ?, ?)");
+                                         VALUES (?, ?, ?, ?, ?, ?, ?)");
 
                             foreach ($items as $item) {
                                 $id_bahan = intval($item['id_bahan']);
                                 $qty = intval($item['qty']);
                                 $harga = floatval($item['harga']);
                                 $subtotal = $harga * $qty;
-                                $tarif_pemotong = getTarifUpah('pemotongan', $tanggal_hasil_potong);
-                                $upah_pemotong = $total_hasil * $tarif_pemotong;
 
                                 $stmt_detail->bind_param("iiiiddd", $id_hasil_potong_fix, $id_bahan, $id_produk, $id_pemotong, $qty, $harga, $subtotal);
 
                                 if (!$stmt_detail->execute()) {
                                     throw new Exception("Gagal menyimpan detail hasil pemotongan: " . $stmt_detail->error);
-                                }
-
-                                if (!catatHutangUpah($id_pemotong, 'pemotong', $tanggal_hasil_potong, $upah_pemotong)) {
-                                    throw new Exception("Gagal mencatat hutang upah pemotong");
                                 }
 
                                 // Update stok

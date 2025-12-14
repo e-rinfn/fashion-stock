@@ -361,7 +361,7 @@ JOIN hasil_kirim_finishing hk ON dh.id_hasil_kirim_finishing = hk.id_hasil_kirim
 LEFT JOIN petugas_finishing pf ON hk.id_petugas_finishing = pf.id_petugas_finishing
 LEFT JOIN detail_hasil_finishing_koko dhfk ON dh.id_detail_hasil_kirim_finishing = dhfk.id_detail_hasil_kirim_finishing
 WHERE dh.id_hasil_kirim_finishing = ?
-GROUP BY dh.id_detail_hasil_kirim_finishing
+GROUP BY dh.id_detail_hasil_kirim_finishing, dh.id_koko, k.nama_koko, k.stok, k.id_produk, p.nama_produk, p2.id_produk, p2.nama_produk, pf.nama_petugas, hk.id_petugas_finishing, dhfk.upah_per_unit
 ORDER BY k.nama_koko";
 
 $stmt_details = $conn->prepare($sql_details);

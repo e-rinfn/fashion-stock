@@ -3,26 +3,6 @@ require_once '../includes/header.php';
 require_once '../../config/database.php';
 require_once '../../config/functions.php';
 
-function dateIndo($tanggal)
-{
-    $bulanIndo = [
-        1 => 'Januari',
-        'Februari',
-        'Maret',
-        'April',
-        'Mei',
-        'Juni',
-        'Juli',
-        'Agustus',
-        'September',
-        'Oktober',
-        'November',
-        'Desember'
-    ];
-    $tanggal = date('Y-m-d', strtotime($tanggal));
-    $pecah = explode('-', $tanggal);
-    return $pecah[2] . ' ' . $bulanIndo[(int)$pecah[1]] . ' ' . $pecah[0];
-}
 
 $id_penjualan_bahan = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
@@ -32,10 +12,6 @@ $penjualan_bahan = query("SELECT p.*, r.nama_reseller
                     JOIN reseller r ON p.id_reseller = r.id_reseller
                     WHERE p.id_penjualan_bahan = $id_penjualan_bahan")[0] ?? null;
 
-// if (!$penjualan || $penjualan['status_pembayaran'] != 'cicilan') {
-//     header("Location: list.php");
-//     exit();
-// }
 
 // Ambil data cicilan
 $cicilan = query("SELECT * FROM cicilan_penjualan_bahan WHERE id_penjualan_bahan = $id_penjualan_bahan ORDER BY tanggal_bayar DESC");
@@ -264,12 +240,12 @@ $total_cicilan = $cicilan_info['total'] ?? 0;
                                         <div class="col-md-4">
                                             <table class="table table-bordered">
                                                 <tr>
-                                                    <th width="30%">Reseller</th>
+                                                    <th width="30%">Reseller/Pembeli</th>
                                                     <td><?= $penjualan_bahan['nama_reseller'] ?></td>
                                                 </tr>
                                                 <tr>
                                                     <th>Tanggal</th>
-                                                    <td><?= dateIndo($penjualan_bahan['tanggal_penjualan_bahan']) . ' ' . date('H:i', strtotime($penjualan_bahan['tanggal_penjualan_bahan'])) ?></td>
+                                                    <td><?= dateIndo($penjualan_bahan['tanggal_penjualan_bahan']) ?></td>
                                                 </tr>
 
                                             </table>
@@ -307,38 +283,45 @@ $total_cicilan = $cicilan_info['total'] ?? 0;
                             <div class="card">
                                 <div class="card-header">
                                     <div class="d-flex justify-content-between">
-                                        <h3>Daftar Produk</h3>
+                                        <h3>Daftar Penjualan Bahan Baku</h3>
                                         <a href="nota.php?id=<?= $id_penjualan_bahan ?>" class="btn btn-danger" target="_blank">
                                             <i class="bx bx-printer"></i> Cetak Nota
                                         </a>
                                     </div>
+                                    <hr>
                                 </div>
                                 <div class="card-body">
                                     <table class="table table-bordered">
                                         <thead>
-                                            <tr>
+                                            <tr class="text-center">
                                                 <th>No</th>
                                                 <th>Produk</th>
-                                                <th>Harga Satuan</th>
+                                                <th>Harga Per Meter</th>
+                                                <th>Meter</th>
                                                 <th>Qty</th>
                                                 <th>Subtotal</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             <?php foreach ($detail as $i => $d): ?>
+                                                <?php
+                                                // Hitung subtotal = harga per meter x meter
+                                                $subtotal = $d['harga_satuan'] * $d['meter'];
+                                                ?>
                                                 <tr>
-                                                    <td><?= $i + 1 ?></td>
+                                                    <td class="text-center"><?= $i + 1 ?></td>
                                                     <td><?= $d['nama_bahan'] ?></td>
-                                                    <td><?= formatRupiah($d['harga_satuan']) ?></td>
-                                                    <td><?= $d['jumlah'] ?></td>
-                                                    <td><?= formatRupiah($d['subtotal']) ?></td>
+                                                    <td class="text-end"><?= formatRupiah($d['harga_satuan']) ?></td>
+                                                    <td class="text-center"><?= $d['meter'] ?> m</td>
+                                                    <td class="text-center"><?= $d['jumlah'] ?></td>
+                                                    <td class="text-end"><?= formatRupiah($subtotal) ?></td>
                                                 </tr>
                                             <?php endforeach; ?>
                                         </tbody>
                                         <tfoot>
                                             <tr>
-                                                <th colspan="4" class="text-right">Total</th>
-                                                <th class="fs-6 text-center"><?= formatRupiah($penjualan_bahan['total_harga']) ?></th>
+                                                <th colspan="5" class="text-right">Total</th>
+                                                <th class="fs-6 text-end"><?= formatRupiah($penjualan_bahan['total_harga']) ?></th>
                                             </tr>
                                         </tfoot>
                                     </table>
@@ -356,14 +339,18 @@ $total_cicilan = $cicilan_info['total'] ?? 0;
                                 </div>
                                 <div class="card-body">
                                     <form method="post" enctype="multipart/form-data">
+                                        <!-- Di bagian form tambah pembayaran, ganti input jumlah dengan: -->
                                         <div class="form-group">
                                             <label>Jumlah Dibayarkan</label>
-                                            <!-- <input type="text" name="jumlah" class="form-control money"
-                                                    placeholder="Masukkan jumlah" required
-                                                    value="<?= $sisa_hutang ?>"> -->
                                             <input type="text" name="jumlah" class="form-control money"
                                                 placeholder="Masukkan jumlah" required
-                                                value="0">
+                                                value="0"
+                                                data-sisa-hutang="<?= $sisa_hutang ?>"
+                                                max="<?= $sisa_hutang ?>">
+                                            <small class="text-muted">Sisa hutang: <?= formatRupiah($sisa_hutang) ?></small>
+                                            <div class="invalid-feedback" id="jumlah-error">
+                                                Jumlah tidak boleh melebihi sisa hutang <?= formatRupiah($sisa_hutang) ?>
+                                            </div>
                                         </div>
                                         <div class="form-group mt-3">
                                             <label>Tanggal Pembayaran <span class="text-danger">(Bulan/Tanggal/Tahun)</span></label>
@@ -539,6 +526,7 @@ $total_cicilan = $cicilan_info['total'] ?? 0;
         input.addEventListener('keyup', function(e) {
             let value = this.value.replace(/[^0-9]/g, '');
             this.value = formatRupiahInput(value);
+            validateAmount(this);
         });
     });
 
@@ -633,6 +621,130 @@ $total_cicilan = $cicilan_info['total'] ?? 0;
     function hideEditForm() {
         document.getElementById('editFormContainer').style.display = 'none';
     }
+</script>
+
+<script>
+    // Format input uang
+    document.querySelectorAll('.money').forEach(input => {
+        input.addEventListener('keyup', function(e) {
+            let value = this.value.replace(/[^0-9]/g, '');
+            this.value = formatRupiahInput(value);
+            validateAmount(this);
+        });
+    });
+
+    // Validasi real-time
+    function validateAmount(input) {
+        const jumlahInput = input;
+        const jumlah = parseFloat(jumlahInput.value.replace(/\./g, '')) || 0;
+        const sisaHutang = parseFloat(jumlahInput.dataset.sisaHutang) || 0;
+        const errorElement = document.getElementById('jumlah-error');
+
+        if (jumlah > sisaHutang) {
+            jumlahInput.classList.add('is-invalid');
+            if (errorElement) {
+                errorElement.textContent = `Jumlah melebihi sisa hutang ${formatRupiahDisplay(sisaHutang)}`;
+                errorElement.style.display = 'block';
+            }
+            return false;
+        } else {
+            jumlahInput.classList.remove('is-invalid');
+            if (errorElement) {
+                errorElement.style.display = 'none';
+            }
+            return true;
+        }
+    }
+
+    // Validasi sebelum submit form
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const jumlahInput = document.querySelector('input[name="jumlah"]');
+        const jumlah = parseFloat(jumlahInput.value.replace(/\./g, '')) || 0;
+        const sisaHutang = parseFloat(jumlahInput.dataset.sisaHutang) || 0;
+
+        // Validasi 1: Jumlah harus lebih dari 0
+        if (jumlah <= 0) {
+            e.preventDefault();
+            Swal.fire({
+                title: 'Jumlah Tidak Valid!',
+                text: 'Jumlah pembayaran harus lebih dari 0',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+            return false;
+        }
+
+        // Validasi 2: Jumlah tidak boleh melebihi sisa hutang
+        if (jumlah > sisaHutang) {
+            e.preventDefault();
+            Swal.fire({
+                title: 'Jumlah Melebihi Sisa Hutang!',
+                html: `Jumlah pembayaran (${formatRupiahDisplay(jumlah)}) melebihi sisa hutang (${formatRupiahDisplay(sisaHutang)})`,
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+            return false;
+        }
+
+        return true;
+    });
+
+    // Fungsi format untuk display
+    function formatRupiahInput(angka) {
+        const num = parseInt(angka || 0);
+        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    }
+
+    function formatRupiahDisplay(angka) {
+        return 'Rp ' + formatRupiahInput(angka);
+    }
+
+    // Fungsi untuk menampilkan form edit
+    function showEditForm(id_cicilan_penjualan_bahan) {
+        // Ambil data cicilan via AJAX
+        fetch(`get_cicilan.php?id=${id_cicilan_penjualan_bahan}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data) {
+                    // Validasi jumlah edit
+                    const sisaHutang = <?= $sisa_hutang ?>;
+                    const jumlahCicilanLama = parseFloat(data.jumlah_cicilan_penjualan_bahan) || 0;
+                    const maxEditAmount = sisaHutang + jumlahCicilanLama;
+
+                    document.getElementById('edit_id_cicilan_penjualan_bahan').value = data.id_cicilan_penjualan_bahan;
+                    document.getElementById('edit_jumlah').value = jumlahCicilanLama;
+                    document.getElementById('edit_jumlah').setAttribute('data-max-edit', maxEditAmount);
+                    document.getElementById('edit_tanggal').value = data.tanggal_bayar;
+                    document.getElementById('edit_metode').value = data.metode_pembayaran;
+
+                    // Tampilkan form
+                    document.getElementById('editFormContainer').style.display = 'block';
+
+                    // Scroll ke form edit
+                    document.getElementById('editFormContainer').scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                }
+            });
+    }
+
+    // Validasi form edit
+    document.getElementById('editCicilanForm').addEventListener('submit', function(e) {
+        const jumlahInput = document.getElementById('edit_jumlah');
+        const jumlah = parseFloat(jumlahInput.value.replace(/\./g, '')) || 0;
+        const maxAmount = parseFloat(jumlahInput.getAttribute('data-max-edit')) || 0;
+
+        if (jumlah > maxAmount) {
+            e.preventDefault();
+            Swal.fire({
+                title: 'Jumlah Melebihi Batas!',
+                text: `Jumlah edit tidak boleh melebihi ${formatRupiahDisplay(maxAmount)}`,
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+            return false;
+        }
+    });
 </script>
 
 

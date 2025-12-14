@@ -14,7 +14,6 @@ if ($_SESSION['role'] !== 'admin') {
     exit();
 }
 
-
 if (!isset($_GET['id'])) {
     header("Location: list.php");
     exit();
@@ -34,15 +33,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nama = $conn->real_escape_string($_POST['nama_bahan']);
     $stok = $conn->real_escape_string($_POST['jumlah_stok']);
     $satuan = $conn->real_escape_string($_POST['satuan']);
+    $jumlah_meter = $conn->real_escape_string($_POST['jumlah_meter']);
     $harga = $conn->real_escape_string($_POST['harga_per_satuan']);
-    // $supplier = $conn->real_escape_string($_POST['supplier']);
 
     $sql = "UPDATE bahan_baku SET 
             nama_bahan = '$nama',
             jumlah_stok = '$stok',
             satuan = '$satuan',
+            jumlah_meter = '$jumlah_meter',
             harga_per_satuan = '$harga'
-            -- supplier = '$supplier'
             WHERE id_bahan = '$id'";
 
     if ($conn->query($sql)) {
@@ -109,16 +108,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <input type="number" step="1" id="jumlah_stok" name="jumlah_stok" class="form-control" value="<?= number_format($bahan['jumlah_stok']); ?>" required>
                             </div>
 
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-2 mb-3">
                                 <label for="satuan" class="form-label">Satuan</label>
                                 <input type="text" id="satuan" name="satuan" class="form-control" value="<?= htmlspecialchars($bahan['satuan']); ?>" required>
                             </div>
 
-                            <div class="col-md-4 mb-3">
-                                <label for="harga_per_satuan" class="form-label">Harga per Satuan</label>
+                            <div class="col-md-3 mb-3">
+                                <label for="jumlah_meter" class="form-label">Jumlah Meter</label>
+                                <div class="input-group">
+                                    <input type="number" step="1" id="jumlah_meter" name="jumlah_meter" class="form-control" value="<?= number_format($bahan['jumlah_meter']); ?>" required>
+                                    <span class="input-group-text">Meter</span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label for="harga_per_satuan" class="form-label">Harga per Meter</label>
                                 <div class="input-group">
                                     <span class="input-group-text">Rp</span>
-                                    <input type="number" id="harga_per_satuan" name="harga_per_satuan" class="form-control" value="<?= $bahan['harga_per_satuan']; ?>" required>
+                                    <input type="number" id="harga_per_satuan" step="500" name="harga_per_satuan" class="form-control" value="<?= $bahan['harga_per_satuan']; ?>" required>
                                 </div>
                             </div>
                         </div>

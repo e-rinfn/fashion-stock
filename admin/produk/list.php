@@ -70,11 +70,11 @@ $produk = query($sql);
                             <thead class="table-light text-center">
                                 <tr>
                                     <th style="width: 5%;">No</th>
-                                    <th style="width: 25%;">Nama Produk</th>
-                                    <th style="width: 20%;">Stok</th>
-                                    <th style="width: 35%;">Harga Per Pcs</th>
-                                    <!-- <th style="width: 250px;">Deskripsi</th> -->
-                                    <th style="width: 15%;">Aksi</th>
+                                    <th style="width: 30%;">Nama Produk</th>
+                                    <th style="width: 20%;">Tipe Produk</th>
+                                    <th style="width: 20%;">Stok (Pcs)</th>
+                                    <th style="width: 15%;">Harga Per Pcs</th>
+                                    <th style="width: 10%;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -88,6 +88,7 @@ $produk = query($sql);
                                         <tr>
                                             <td class="text-center"><?= $no++ ?></td>
                                             <td><?= htmlspecialchars($p['nama_produk']) ?></td>
+                                            <td class="text-center"><?= htmlspecialchars(ucfirst($p['tipe_produk'])) ?></td>
                                             <td class="text-end"><?= $p['stok'] ?></td>
                                             <td class="text-end"><?= formatRupiah($p['harga_jual']) ?></td>
                                             <!-- <td><?= htmlspecialchars(substr($p['deskripsi'], 0, 50)) ?>...</td> -->

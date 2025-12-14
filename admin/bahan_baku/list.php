@@ -7,92 +7,15 @@ if (!isLoggedIn()) {
     exit;
 }
 
-// Query data bahan baku
-$sql = "SELECT * FROM bahan_baku ORDER BY nama_bahan";
-$bahan_baku = query($sql);
-
-// Proses tambah stok jika form disubmit
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['tambah_stok'])) {
-    $id_bahan = intval($_POST['id_bahan']);
-    $jumlah = floatval($_POST['jumlah']);
-
-    // Validasi input
-    if ($id_bahan > 0 && $jumlah > 0) {
-        // Update stok di database
-        $sql_update = "UPDATE bahan_baku SET jumlah_stok = jumlah_stok + $jumlah WHERE id_bahan = $id_bahan";
-        if ($conn->query($sql_update)) {
-            $_SESSION['success'] = "Stok berhasil ditambahkan";
-            header("Location: list.php");
-            exit();
-        } else {
-            $error = "Gagal menambahkan stok: " . $conn->error;
-        }
-    } else {
-        $error = "Jumlah tidak valid!";
-    }
+if ($_SESSION['role'] !== 'admin') {
+    header("Location: {$base_url}/auth/role_tidak_cocok.php");
+    exit();
 }
 
 // Query data bahan baku
 $sql = "SELECT * FROM bahan_baku ORDER BY nama_bahan";
 $bahan_baku = query($sql);
 
-// Proses tambah stok jika form disubmit
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if (isset($_POST['tambah_stok'])) {
-        $id_bahan = intval($_POST['id_bahan']);
-        $jumlah = floatval($_POST['jumlah']);
-
-        // Validasi input
-        if ($id_bahan > 0 && $jumlah > 0) {
-            // Update stok di database
-            $sql_update = "UPDATE bahan_baku SET jumlah_stok = jumlah_stok + $jumlah WHERE id_bahan = $id_bahan";
-            if ($conn->query($sql_update)) {
-                $_SESSION['success'] = "Stok berhasil ditambahkan";
-                header("Location: list.php");
-                exit();
-            } else {
-                $error = "Gagal menambahkan stok: " . $conn->error;
-            }
-        } else {
-            $error = "Jumlah tidak valid!";
-        }
-    }
-
-    // Proses adjust stok (tambah/kurang)
-    if (isset($_POST['adjust_stok'])) {
-        $id_bahan = intval($_POST['id_bahan']);
-        $jumlah = floatval($_POST['adjust_jumlah']);
-        $tipe = $_POST['adjust_tipe']; // 'tambah' atau 'kurang'
-
-        // Validasi input
-        if ($id_bahan > 0 && $jumlah > 0) {
-            // Update stok berdasarkan tipe
-            if ($tipe == 'kurang') {
-                // Cek stok cukup
-                $current_stock = query("SELECT jumlah_stok FROM bahan_baku WHERE id_bahan = $id_bahan")[0]['jumlah_stok'];
-                if ($current_stock < $jumlah) {
-                    $error = "Stok tidak cukup! Stok tersedia: $current_stock";
-                } else {
-                    $sql_update = "UPDATE bahan_baku SET jumlah_stok = jumlah_stok - $jumlah WHERE id_bahan = $id_bahan";
-                }
-            } else {
-                $sql_update = "UPDATE bahan_baku SET jumlah_stok = jumlah_stok + $jumlah WHERE id_bahan = $id_bahan";
-            }
-
-            if (isset($sql_update) && $conn->query($sql_update)) {
-                $_SESSION['success'] = "Stok berhasil disesuaikan";
-                header("Location: list.php");
-                exit();
-            } elseif (!isset($sql_update)) {
-                $error = $error ?? "Gagal menyesuaikan stok";
-            } else {
-                $error = "Gagal menyesuaikan stok: " . $conn->error;
-            }
-        } else {
-            $error = "Jumlah tidak valid!";
-        }
-    }
-}
 ?>
 
 <style>
@@ -155,11 +78,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <thead class="table-light text-center">
                                 <tr>
                                     <th style="width: 5%;">No</th>
-                                    <th style="width: 25%;">Nama Bahan</th>
-                                    <th style="width: 20%;">Stok</th>
-                                    <th style="width: 10%;">Satuan</th>
-                                    <th style="width: 25%;">Harga Per Satuan</th>
-                                    <th style="width: 15%;">Aksi</th>
+                                    <th style="width: 30%;">Nama Bahan</th>
+                                    <th colspan="2" style="width: 20%;">Stok</th>
+                                    <th style="width: 15%;">Total (Meter)</th>
+                                    <th style="width: 20%;">Harga Per Meter</th>
+                                    <th style="width: 10%;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -175,6 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                             <td><?= htmlspecialchars($bahan['nama_bahan']); ?></td>
                                             <td class="text-end"><?= number_format($bahan['jumlah_stok']); ?></td>
                                             <td><?= htmlspecialchars($bahan['satuan']); ?></td>
+                                            <td class="text-end"><?= number_format($bahan['jumlah_meter']); ?></td>
                                             <td class="text-end"><?= formatRupiah($bahan['harga_per_satuan']); ?></td>
                                             <td class="text-center">
                                                 <a href="edit.php?id=<?= $bahan['id_bahan']; ?>" class="btn btn-primary btn-sm">

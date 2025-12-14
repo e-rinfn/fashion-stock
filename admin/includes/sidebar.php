@@ -58,6 +58,9 @@ function isActive($path)
                         <li class="pc-item <?= isActive('/admin/penjahit') ?>">
                             <a class="pc-link" href="<?= $base_url ?>/admin/penjahit/list.php">Penjahit</a>
                         </li>
+                        <li class="pc-item <?= isActive('/admin/petugas_finishing') ?>">
+                            <a class="pc-link" href="<?= $base_url ?>/admin/petugas_finishing/list.php">Petugas Finishing</a>
+                        </li>
                         <li class="pc-item <?= isActive('/admin/reseller') ?>">
                             <a class="pc-link" href="<?= $base_url ?>/admin/reseller/list.php">Reseller</a>
                         </li>
@@ -82,6 +85,9 @@ function isActive($path)
                         <li class="pc-item <?= isActive('/admin/stok_produk') ?>">
                             <a class="pc-link" href="<?= $base_url ?>/admin/stok_produk/index.php">Produk</a>
                         </li>
+                        <li class="pc-item <?= isActive('/admin/stok_koko') ?>">
+                            <a class="pc-link" href="<?= $base_url ?>/admin/stok_koko/index.php">Koko Mentah</a>
+                        </li>
                     </ul>
                 </li>
 
@@ -94,6 +100,13 @@ function isActive($path)
                     <a href="<?= $base_url ?>/admin/hasil_pemotongan/list.php" class="pc-link">
                         <span class="pc-micon"><i class="ti ti-settings"></i></span>
                         <span class="pc-mtext">Proses Produksi</span>
+                    </a>
+                </li>
+
+                <li class="pc-item <?= isActive('/finishing_koko') ?>">
+                    <a href="<?= $base_url ?>/admin/finishing_koko/finishing.php" class="pc-link">
+                        <span class="pc-micon"><i class="ti ti-settings"></i></span>
+                        <span class="pc-mtext">Finishing Koko</span>
                     </a>
                 </li>
 

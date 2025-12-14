@@ -73,10 +73,10 @@ $pemotong = query($sql);
                             <thead class="table-light text-center">
                                 <tr>
                                     <th style="width: 5%;">No</th>
-                                    <th style="width: 25%;">Nama Pemotong</th>
+                                    <th style="width: 30%;">Nama Pemotong</th>
                                     <th style="width: 20%;">Kontak</th>
                                     <th style="width: 35%;">Alamat</th>
-                                    <th style="width: 15%;">Aksi</th>
+                                    <th style="width: 10%;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>

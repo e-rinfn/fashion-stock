@@ -109,11 +109,10 @@ $bahan = query($sql);
                             <thead class="table-light text-center">
                                 <tr>
                                     <th style="width: 5%;">No</th>
-                                    <th style="width: 25%;">Nama Bahan</th>
-                                    <th style="width: 20%;">Stok</th>
-                                    <th style="width: 35%;">Satuan</th>
-                                    <th style="width: 15%;">Harga Per Satuan</th>
-                                    <!-- <th>Supplier</th> -->
+                                    <th style="width: 35%;">Nama Bahan</th>
+                                    <th colspan="2" style="width: 20%;">Stok</th>
+                                    <th style="width: 15%;">Total (Meter)</th>
+                                    <th style="width: 25%;">Harga Per Meter</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -123,7 +122,8 @@ $bahan = query($sql);
                                         <td class="text-center"><?= $no++ ?></td>
                                         <td><?= htmlspecialchars($b['nama_bahan']) ?></td>
                                         <td class="text-end"><?= $b['jumlah_stok'] ?></td>
-                                        <td class="text-center"><?= $b['satuan'] ?></td>
+                                        <td class="text-start"><?= $b['satuan'] ?></td>
+                                        <td class="text-end"><?= $b['jumlah_meter'] ?></td>
                                         <td class="text-end"><?= formatRupiah($b['harga_per_satuan']) ?></td>
                                         <!-- <td><?= htmlspecialchars(substr($b['supplier'], 0, 50)) ?>...</td> -->
                                     </tr>

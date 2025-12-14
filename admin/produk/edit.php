@@ -22,6 +22,7 @@ if (!$produk) {
 // Proses update data
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $nama = $conn->real_escape_string($_POST['nama']);
+    $tipe_produk = $conn->real_escape_string($_POST['tipe_produk']);
     $harga = $conn->real_escape_string($_POST['harga']);
     $stok = $conn->real_escape_string($_POST['stok']);
     $stok_unit = $conn->real_escape_string($_POST['stok_unit']);
@@ -34,6 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     $sql = "UPDATE produk SET 
             nama_produk = '$nama',
+            tipe_produk = '$tipe_produk',
             harga_jual = '$harga',
             stok = '$stok',
             deskripsi = '$deskripsi'
@@ -86,10 +88,22 @@ $show_kodi = ($stok_pcs % 20 == 0) && ($stok_pcs > 0);
                 <div class="card p-4 shadow-sm">
 
                     <form method="post">
-                        <div class="mb-3">
-                            <label for="nama" class="form-label">Nama Produk</label>
-                            <input type="text" id="nama" name="nama" class="form-control"
-                                value="<?= htmlspecialchars($produk['nama_produk']) ?>" required>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="nama" class="form-label">Nama Produk</label>
+                                <input type="text" name="nama" id="nama" class="form-control"
+                                    value="<?= htmlspecialchars($produk['nama_produk']) ?>" required>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="tipe_produk" class="form-label">Tipe Produk</label>
+                                <select name="tipe_produk" id="tipe_produk" class="form-select" required>
+                                    <option value="" disabled>Pilih Tipe Produk</option>
+                                    <option value="koko" <?= ($produk['tipe_produk'] == 'koko'   ? 'selected' : '') ?>>Koko</option>
+                                    <option value="mukena" <?= ($produk['tipe_produk'] == 'mukena' ? 'selected' : '') ?>>Mukena</option>
+                                </select>
+                            </div>
                         </div>
 
                         <div class="row">
@@ -123,10 +137,6 @@ $show_kodi = ($stok_pcs % 20 == 0) && ($stok_pcs > 0);
                                 <small class="text-muted">1 kodi = 20 pcs</small>
                             </div>
 
-                        </div>
-                        <div class="mb-3">
-                            <label for="deskripsi" class="form-label">Deskripsi</label>
-                            <textarea id="deskripsi" name="deskripsi" rows="5" class="form-control"><?= htmlspecialchars($produk['deskripsi']) ?></textarea>
                         </div>
 
                         <div class="">

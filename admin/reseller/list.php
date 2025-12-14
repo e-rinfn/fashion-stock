@@ -1,26 +1,6 @@
 <?php
 require_once '../includes/header.php';
-
-function dateIndo($tanggal)
-{
-    $bulanIndo = [
-        1 => 'Januari',
-        'Februari',
-        'Maret',
-        'April',
-        'Mei',
-        'Juni',
-        'Juli',
-        'Agustus',
-        'September',
-        'Oktober',
-        'November',
-        'Desember'
-    ];
-    $tanggal = date('Y-m-d', strtotime($tanggal));
-    $pecah = explode('-', $tanggal);
-    return $pecah[2] . ' ' . $bulanIndo[(int)$pecah[1]] . ' ' . $pecah[0];
-}
+require_once '../../config/functions.php';
 ?>
 
 <style>
@@ -87,10 +67,10 @@ function dateIndo($tanggal)
                             <thead class="table-light text-center">
                                 <tr>
                                     <th style="width: 5%;">No</th>
-                                    <th style="width: 25%;">Nama Reseller</th>
+                                    <th style="width: 30%;">Nama Reseller</th>
                                     <th style="width: 20%;">Kontak</th>
                                     <th style="width: 35%;">Tanggal Bergabung</th>
-                                    <th style="width: 15%;">Aksi</th>
+                                    <th style="width: 10%;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>

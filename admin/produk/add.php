@@ -3,6 +3,7 @@ require_once '../includes/header.php';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $nama = $conn->real_escape_string($_POST['nama']);
+    $tipe_produk = $conn->real_escape_string($_POST['tipe_produk']);
     $harga = $conn->real_escape_string($_POST['harga']);
     $stok = $conn->real_escape_string($_POST['stok']);
     $stok_unit = $conn->real_escape_string($_POST['stok_unit']);
@@ -13,8 +14,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $stok = $stok * 20;
     }
 
-    $sql = "INSERT INTO produk (nama_produk, harga_jual, stok, deskripsi) 
-            VALUES ('$nama', '$harga', '$stok', '$deskripsi')";
+    $sql = "INSERT INTO produk (nama_produk, tipe_produk, harga_jual, stok, deskripsi) 
+            VALUES ('$nama', '$tipe_produk', '$harga', '$stok', '$deskripsi')";
 
     if ($conn->query($sql)) {
         $_SESSION['success'] = "Produk berhasil ditambahkan";
@@ -58,9 +59,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <div class="card p-4 shadow-sm">
 
                     <form method="post">
-                        <div class="mb-3">
-                            <label for="nama" class="form-label">Nama Produk</label>
-                            <input type="text" name="nama" id="nama" class="form-control" required>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="nama" class="form-label">Nama Produk</label>
+                                <input type="text" name="nama" id="nama" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="tipe_produk" class="form-label">Tipe Produk</label>
+                                <select name="tipe_produk" id="tipe_produk" class="form-select" required>
+                                    <option value="" selected disabled>Pilih Tipe Produk</option>
+                                    <option value="koko">Koko</option>
+                                    <option value="mukena">Mukena</option>
+                                </select>
+                            </div>
+
                         </div>
 
                         <div class="row">
@@ -83,11 +96,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 </div>
                                 <small class="text-muted">1 kodi = 20 pcs</small>
                             </div>
-
-                        </div>
-                        <div class="mb-3">
-                            <label for="deskripsi" class="form-label">Deskripsi</label>
-                            <textarea name="deskripsi" id="deskripsi" rows="5" class="form-control"></textarea>
                         </div>
 
                         <div class="">

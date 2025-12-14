@@ -3,27 +3,6 @@ require_once '../../config/database.php';
 require_once '../../config/functions.php';
 require_once '../../vendor/autoload.php';
 
-function dateIndo($tanggal)
-{
-    $bulanIndo = [
-        1 => 'Januari',
-        'Februari',
-        'Maret',
-        'April',
-        'Mei',
-        'Juni',
-        'Juli',
-        'Agustus',
-        'September',
-        'Oktober',
-        'November',
-        'Desember'
-    ];
-    $tanggal = date('Y-m-d', strtotime($tanggal));
-    $pecah = explode('-', $tanggal);
-    return $pecah[2] . ' ' . $bulanIndo[(int)$pecah[1]] . ' ' . $pecah[0];
-}
-
 $id_penjualan = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
 $penjualan = query("SELECT p.*, r.nama_reseller, r.alamat as alamat_reseller 

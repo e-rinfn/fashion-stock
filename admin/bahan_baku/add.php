@@ -18,11 +18,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nama = $conn->real_escape_string($_POST['nama_bahan']);
     $stok = $conn->real_escape_string($_POST['jumlah_stok']);
     $satuan = $conn->real_escape_string($_POST['satuan']);
+    $jumlah_meter = $conn->real_escape_string($_POST['jumlah_meter']);
     $harga = $conn->real_escape_string($_POST['harga_per_satuan']);
     // $supplier = $conn->real_escape_string($_POST['supplier']);
 
-    $sql = "INSERT INTO bahan_baku (nama_bahan, jumlah_stok, satuan, harga_per_satuan) 
-            VALUES ('$nama', '$stok', '$satuan', '$harga')";
+    $sql = "INSERT INTO bahan_baku (nama_bahan, jumlah_stok, satuan, jumlah_meter, harga_per_satuan) 
+            VALUES ('$nama', '$stok', '$satuan', '$jumlah_meter', '$harga')";
 
     if ($conn->query($sql)) {
         $_SESSION['success'] = "Bahan baku berhasil ditambahkan";
@@ -87,16 +88,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <input type="number" step="0.01" id="jumlah_stok" name="jumlah_stok" class="form-control" required>
                             </div>
 
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-2 mb-3">
                                 <label for="satuan" class="form-label">Satuan</label>
                                 <input type="text" id="satuan" name="satuan" class="form-control" required>
                             </div>
 
-                            <div class="col-md-4 mb-3">
-                                <label for="harga_per_satuan" class="form-label">Harga per Satuan</label>
+                            <div class="col-md-3 mb-3">
+                                <label for="jumlah_meter" class="form-label">Jumlah Meter</label>
+                                <div class="input-group">
+                                    <input type="number" step="1" id="jumlah_meter" name="jumlah_meter" class="form-control" required>
+                                    <span class="input-group-text">Meter</span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label for="harga_per_satuan" class="form-label">Harga per Meter</label>
                                 <div class="input-group">
                                     <span class="input-group-text">Rp</span>
-                                    <input type="number" id="harga_per_satuan" name="harga_per_satuan" class="form-control" required>
+                                    <input type="number" id="harga_per_satuan" step="500" name="harga_per_satuan" class="form-control" required>
                                 </div>
                             </div>
                         </div>

@@ -31,6 +31,140 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
     return 700.00;
 }
 
+// ✅ FUNGSI BARU: untuk mengurangi hutang upah pemotong dengan validasi
+function kurangiHutangUpahPemotong($id_pemotong, $jumlah_kurang)
+{
+    global $conn;
+
+    try {
+        // 1. Cek apakah ada hutang
+        $sql_check = "SELECT id_hutang, total_upah, sisa_hutang, total_dibayar 
+                     FROM hutang_upah 
+                     WHERE id_karyawan = ? AND jenis_karyawan = 'pemotong'
+                     LIMIT 1";
+        $stmt = $conn->prepare($sql_check);
+        $stmt->bind_param("i", $id_pemotong);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($result->num_rows === 0) {
+            // Jika tidak ada hutang, tidak perlu melakukan apa-apa
+            // (mungkin data sudah dihapus sebelumnya)
+            return true;
+        }
+
+        $hutang = $result->fetch_assoc();
+
+        // 2. Validasi: tidak boleh mengurangi lebih dari sisa hutang
+        if ($jumlah_kurang > $hutang['sisa_hutang']) {
+            throw new Exception("Tidak dapat mengurangi hutang karena jumlah yang akan dikurangi (" .
+                formatRupiah($jumlah_kurang) . ") lebih besar dari sisa hutang (" .
+                formatRupiah($hutang['sisa_hutang']) . "). Total yang sudah dibayar: " .
+                formatRupiah($hutang['total_dibayar']));
+        }
+
+        // 3. Hitung nilai baru
+        $total_upah_baru = $hutang['total_upah'] - $jumlah_kurang;
+        $sisa_hutang_baru = $hutang['sisa_hutang'] - $jumlah_kurang;
+
+        // Pastikan tidak minus
+        $total_upah_baru = max(0, $total_upah_baru);
+        $sisa_hutang_baru = max(0, $sisa_hutang_baru);
+
+        // 4. Update atau hapus
+        if ($total_upah_baru <= 0) {
+            // Hapus record hutang jika total upah menjadi 0
+            $sql_delete = "DELETE FROM hutang_upah WHERE id_hutang = ?";
+            $stmt = $conn->prepare($sql_delete);
+            $stmt->bind_param("i", $hutang['id_hutang']);
+            if (!$stmt->execute()) {
+                throw new Exception("Gagal menghapus record hutang: " . $conn->error);
+            }
+            return true;
+        } else {
+            // Update hutang yang sudah ada
+            $sql_update = "UPDATE hutang_upah 
+                          SET total_upah = ?, 
+                              sisa_hutang = ?,
+                              updated_at = NOW()
+                          WHERE id_hutang = ?";
+            $stmt = $conn->prepare($sql_update);
+            $stmt->bind_param("ddi", $total_upah_baru, $sisa_hutang_baru, $hutang['id_hutang']);
+            if (!$stmt->execute()) {
+                throw new Exception("Gagal update hutang: " . $conn->error);
+            }
+            return true;
+        }
+    } catch (Exception $e) {
+        throw new Exception("Gagal mengurangi hutang upah pemotong: " . $e->getMessage());
+    }
+}
+
+// ✅ FUNGSI BARU: untuk mengembalikan stok bahan baku
+// ✅ FUNGSI BARU: untuk mengembalikan stok bahan baku
+function kembalikanStokBahanBaku($id_hasil_potong_fix)
+{
+    global $conn;
+
+    try {
+        // 1. Ambil semua detail bahan yang digunakan dalam produksi ini
+        $sql_detail = "SELECT dh.*, b.nama_bahan, b.satuan
+                      FROM detail_hasil_potong_fix dh
+                      JOIN bahan_baku b ON dh.id_bahan = b.id_bahan
+                      WHERE dh.id_hasil_potong_fix = ?";
+
+        $stmt = $conn->prepare($sql_detail);
+        $stmt->bind_param("i", $id_hasil_potong_fix);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        $total_bahan_dikembalikan = 0;
+        $detail_bahan_dikembalikan = [];
+
+        while ($detail = $result->fetch_assoc()) {
+            $id_bahan = $detail['id_bahan'];
+            $jumlah_digunakan = $detail['jumlah'] ?? 0;
+            $total_meter = $detail['total_meter'] ?? 0;
+            $nama_bahan = $detail['nama_bahan'];
+            $satuan = $detail['satuan'];
+
+            if (($jumlah_digunakan > 0 || $total_meter > 0) && $id_bahan > 0) {
+                // 2. Update stok bahan baku - TAMBAHKAN kembali jumlah yang digunakan
+                // Perbaikan: field yang benar di tabel bahan_baku
+                $sql_update_stok = "UPDATE bahan_baku 
+                                   SET jumlah_stok = jumlah_stok + ?,
+                                       jumlah_meter = jumlah_meter + ?,
+                                       updated_at = NOW()
+                                   WHERE id_bahan = ?";
+
+                $stmt_update = $conn->prepare($sql_update_stok);
+                // Perbaikan parameter binding: jumlah_digunakan (decimal), total_meter (decimal), id_bahan (integer)
+                $stmt_update->bind_param("ddi", $jumlah_digunakan, $total_meter, $id_bahan);
+
+                if (!$stmt_update->execute()) {
+                    throw new Exception("Gagal mengembalikan stok bahan baku ID $id_bahan: " . $conn->error);
+                }
+
+                $total_bahan_dikembalikan += ($jumlah_digunakan + $total_meter);
+                $detail_bahan_dikembalikan[] = [
+                    'id_bahan' => $id_bahan,
+                    'nama_bahan' => $nama_bahan,
+                    'jumlah_stok' => $jumlah_digunakan,
+                    'jumlah_meter' => $total_meter,
+                    'satuan' => $satuan
+                ];
+            }
+        }
+
+        return [
+            'total' => $total_bahan_dikembalikan,
+            'detail' => $detail_bahan_dikembalikan
+        ];
+    } catch (Exception $e) {
+        throw new Exception("Gagal mengembalikan stok bahan baku: " . $e->getMessage());
+    }
+}
+
 // Cek apakah ada parameter ID
 if (!isset($_GET['id']) || empty($_GET['id'])) {
     $_SESSION['error'] = "ID produksi tidak valid";
@@ -40,11 +174,23 @@ if (!isset($_GET['id']) || empty($_GET['id'])) {
 
 $id_hasil_potong_fix = intval($_GET['id']);
 
-// Ambil data produksi yang akan dibatalkan
-$produksi_data = query("SELECT hp.*, p.nama_pemotong 
-                       FROM hasil_potong_fix hp
-                       JOIN pemotong p ON hp.id_pemotong = p.id_pemotong
-                       WHERE hp.id_hasil_potong_fix = $id_hasil_potong_fix")[0];
+// Ambil data produksi sebelum dibatalkan
+$produksi_data = query("SELECT 
+    hp.*,
+    p.nama_produk,
+    p.tipe_produk,
+    pem.nama_pemotong,
+    pem.id_pemotong,
+    pen.nama_penjahit,
+    hp.tanggal_hasil_potong,
+    hp.total_hasil,
+    hp.seri,
+    hp.total_hasil_jahit
+FROM hasil_potong_fix hp
+JOIN produk p ON hp.id_produk = p.id_produk 
+JOIN pemotong pem ON hp.id_pemotong = pem.id_pemotong 
+LEFT JOIN penjahit pen ON hp.id_penjahit = pen.id_penjahit 
+WHERE hp.id_hasil_potong_fix = $id_hasil_potong_fix")[0];
 
 if (!$produksi_data) {
     $_SESSION['error'] = "Data produksi tidak ditemukan";
@@ -52,183 +198,71 @@ if (!$produksi_data) {
     exit();
 }
 
-// ===== VALIDASI: CEK APAKAH UPAH PEMOTONG SUDAH DIBERIKAN UNTUK PRODUKSI INI =====
+$id_produk = $produksi_data['id_produk'];
 $id_pemotong = $produksi_data['id_pemotong'];
-$tanggal_potong = $produksi_data['tanggal_hasil_potong'];
+$total_hasil_potong = $produksi_data['total_hasil'];
+$total_hasil_jahit = $produksi_data['total_hasil_jahit'];
 $seri = $produksi_data['seri'];
-$total_hasil = $produksi_data['total_hasil'];
+$tipe_produk = $produksi_data['tipe_produk'];
+$tanggal_hasil_potong = $produksi_data['tanggal_hasil_potong'];
+$status_potong = $produksi_data['status_potong'];
 
-// Hitung upah untuk produksi ini
-$tarif_pemotong = getTarifUpah('pemotongan', $tanggal_potong);
-$upah_produksi_ini = $total_hasil * $tarif_pemotong;
-
-// Cek apakah ada pembayaran upah yang terkait dengan seri produksi ini
-$check_upah_dibayar = $conn->prepare("
-    SELECT 
-        COUNT(pu.id_pembayaran) as total_pembayaran_terkait
-    FROM pembayaran_upah_2 pu
-    JOIN hutang_upah hu ON pu.id_hutang = hu.id_hutang
-    WHERE hu.id_karyawan = ? 
-    AND hu.jenis_karyawan = 'pemotong' 
-    AND hu.periode = DATE_FORMAT(?, '%Y-%m-01')
-    AND (pu.keterangan LIKE ? OR hu.total_dibayar >= ?)
-");
-
-if (!$check_upah_dibayar) {
-    $_SESSION['error'] = "Error preparing statement: " . $conn->error;
+// Validasi: tidak bisa batal jika sudah ada hasil jahit
+if (!empty($total_hasil_jahit) && $total_hasil_jahit > 0) {
+    $_SESSION['error'] = "Tidak dapat membatalkan produksi karena sudah ada hasil jahit (" . $total_hasil_jahit . " Pcs). Batalkan hasil jahit terlebih dahulu.";
     header("Location: list.php");
     exit();
 }
 
-$search_seri = "%" . $seri . "%";
-$check_upah_dibayar->bind_param("issd", $id_pemotong, $tanggal_potong, $search_seri, $upah_produksi_ini);
-$check_upah_dibayar->execute();
-$result_upah = $check_upah_dibayar->get_result();
-$pembayaran_terkait = $result_upah->fetch_assoc()['total_pembayaran_terkait'] > 0;
-$check_upah_dibayar->close();
+// Hitung upah pemotong yang akan dihapus
+$tarif_pemotong = getTarifUpah('pemotongan', $tanggal_hasil_potong);
+$upah_dihapus = $total_hasil_potong * $tarif_pemotong;
 
-if ($pembayaran_terkait) {
-    $_SESSION['error'] = "Tidak dapat membatalkan produksi Seri '$seri' karena upah pemotong '" . $produksi_data['nama_pemotong'] . "' untuk produksi ini sudah dibayar. Silakan batalkan pembayaran upah pemotongan terlebih dahulu di menu Hutang Upah.";
-    header("Location: list.php");
-    exit();
-}
-// ===== END VALIDASI =====
-
-// Mulai transaksi
-$conn->begin_transaction();
-
+$conn->autocommit(FALSE);
 try {
-    // 1. Ambil detail bahan yang digunakan untuk produksi ini
-    $detail_bahan = query("SELECT * FROM detail_hasil_potong_fix WHERE id_hasil_potong_fix = $id_hasil_potong_fix");
+    // 1. Kembalikan stok bahan baku ke tabel bahan_baku
+    $stok_dikembalikan = kembalikanStokBahanBaku($id_hasil_potong_fix);
 
-    // 2. Kembalikan stok bahan baku
-    foreach ($detail_bahan as $detail) {
-        $id_bahan = $detail['id_bahan'];
-        $jumlah_digunakan = $detail['jumlah'];
-
-        $sql_kembalikan_stok = "UPDATE bahan_baku 
-                               SET jumlah_stok = jumlah_stok + ? 
-                               WHERE id_bahan = ?";
-        $stmt_stok = $conn->prepare($sql_kembalikan_stok);
-        $stmt_stok->bind_param("ii", $jumlah_digunakan, $id_bahan);
-
-        if (!$stmt_stok->execute()) {
-            throw new Exception("Gagal mengembalikan stok bahan ID: $id_bahan");
-        }
-        $stmt_stok->close();
+    // 2. Hapus data detail hasil potong
+    $sql_delete_detail = "DELETE FROM detail_hasil_potong_fix WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
+    if (!$conn->query($sql_delete_detail)) {
+        throw new Exception("Gagal menghapus detail hasil potong: " . $conn->error);
     }
 
-    // 3. Jika sudah ada penjahitan, kurangi stok produk
-    if (!empty($produksi_data['total_hasil_jahit']) && $produksi_data['total_hasil_jahit'] > 0) {
-        $sql_kurangi_stok_produk = "UPDATE produk 
-                                  SET stok = stok - ? 
-                                  WHERE id_produk = ?";
-        $stmt_produk = $conn->prepare($sql_kurangi_stok_produk);
-        $stmt_produk->bind_param("ii", $produksi_data['total_hasil_jahit'], $produksi_data['id_produk']);
+    // 3. Hapus data utama hasil potong
+    $sql_delete_utama = "DELETE FROM hasil_potong_fix WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
+    if (!$conn->query($sql_delete_utama)) {
+        throw new Exception("Gagal menghapus data hasil potong: " . $conn->error);
+    }
 
-        if (!$stmt_produk->execute()) {
-            throw new Exception("Gagal mengurangi stok produk");
-        }
-        $stmt_produk->close();
-
-        // 4. Hapus hutang upah penjahit jika ada
-        if (!empty($produksi_data['id_penjahit'])) {
-            $periode = date('Y-m-01', strtotime($produksi_data['tanggal_hasil_jahit']));
-            $tarif_penjahit = getTarifUpah('penjahitan', $produksi_data['tanggal_hasil_jahit']);
-            $upah_penjahit = $produksi_data['total_hasil_jahit'] * $tarif_penjahit;
-
-            // Cari hutang yang terkait
-            $check_hutang = $conn->prepare("SELECT id_hutang, total_upah, sisa_hutang FROM hutang_upah 
-                                          WHERE id_karyawan = ? AND jenis_karyawan = 'penjahit' AND periode = ?");
-            $check_hutang->bind_param("is", $produksi_data['id_penjahit'], $periode);
-            $check_hutang->execute();
-            $result_hutang = $check_hutang->get_result();
-
-            if ($result_hutang->num_rows > 0) {
-                $hutang = $result_hutang->fetch_assoc();
-                $total_upah_baru = $hutang['total_upah'] - $upah_penjahit;
-                $sisa_hutang_baru = $hutang['sisa_hutang'] - $upah_penjahit;
-
-                if ($total_upah_baru <= 0) {
-                    $delete_hutang = $conn->prepare("DELETE FROM hutang_upah WHERE id_hutang = ?");
-                    $delete_hutang->bind_param("i", $hutang['id_hutang']);
-                    if (!$delete_hutang->execute()) {
-                        throw new Exception("Gagal menghapus hutang upah penjahit");
-                    }
-                } else {
-                    $update_hutang = $conn->prepare("UPDATE hutang_upah SET sisa_hutang = ? 
-                                                  WHERE id_hutang = ?");
-                    $update_hutang->bind_param("di", $sisa_hutang_baru, $hutang['id_hutang']);
-                    if (!$update_hutang->execute()) {
-                        throw new Exception("Gagal update hutang upah penjahit");
-                    }
-                }
-            }
+    // 4. Hapus/Update hutang upah pemotong (hanya jika ada upah)
+    if ($upah_dihapus > 0 && $id_pemotong > 0) {
+        if (!kurangiHutangUpahPemotong($id_pemotong, $upah_dihapus)) {
+            throw new Exception("Gagal mengurangi hutang upah pemotong");
         }
     }
 
-    // 5. Hapus hutang upah pemotong untuk produksi ini
-    $periode_pemotong = date('Y-m-01', strtotime($produksi_data['tanggal_hasil_potong']));
-    $tarif_pemotong = getTarifUpah('pemotongan', $produksi_data['tanggal_hasil_potong']);
-    $upah_pemotong = $produksi_data['total_hasil'] * $tarif_pemotong;
-
-    // Cari hutang pemotong yang terkait
-    $check_hutang_pemotong = $conn->prepare("SELECT id_hutang, total_upah, sisa_hutang FROM hutang_upah 
-                                           WHERE id_karyawan = ? AND jenis_karyawan = 'pemotong' AND periode = ?");
-    $check_hutang_pemotong->bind_param("is", $produksi_data['id_pemotong'], $periode_pemotong);
-    $check_hutang_pemotong->execute();
-    $result_hutang_pemotong = $check_hutang_pemotong->get_result();
-
-    if ($result_hutang_pemotong->num_rows > 0) {
-        $hutang_pemotong = $result_hutang_pemotong->fetch_assoc();
-        $total_upah_baru_pemotong = $hutang_pemotong['total_upah'] - $upah_pemotong;
-        $sisa_hutang_baru_pemotong = $hutang_pemotong['sisa_hutang'] - $upah_pemotong;
-
-        if ($total_upah_baru_pemotong <= 0) {
-            $delete_hutang_pemotong = $conn->prepare("DELETE FROM hutang_upah WHERE id_hutang = ?");
-            $delete_hutang_pemotong->bind_param("i", $hutang_pemotong['id_hutang']);
-            if (!$delete_hutang_pemotong->execute()) {
-                throw new Exception("Gagal menghapus hutang upah pemotong");
-            }
-        } else {
-            $update_hutang_pemotong = $conn->prepare("UPDATE hutang_upah SET total_upah = ?, sisa_hutang = ? 
-                                                   WHERE id_hutang = ?");
-            $update_hutang_pemotong->bind_param("ddi", $total_upah_baru_pemotong, $sisa_hutang_baru_pemotong, $hutang_pemotong['id_hutang']);
-            if (!$update_hutang_pemotong->execute()) {
-                throw new Exception("Gagal update hutang upah pemotong");
-            }
-        }
-    }
-
-    // 6. Hapus detail hasil potong
-    $sql_delete_detail = "DELETE FROM detail_hasil_potong_fix WHERE id_hasil_potong_fix = ?";
-    $stmt_detail = $conn->prepare($sql_delete_detail);
-    $stmt_detail->bind_param("i", $id_hasil_potong_fix);
-
-    if (!$stmt_detail->execute()) {
-        throw new Exception("Gagal menghapus detail produksi");
-    }
-    $stmt_detail->close();
-
-    // 7. Hapus data utama produksi
-    $sql_delete_produksi = "DELETE FROM hasil_potong_fix WHERE id_hasil_potong_fix = ?";
-    $stmt_produksi = $conn->prepare($sql_delete_produksi);
-    $stmt_produksi->bind_param("i", $id_hasil_potong_fix);
-
-    if (!$stmt_produksi->execute()) {
-        throw new Exception("Gagal menghapus data produksi");
-    }
-    $stmt_produksi->close();
-
-    // Commit transaksi
     $conn->commit();
+    $conn->autocommit(TRUE);
 
-    $_SESSION['success'] = "Produksi Seri '$seri' berhasil dibatalkan. Stok bahan telah dikembalikan." .
-        ($produksi_data['total_hasil_jahit'] > 0 ? " Stok produk dikurangi {$produksi_data['total_hasil_jahit']} pcs." : "");
+    // Buat pesan detail bahan yang dikembalikan
+    $pesan_bahan = "";
+    if ($stok_dikembalikan['total'] > 0 && !empty($stok_dikembalikan['detail'])) {
+        $pesan_bahan = " Bahan baku yang dikembalikan: ";
+        $detail_items = [];
+        foreach ($stok_dikembalikan['detail'] as $bahan) {
+            $detail_items[] = $bahan['nama_bahan'] . " (" . $bahan['jumlah'] . " " . $bahan['satuan'] . ")";
+        }
+        $pesan_bahan .= implode(", ", $detail_items) . ".";
+    }
+
+    $_SESSION['success'] = "✅ Produksi seri $seri berhasil dibatalkan. " .
+        ($upah_dihapus > 0 ? " Upah pemotong dikurangi: " . formatRupiah($upah_dihapus) . "." : "") .
+        $pesan_bahan;
 } catch (Exception $e) {
     $conn->rollback();
-    error_log("Error batal produksi - ID: $id_hasil_potong_fix - " . $e->getMessage());
-    $_SESSION['error'] = "Gagal membatalkan produksi: " . $e->getMessage();
+    $conn->autocommit(TRUE);
+    $_SESSION['error'] = "❌ Gagal membatalkan produksi: " . $e->getMessage();
 }
 
 header("Location: list.php");

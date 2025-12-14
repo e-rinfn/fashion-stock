@@ -3,27 +3,6 @@ require_once '../includes/header.php';
 require_once '../../config/database.php';
 require_once '../../config/functions.php';
 
-function dateIndo($tanggal)
-{
-    $bulanIndo = [
-        1 => 'Januari',
-        'Februari',
-        'Maret',
-        'April',
-        'Mei',
-        'Juni',
-        'Juli',
-        'Agustus',
-        'September',
-        'Oktober',
-        'November',
-        'Desember'
-    ];
-    $tanggal = date('Y-m-d', strtotime($tanggal));
-    $pecah = explode('-', $tanggal);
-    return $pecah[2] . ' ' . $bulanIndo[(int)$pecah[1]] . ' ' . $pecah[0];
-}
-
 $id_hutang = intval($_GET['id']);
 $detail = getDetailHutang($id_hutang);
 

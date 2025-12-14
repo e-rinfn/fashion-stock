@@ -34,37 +34,6 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
     return 700.00;
 }
 
-// Fungsi date Indo
-function dateIndo($tanggal)
-{
-    $bulanIndo = [
-        1 => 'Januari',
-        'Februari',
-        'Maret',
-        'April',
-        'Mei',
-        'Juni',
-        'Juli',
-        'Agustus',
-        'September',
-        'Oktober',
-        'November',
-        'Desember'
-    ];
-
-    if (empty($tanggal)) return '-';
-
-    $tanggal = date('Y-m-d', strtotime($tanggal));
-    $pecah = explode('-', $tanggal);
-    return $pecah[2] . ' ' . $bulanIndo[(int)$pecah[1]] . ' ' . $pecah[0];
-}
-
-// Format Rupiah
-// function formatRupiah($angka)
-// {
-//     if (empty($angka)) return '-';
-//     return 'Rp ' . number_format($angka, 0, ',', '.');
-// }
 
 // Ambil parameter filter
 $id_produk = isset($_GET['id_produk']) ? (int)$_GET['id_produk'] : 0;
@@ -123,6 +92,7 @@ foreach ($produksi as $prod) {
         'penjahit' => $prod['nama_penjahit'],
         'status' => $prod['status_potong'],
         'total_hasil' => $prod['total_hasil'],
+        'tanggal_kirim_jahit' => $prod['tanggal_kirim_jahit'],
         'tanggal_hasil_jahit' => $prod['tanggal_hasil_jahit'],
         'total_hasil_jahit' => $prod['total_hasil_jahit'],
         'upah_pemotong' => $upah_pemotong,
@@ -230,9 +200,9 @@ $html = '
         <th width="11%">Produk</th>
         <th width="6%">Hasil<br>Potong</th>
         <th width="9%">Upah<br>Pemotong</th>
-        <th width="6%">Status</th>
-        <th width="7%">Tgl Jahit</th>
+        <th width="6%">Tgl Kirim Jahit</th>
         <th width="11%">Penjahit</th>
+        <th width="7%">Tgl Jahit</th>
         <th width="6%">Hasil<br>Jahit</th>
         <th width="9%">Upah<br>Penjahit</th>
         <th width="7%">Total<br>Upah</th>
@@ -253,7 +223,7 @@ foreach ($all_data as $data) {
     $pemotong = htmlspecialchars($data['pemotong'] ?? '-');
     $produk = htmlspecialchars($data['produk'] ?? '-');
     $penjahit = htmlspecialchars($data['penjahit'] ?? '-');
-    $status = ucfirst($data['status'] ?? '-');
+    $tanggal_kirim_jahit = !empty($data['tanggal_kirim_jahit']) ? dateIndo($data['tanggal_kirim_jahit']) : '-';
 
     $tgl_potong = !empty($data['tanggal']) ? dateIndo($data['tanggal']) : '-';
     $tgl_jahit = !empty($data['tanggal_hasil_jahit']) ? dateIndo($data['tanggal_hasil_jahit']) : '-';
@@ -278,9 +248,9 @@ foreach ($all_data as $data) {
         <td class="text-left" width="11%">' . $produk . '</td>
         <td class="text-center" width="6%">' . $hasil_potong . '</td>
         <td class="text-right" width="9%">' . $upah_pemotong . '</td>
-        <td class="text-center" width="6%">' . $status . '</td>
-        <td class="text-center" width="7%">' . $tgl_jahit . '</td>
+        <td class="text-center" width="6%">' . $tanggal_kirim_jahit . '</td>
         <td class="text-left" width="11%">' . ($penjahit != '-' ? $penjahit . '<br><span class="small">Rate: ' . $rate_penjahit . '/pcs</span>' : '-') . '</td>
+        <td class="text-center" width="7%">' . $tgl_jahit . '</td>
         <td class="text-center" width="6%">' . $hasil_jahit . '</td>
         <td class="text-right" width="9%">' . ($hasil_jahit != '-' ? $upah_penjahit : '-') . '</td>
         <td class="text-right" width="7%"><b>' . $total_upah . '</b></td>

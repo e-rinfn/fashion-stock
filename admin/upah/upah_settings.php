@@ -1,26 +1,6 @@
 <?php
 require_once '../includes/header.php';
-
-function dateIndo($tanggal)
-{
-    $bulanIndo = [
-        1 => 'Januari',
-        'Februari',
-        'Maret',
-        'April',
-        'Mei',
-        'Juni',
-        'Juli',
-        'Agustus',
-        'September',
-        'Oktober',
-        'November',
-        'Desember'
-    ];
-    $tanggal = date('Y-m-d', strtotime($tanggal));
-    $pecah = explode('-', $tanggal);
-    return $pecah[2] . ' ' . $bulanIndo[(int)$pecah[1]] . ' ' . $pecah[0];
-}
+require_once '../../config/functions.php';
 
 
 // Ambil semua tarif upah
@@ -133,10 +113,13 @@ if (isset($_GET['hapus'])) {
                                     <tr>
                                         <td class="text-center"><?= $no++ ?></td>
                                         <td>
-                                            <span class="badge bg-<?= $tarif['jenis_tarif'] == 'pemotongan' ? 'warning' : 'info' ?>">
+                                            <span class="badge bg-<?=
+                                                                    $tarif['jenis_tarif'] == 'pemotongan' ? 'warning' : ($tarif['jenis_tarif'] == 'finishing' ? 'success' : 'info')
+                                                                    ?>">
                                                 <?= ucfirst($tarif['jenis_tarif']) ?>
                                             </span>
                                         </td>
+
                                         <td><?= formatRupiah($tarif['tarif_per_unit']) ?></td>
                                         <td><?= dateIndo($tarif['berlaku_sejak']) ?></td>
                                         <td><?= htmlspecialchars($tarif['keterangan'] ?? '-') ?></td>
@@ -173,6 +156,7 @@ if (isset($_GET['hapus'])) {
                                 <option value="">-- Pilih Jenis Tarif --</option>
                                 <option value="pemotongan">Pemotong</option>
                                 <option value="penjahitan">Penjahit</option>
+                                <option value="finishing">Finishing</option>
                             </select>
                         </div>
                         <div class="mb-3">

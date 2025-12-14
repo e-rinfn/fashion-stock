@@ -109,10 +109,12 @@ $produk = query($sql);
                             <thead class="table-light text-center">
                                 <tr>
                                     <th style="width: 5%;">No</th>
-                                    <th style="width: 25%;">Nama Produk</th>
-                                    <th style="width: 20%;">Stok</th>
-                                    <th style="width: 15%;">Harga Per Pcs</th>
-                                    <th style="width: 35%;">Deskripsi</th>
+                                    <th style="width: 35%;">Nama Produk</th>
+                                    <th style="width: 20%;">Tipe Produk</th>
+                                    <th style="width: 15%;">Stok (Pcs)</th>
+                                    <th style="width: 25%;">Harga Per Pcs</th>
+
+                                    <!-- <th style="width: 35%;">Deskripsi</th> -->
                                 </tr>
                             </thead>
                             <tbody>
@@ -121,9 +123,10 @@ $produk = query($sql);
                                     <tr>
                                         <td class="text-center"><?= $no++ ?></td>
                                         <td><?= htmlspecialchars($p['nama_produk']) ?></td>
+                                        <td class="text-start"><?= htmlspecialchars(ucfirst($p['tipe_produk'])) ?></td>
                                         <td class="text-end"><?= $p['stok'] ?></td>
-                                        <td><?= formatRupiah($p['harga_jual']) ?></td>
-                                        <td>
+                                        <td class="text-end"><?= formatRupiah($p['harga_jual']) ?></td>
+                                        <!-- <td>
                                             <span class="deskripsi-truncated"
                                                 data-bs-toggle="modal"
                                                 data-bs-target="#deskripsiModal"
@@ -131,7 +134,7 @@ $produk = query($sql);
                                                 data-nama="<?= htmlspecialchars($p['nama_produk']) ?>">
                                                 <?= htmlspecialchars(substr($p['deskripsi'], 0, 50)) ?>...
                                             </span>
-                                        </td>
+                                        </td> -->
                                     </tr>
                                 <?php endforeach; ?>
                                 <?php if (empty($produk)): ?>

@@ -30,6 +30,7 @@ function bulanTahunIndo($tanggal)
 // Ambil data untuk filter
 $pemotong = query("SELECT * FROM pemotong ORDER BY nama_pemotong");
 $penjahit = query("SELECT * FROM penjahit ORDER BY nama_penjahit");
+$petugas_finishing = query("SELECT * FROM petugas_finishing ORDER BY nama_petugas");
 
 // Filter parameters
 $jenis_karyawan = isset($_GET['jenis_karyawan']) ? $_GET['jenis_karyawan'] : 'all';
@@ -38,40 +39,53 @@ $status_hutang = isset($_GET['status_hutang']) ? $_GET['status_hutang'] : 'all';
 $periode = isset($_GET['periode']) ? $_GET['periode'] : '';
 $search_karyawan = isset($_GET['search_karyawan']) ? $_GET['search_karyawan'] : '';
 
-// Build query dengan filter
+// PERBAIKAN: Gunakan 'finishing' bukan 'petugas_finishing'
 $sql = "SELECT h.*, 
                CASE 
-                   WHEN h.jenis_karyawan = 'pemotong' THEN p.nama_pemotong 
-                   ELSE j.nama_penjahit 
-               END as nama_karyawan
+                   WHEN h.jenis_karyawan = 'pemotong' THEN p.nama_pemotong
+                   WHEN h.jenis_karyawan = 'penjahit' THEN j.nama_penjahit
+                   WHEN h.jenis_karyawan = 'finishing' THEN pf.nama_petugas
+                   ELSE '-'
+               END AS nama_karyawan
         FROM hutang_upah h
-        LEFT JOIN pemotong p ON h.jenis_karyawan = 'pemotong' AND h.id_karyawan = p.id_pemotong
-        LEFT JOIN penjahit j ON h.jenis_karyawan = 'penjahit' AND h.id_karyawan = j.id_penjahit
+        LEFT JOIN pemotong p 
+            ON h.jenis_karyawan = 'pemotong' 
+           AND h.id_karyawan = p.id_pemotong
+        LEFT JOIN penjahit j 
+            ON h.jenis_karyawan = 'penjahit' 
+           AND h.id_karyawan = j.id_penjahit
+        LEFT JOIN petugas_finishing pf 
+            ON h.jenis_karyawan = 'finishing' 
+           AND h.id_karyawan = pf.id_petugas_finishing
         WHERE 1=1";
 
 $params = [];
 
-// Filter jenis karyawan
-if ($jenis_karyawan != 'all') {
+// PERBAIKAN: Sesuaikan filter jenis karyawan
+if ($jenis_karyawan !== 'all') {
+    // Ubah 'petugas_finishing' menjadi 'finishing' jika dipilih
+    $jenis_filter = ($jenis_karyawan == 'petugas_finishing') ? 'finishing' : $jenis_karyawan;
     $sql .= " AND h.jenis_karyawan = ?";
-    $params[] = $jenis_karyawan;
+    $params[] = $jenis_filter;
 }
 
 // Filter pencarian karyawan
 if (!empty($search_karyawan)) {
-    $sql .= " AND (p.nama_pemotong LIKE ? OR j.nama_penjahit LIKE ?)";
+    $sql .= " AND (
+        p.nama_pemotong LIKE ?
+        OR j.nama_penjahit LIKE ?
+        OR pf.nama_petugas LIKE ?
+    )";
+
     $search_param = "%" . $search_karyawan . "%";
+    $params[] = $search_param;
     $params[] = $search_param;
     $params[] = $search_param;
 }
 
 // Filter karyawan spesifik (jika menggunakan ID)
-if ($id_karyawan > 0) {
-    if ($jenis_karyawan == 'pemotong') {
-        $sql .= " AND h.jenis_karyawan = 'pemotong' AND h.id_karyawan = ?";
-    } else {
-        $sql .= " AND h.jenis_karyawan = 'penjahit' AND h.id_karyawan = ?";
-    }
+if ($id_karyawan > 0 && $jenis_karyawan !== 'all') {
+    $sql .= " AND h.id_karyawan = ?";
     $params[] = $id_karyawan;
 }
 
@@ -268,6 +282,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 <option value="all">Semua Jenis</option>
                                 <option value="pemotong" <?= $jenis_karyawan == 'pemotong' ? 'selected' : '' ?>>Pemotong</option>
                                 <option value="penjahit" <?= $jenis_karyawan == 'penjahit' ? 'selected' : '' ?>>Penjahit</option>
+                                <option value="finishing" <?= $jenis_karyawan == 'finishing' || $jenis_karyawan == 'petugas_finishing' ? 'selected' : '' ?>>Finishing</option>
                             </select>
                         </div>
 
@@ -338,7 +353,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <thead class="table-light">
                                 <tr class="text-center">
                                     <th style="width: 5%;">No</th>
-                                    <th style="width: 12%;">Periode</th>
+                                    <!-- <th style="width: 12%;">Periode</th> -->
                                     <th style="width: 15%;">Karyawan</th>
                                     <th style="width: 10%;">Jenis</th>
                                     <th style="width: 13%;">Total Upah</th>
@@ -358,12 +373,32 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     <?php foreach ($hutang as $h): ?>
                                         <tr>
                                             <td class="text-center"><?= $no++; ?></td>
-                                            <td><?= bulanTahunIndo($h['periode']) ?></td>
+                                            <!-- <td><?= bulanTahunIndo($h['periode']) ?></td> -->
                                             <td><?= htmlspecialchars($h['nama_karyawan']) ?></td>
                                             <td class="text-center">
-                                                <span class="badge bg-<?= $h['jenis_karyawan'] == 'pemotong' ? 'warning' : 'info' ?>">
-                                                    <?= ucfirst($h['jenis_karyawan']) ?>
+                                                <?php
+                                                // PERBAIKAN: Gunakan 'finishing' untuk pengecekan
+                                                $jenis_display = $h['jenis_karyawan'];
+                                                $badgeColor = match ($jenis_display) {
+                                                    'pemotong' => 'warning',
+                                                    'penjahit' => 'info',
+                                                    'finishing' => 'success',
+                                                    default => 'secondary'
+                                                };
+
+                                                // Tampilkan dengan format yang benar
+                                                $jenis_text = match ($jenis_display) {
+                                                    'pemotong' => 'Pemotong',
+                                                    'penjahit' => 'Penjahit',
+                                                    'finishing' => 'Finishing',
+                                                    default => $jenis_display
+                                                };
+                                                ?>
+
+                                                <span class="badge bg-<?= $badgeColor ?>">
+                                                    <?= $jenis_text ?>
                                                 </span>
+
                                             </td>
                                             <td><?= formatRupiah($h['total_upah']) ?></td>
                                             <td><?= formatRupiah($h['total_dibayar']) ?></td>
@@ -474,7 +509,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         const selectedKaryawanId = document.getElementById('selectedKaryawanId');
         const jenisSelect = document.getElementById('jenisKaryawanSelect');
 
-        // Data karyawan untuk pencarian
+        // Data karyawan untuk pencarian - PERBAIKAN: tambah petugas finishing
         const karyawanData = [
             <?php if ($jenis_karyawan == 'pemotong' || $jenis_karyawan == 'all'): ?>
                 <?php foreach ($pemotong as $p): ?> {
@@ -491,6 +526,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         nama: "<?= htmlspecialchars($j['nama_penjahit']) ?>",
                         jenis: "penjahit",
                         display: "<?= htmlspecialchars($j['nama_penjahit']) ?> (Penjahit)"
+                    },
+                <?php endforeach; ?>
+            <?php endif; ?>
+            <?php if ($jenis_karyawan == 'finishing' || $jenis_karyawan == 'all'): ?>
+                <?php foreach ($petugas_finishing as $pf): ?> {
+                        id: <?= $pf['id_petugas_finishing'] ?>,
+                        nama: "<?= htmlspecialchars($pf['nama_petugas']) ?>",
+                        jenis: "finishing", // PERBAIKAN: gunakan 'finishing'
+                        display: "<?= htmlspecialchars($pf['nama_petugas']) ?> (Finishing)"
                     },
                 <?php endforeach; ?>
             <?php endif; ?>

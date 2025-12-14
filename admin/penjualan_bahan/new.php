@@ -5,7 +5,7 @@ require_once '../../config/functions.php';
 // redirectIfNotLoggedIn();
 // checkRole('admin');
 
-$bahan = query("SELECT * FROM bahan_baku WHERE jumlah_stok > 0 ORDER BY nama_bahan");
+$bahan = query("SELECT *, COALESCE(jumlah_meter, 0) as jumlah_meter, COALESCE(meter_per_roll, 0) as meter_per_roll FROM bahan_baku WHERE jumlah_stok > 0 ORDER BY nama_bahan");
 $reseller = query("SELECT * FROM reseller ORDER BY nama_reseller");
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_penjualan_bahan'])) {
@@ -23,10 +23,31 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_penjualan_bahan
         foreach ($items as $item) {
             $id_bahan = intval($item['id_bahan']);
             $qty = intval($item['qty']);
-            $bahan = query("SELECT jumlah_stok FROM bahan_baku WHERE id_bahan = $id_bahan")[0];
+            $harga = floatval($item['harga']);
+            $meter = floatval($item['meter']);
 
-            if ($qty > $bahan['jumlah_stok']) {
-                $error = "Jumlah melebihi stok tersedia untuk bahan ID $id_bahan";
+            // Ambil data stok bahan
+            $bahan_stok = query("SELECT jumlah_stok, jumlah_meter FROM bahan_baku WHERE id_bahan = $id_bahan")[0];
+
+            if ($qty > $bahan_stok['jumlah_stok']) {
+                $error = "Jumlah roll melebihi stok tersedia untuk bahan ID $id_bahan";
+                break;
+            }
+
+            // Hitung total meter yang akan dijual
+            $total_meter = $meter * $qty;
+            if ($total_meter > $bahan_stok['jumlah_meter']) {
+                $error = "Total meter melebihi stok meter tersedia untuk bahan ID $id_bahan";
+                break;
+            }
+
+            if ($harga <= 0) {
+                $error = "Harga tidak valid untuk bahan ID $id_bahan";
+                break;
+            }
+
+            if ($meter <= 0) {
+                $error = "Meter per roll tidak valid untuk bahan ID $id_bahan";
                 break;
             }
         }
@@ -38,26 +59,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_penjualan_bahan
                 $id_bahan = intval($item['id_bahan']);
                 $qty = intval($item['qty']);
                 $harga = floatval($item['harga']);
+                $meter = floatval($item['meter']);
 
                 if ($qty <= 0) {
                     $error = "Jumlah bahan tidak boleh nol.";
                     break;
                 }
 
-                if ($harga <= 0) {
-                    $error = "Harga bahan tidak boleh nol atau negatif.";
-                    break;
-                }
-
-                $total_harga += $harga * $qty;
+                $total_harga += $harga * ($meter * $qty);
             }
 
             if (!isset($error)) {
                 $conn->autocommit(FALSE);
                 try {
+                    // Insert penjualan bahan utama
                     $sql_penjualan_bahan = "INSERT INTO penjualan_bahan (id_reseller, tanggal_penjualan_bahan, total_harga, status_pembayaran, metode_pembayaran) 
-                                      VALUES ($id_reseller, NOW(), $total_harga, '$status_pembayaran', '$metode_pembayaran')";
-                    if (!$conn->query($sql_penjualan_bahan)) throw new Exception("Gagal menyimpan penjualan bahan");
+                                          VALUES ($id_reseller, NOW(), $total_harga, '$status_pembayaran', '$metode_pembayaran')";
+                    if (!$conn->query($sql_penjualan_bahan)) {
+                        throw new Exception("Gagal menyimpan penjualan bahan: " . $conn->error);
+                    }
 
                     $id_penjualan_bahan = $conn->insert_id;
 
@@ -65,23 +85,38 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_penjualan_bahan
                         $id_bahan = intval($item['id_bahan']);
                         $qty = intval($item['qty']);
                         $harga = floatval($item['harga']);
-                        $bahan = query("SELECT jumlah_stok FROM bahan_baku WHERE id_bahan = $id_bahan")[0];
+                        $meter = floatval($item['meter']);
 
-                        if ($bahan['jumlah_stok'] < $qty) throw new Exception("Stok bahan tidak mencukupi untuk bahan ID $id_bahan");
+                        // Ambil data bahan saat ini
+                        $bahan_current = query("SELECT jumlah_stok, jumlah_meter FROM bahan_baku WHERE id_bahan = $id_bahan")[0];
 
                         $subtotal = $harga * $qty;
+                        $total_meter = $meter * $qty;
 
-                        $sql_detail = "INSERT INTO detail_penjualan_bahan (id_penjualan_bahan, id_bahan, jumlah, harga_satuan, subtotal) 
-                                       VALUES ($id_penjualan_bahan, $id_bahan, $qty, $harga, $subtotal)";
-                        if (!$conn->query($sql_detail)) throw new Exception("Gagal menyimpan detail penjualan bahan");
+                        // Simpan detail penjualan dengan meter
+                        $sql_detail = "INSERT INTO detail_penjualan_bahan (id_penjualan_bahan, id_bahan, jumlah, harga_satuan, meter, subtotal) 
+                                       VALUES ($id_penjualan_bahan, $id_bahan, $qty, $harga, $total_meter, $subtotal)";
+                        if (!$conn->query($sql_detail)) {
+                            throw new Exception("Gagal menyimpan detail penjualan bahan: " . $conn->error);
+                        }
 
-                        $new_stok = $bahan['jumlah_stok'] - $qty;
-                        $sql_update = "UPDATE bahan_baku SET jumlah_stok = $new_stok WHERE id_bahan = $id_bahan";
-                        if (!$conn->query($sql_update)) throw new Exception("Gagal update stok bahan");
+                        // Update stok (kurangi jumlah roll dan meter)
+                        $new_stok_roll = $bahan_current['jumlah_stok'] - $qty;
+                        $new_stok_meter = $bahan_current['jumlah_meter'] - $total_meter;
+
+                        $sql_update = "UPDATE bahan_baku SET 
+                                        jumlah_stok = $new_stok_roll,
+                                        jumlah_meter = $new_stok_meter
+                                      WHERE id_bahan = $id_bahan";
+                        if (!$conn->query($sql_update)) {
+                            throw new Exception("Gagal update stok bahan: " . $conn->error);
+                        }
                     }
 
                     $conn->commit();
                     $conn->autocommit(TRUE);
+
+                    $_SESSION['success'] = "Data penjualan bahan berhasil disimpan";
                     header("Location: cicilan.php?id=$id_penjualan_bahan");
                     exit();
                 } catch (Exception $e) {
@@ -121,6 +156,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_penjualan_bahan
     .unit-select {
         min-width: 80px;
     }
+
+    .stok-warning {
+        color: #dc3545;
+        font-size: 0.8rem;
+    }
 </style>
 
 <!-- [Body] Start -->
@@ -148,20 +188,35 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_penjualan_bahan
             <div class="row">
 
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2>PESANAN PENJUALAN BAHAN BAKU</h2>
+                    <h2>PENJUALAN BAHAN BAKU</h2>
                 </div>
 
-
                 <div class="card">
+                    <?php if (isset($_SESSION['error'])): ?>
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <?= htmlspecialchars($_SESSION['error']) ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        <?php unset($_SESSION['error']); ?>
+                    <?php endif; ?>
+
+                    <?php if (isset($_SESSION['success'])): ?>
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <?= htmlspecialchars($_SESSION['success']) ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        <?php unset($_SESSION['success']); ?>
+                    <?php endif; ?>
+
+                    <?php if (isset($error)): ?>
+                        <div class="alert alert-danger"><?= $error ?></div>
+                    <?php endif; ?>
+
                     <div class="card-body">
                         <div class="row">
-                            <form method="post" id="formPenjualanBahan">
+                            <form method="post" id="formPenjualan">
                                 <div class="card border border-dark shadow-sm rounded-3">
                                     <div class="card-body">
-                                        <?php if (isset($error)): ?>
-                                            <div class="alert error"><?= $error ?></div>
-                                        <?php endif; ?>
-
                                         <div class="row g-3 align-items-center">
                                             <div class="col-md-6">
                                                 <label class="form-label">Nama Reseller</label>
@@ -173,7 +228,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_penjualan_bahan
                                                 </select>
                                             </div>
 
-                                            <div hidden class="col-md-4">
+                                            <div class="col-md-3">
                                                 <label class="form-label">Metode Pembayaran</label>
                                                 <select name="metode_pembayaran" class="form-control" required>
                                                     <option value="transfer">Transfer Bank</option>
@@ -182,11 +237,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_penjualan_bahan
                                                 </select>
                                             </div>
 
-                                            <div hidden class="col-md-4">
+                                            <div class="col-md-3">
                                                 <label class="form-label">Status Pembayaran</label>
                                                 <select name="status_pembayaran" class="form-control" required>
                                                     <option value="cicilan">Cicilan</option>
-                                                    <option hidden value="lunas">Lunas</option>
+                                                    <option value="lunas">Lunas</option>
                                                 </select>
                                             </div>
                                         </div>
@@ -195,16 +250,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_penjualan_bahan
 
                                 <div class="card mt-3 border border-dark shadow-sm rounded-3">
                                     <div class="card-header">
-                                        <h3>Daftar Bahan</h3>
+                                        <h3>Daftar Bahan Baku</h3>
                                     </div>
                                     <div class="card-body">
                                         <table class="table" id="tabelBahan">
                                             <thead>
                                                 <tr class="text-center">
                                                     <th>Bahan</th>
-                                                    <th>Harga</th>
+                                                    <th>Harga per Roll</th>
                                                     <th>Stok</th>
-                                                    <th>Qty</th>
+                                                    <th>Qty (Roll)</th>
+                                                    <th>Meter/Roll</th>
+                                                    <th>Total Meter</th>
                                                     <th>Subtotal</th>
                                                     <th>Aksi</th>
                                                 </tr>
@@ -212,20 +269,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_penjualan_bahan
                                             <tbody id="bahanContainer"></tbody>
                                             <tfoot>
                                                 <tr>
-                                                    <td colspan="4" class="text-right"><strong>Total</strong></td>
+                                                    <td colspan="6" class="text-right"><strong>Total</strong></td>
                                                     <td class="currency-format"><span id="totalHarga">0</span></td>
                                                     <td></td>
                                                 </tr>
                                             </tfoot>
                                         </table>
 
-                                        <button type="button" class="btn btn-secondary mt-3" id="tambahBahan">+ Tambah Bahan</button>
+                                        <button type="button" class="btn btn-secondary mt-3" id="tambahBahan">
+                                            <i class="ti ti-plus"></i> Tambah Bahan
+                                        </button>
                                     </div>
                                 </div>
 
                                 <div class="mt-3">
-                                    <button type="submit" name="simpan_penjualan_bahan" class="btn btn-primary">Simpan Penjualan Bahan</button>
-                                    <a href="list.php" class="btn btn-danger">Batal</a>
+                                    <button type="submit" name="simpan_penjualan_bahan" class="btn btn-primary">
+                                        <i class="ti ti-save"></i> Simpan Penjualan
+                                    </button>
+                                    <a href="list_penjualan.php" class="btn btn-danger">
+                                        <i class="ti ti-x"></i> Batal
+                                    </a>
                                 </div>
                             </form>
                         </div>
@@ -242,73 +305,97 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_penjualan_bahan
 <!-- [Body] end -->
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     const bahanData = <?= json_encode($bahan) ?>;
-    let selectedBahan = []; // Menyimpan ID bahan yang sudah dipilih
+    let selectedBahans = [];
 
+    function formatCurrency(amount) {
+        return 'Rp ' + Number(amount).toLocaleString('id-ID');
+    }
+
+    // Tombol Tambah Bahan
     document.getElementById('tambahBahan').addEventListener('click', function() {
         const container = document.getElementById('bahanContainer');
         const rowId = Date.now();
 
-        // Filter bahan yang belum dipilih
-        const availableBahan = bahanData.filter(b => !selectedBahan.includes(b.id_bahan));
+        // Ambil semua bahan yang belum dipilih
+        const availableBahans = bahanData.filter(b => !selectedBahans.includes(b.id_bahan));
 
-        if (availableBahan.length === 0) {
+        if (availableBahans.length === 0) {
             Swal.fire({
                 icon: 'info',
-                title: 'Oops!',
-                text: 'Semua jenis bahan sudah ditambahkan atau tidak ada stok tersedia',
-                confirmButtonText: 'Oke'
+                title: 'Tidak ada bahan tersedia',
+                text: 'Semua bahan sudah ditambahkan',
+                confirmButtonText: 'OK'
             });
             return;
         }
 
+        // Buat opsi dropdown
         let options = '<option value="">Pilih Bahan</option>';
-        availableBahan.forEach(bahan => {
-            options += `<option value="${bahan.id_bahan}" data-harga="${bahan.harga_per_satuan}">${bahan.nama_bahan}</option>`;
+        availableBahans.forEach(bahan => {
+            const stokLabel = `${bahan.nama_bahan} (Stok: ${bahan.jumlah_stok} Roll, ${bahan.jumlah_meter || 0} Meter)`;
+            options += `<option value="${bahan.id_bahan}" 
+                        data-harga="${bahan.harga_per_satuan}" 
+                        data-stok="${bahan.jumlah_stok}"
+                        data-meter="${bahan.meter_per_roll || 0}">
+                        ${stokLabel}
+                    </option>`;
         });
 
+        // Tambahkan baris baru ke tabel
         const row = document.createElement('tr');
         row.id = `row-${rowId}`;
         row.innerHTML = `
-                <td class="w-25">
-                    <select name="items[${rowId}][id_bahan]" class="form-control select-bahan" required>
-                        ${options}
-                    </select>
-                </td>
-                <td>
-                    <div class="input-group">
-                        <span class="input-group-text">Rp</span>
-                        <input type="number" name="items[${rowId}][harga]" class="form-control harga-input" min="1" value="" required>
-                    </div>
-                </td>
-                <td class="stok">0</td>
-                <td>
-                <small class="text-danger stok-error" style="display:none">Melebihi stok tersedia</small>
-                    <div class="input-group">
-                        <input type="number" name="items[${rowId}][qty]" class="form-control qty" min="1" value="1" required>
-                        <span class="input-group-text">Roll</span>
-                    </div>
-                </td>
-                <td class="currency-format subtotal">0</td>
-                <td><button type="button" class="btn btn-sm btn-danger hapus-bahan" data-row="${rowId}">Hapus</button></td>
-            `;
+            <td class="w-25">
+                <select name="items[${rowId}][id_bahan]" class="form-control select-bahan" required>
+                    ${options}
+                </select>
+            </td>
+            <td>
+                <div class="input-group">
+                    <span class="input-group-text">Rp</span>
+                    <input type="number" name="items[${rowId}][harga]" class="form-control harga-input" min="1" required>
+                </div>
+            </td>
+            <td class="stok-info">
+                <span class="stok-roll">0</span> Roll<br>
+                <span class="stok-meter">0</span> m
+            </td>
+            <td class="w-15">
+                <div class="input-group">
+                    <input type="number" name="items[${rowId}][qty]" class="form-control qty" min="1" value="1" required>
+                    <span class="input-group-text">Roll</span>
+                </div>
+                <small class="stok-warning stok-roll-warning" style="display:none">Melebihi stok roll</small>
+            </td>
+            <td class="w-15">
+                <div class="input-group">
+                    <input type="number" name="items[${rowId}][meter]" class="form-control meter-input" 
+                           step="1" min="1" value="0" required>
+                    <span class="input-group-text">m/Roll</span>
+                </div>
+            </td>
+            <td class="total-meter">0 m</td>
+            <td class="currency-format subtotal">Rp 0</td>
+            <td><button type="button" class="btn btn-sm btn-danger hapus-bahan" data-row="${rowId}">Hapus</button></td>
+        `;
         container.appendChild(row);
         initRowEvents(rowId);
         hitungTotal();
     });
 
+    // Hapus bahan dari daftar
     document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('hapus-bahan')) {
-            const rowId = e.target.dataset.row;
+        if (e.target.closest('.hapus-bahan')) {
+            const button = e.target.closest('.hapus-bahan');
+            const rowId = button.dataset.row;
             const row = document.getElementById(`row-${rowId}`);
-            const selectedBahanId = row.querySelector('.select-bahan').value;
+            const select = row.querySelector('.select-bahan');
 
-            // Hapus bahan dari daftar yang sudah dipilih
-            if (selectedBahanId) {
-                selectedBahan = selectedBahan.filter(id => id != selectedBahanId);
+            if (select.value) {
+                selectedBahans = selectedBahans.filter(id => id != select.value);
             }
 
             row.remove();
@@ -317,112 +404,238 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_penjualan_bahan
         }
     });
 
+    // Event untuk setiap baris
     function initRowEvents(rowId) {
         const row = document.getElementById(`row-${rowId}`);
         const select = row.querySelector('.select-bahan');
         const hargaInput = row.querySelector('.harga-input');
         const qtyInput = row.querySelector('.qty');
-        const stokError = row.querySelector('.stok-error');
+        const meterInput = row.querySelector('.meter-input');
+        const stokRollDisplay = row.querySelector('.stok-roll');
+        const stokMeterDisplay = row.querySelector('.stok-meter');
+        const stokRollWarning = row.querySelector('.stok-roll-warning');
+        const totalMeterDisplay = row.querySelector('.total-meter');
 
         select.addEventListener('change', function() {
-            const previousBahanId = select.dataset.previousValue;
+            const prevId = select.dataset.previousValue;
+            if (prevId) selectedBahans = selectedBahans.filter(id => id != prevId);
 
-            if (previousBahanId) {
-                selectedBahan = selectedBahan.filter(id => id != previousBahanId);
-            }
+            const newId = this.value;
+            if (newId) {
+                selectedBahans.push(newId);
+                select.dataset.previousValue = newId;
 
-            const newBahanId = this.value;
-            const selectedOption = this.options[this.selectedIndex];
-
-            if (newBahanId) {
-                selectedBahan.push(newBahanId);
-                select.dataset.previousValue = newBahanId;
-
-                const bahan = bahanData.find(p => p.id_bahan == newBahanId);
+                const bahan = bahanData.find(b => b.id_bahan == newId);
                 if (bahan) {
-                    // Set nilai default harga dari data bahan
                     hargaInput.value = bahan.harga_per_satuan;
-                    row.querySelector('.stok').textContent = bahan.jumlah_stok;
-                    qtyInput.max = bahan.jumlah_stok;
+                    stokRollDisplay.textContent = bahan.jumlah_stok;
+                    stokMeterDisplay.textContent = bahan.jumlah_meter || 0;
+
+                    // Set nilai default meter per roll
+                    meterInput.value = bahan.meter_per_roll || 0;
+
                     qtyInput.value = 1;
+                    qtyInput.max = bahan.jumlah_stok;
+
+                    hitungTotalMeter(rowId);
                     hitungSubtotal(rowId);
+                    validateStok(rowId);
                 }
             } else {
                 select.dataset.previousValue = '';
-                hargaInput.value = 0;
-                hitungSubtotal(rowId);
+                hargaInput.value = '';
+                stokRollDisplay.textContent = '0';
+                stokMeterDisplay.textContent = '0';
+                meterInput.value = 0;
+                qtyInput.value = 1;
+                qtyInput.max = '';
+                totalMeterDisplay.textContent = '0 m';
+                row.querySelector('.subtotal').textContent = 'Rp 0';
             }
 
             updateBahanDropdowns();
         });
 
-        // Event listener untuk input harga
-        hargaInput.addEventListener('input', function() {
+        hargaInput.addEventListener('input', () => hitungSubtotal(rowId));
+
+        qtyInput.addEventListener('input', () => {
+            hitungTotalMeter(rowId);
             hitungSubtotal(rowId);
+            validateStok(rowId);
         });
 
-        qtyInput.addEventListener('input', function() {
-            const maxStok = parseInt(qtyInput.max) || 0;
-            const enteredQty = parseInt(this.value) || 0;
-
-            if (enteredQty > maxStok) {
-                stokError.style.display = 'block';
-                this.value = maxStok;
-            } else {
-                stokError.style.display = 'none';
-            }
-
-            hitungSubtotal(rowId);
+        meterInput.addEventListener('input', () => {
+            hitungTotalMeter(rowId);
+            validateStok(rowId);
         });
+
+        // Trigger change event jika sudah ada value
+        if (select.value) select.dispatchEvent(new Event('change'));
     }
 
-    function updateBahanDropdowns() {
-        document.querySelectorAll('.select-bahan').forEach(select => {
-            const currentValue = select.value;
-            const rowId = select.closest('tr').id.split('-')[1];
+    // Fungsi validasi stok
+    function validateStok(rowId) {
+        const row = document.getElementById(`row-${rowId}`);
+        const select = row.querySelector('.select-bahan');
+        const qtyInput = row.querySelector('.qty');
+        const meterInput = row.querySelector('.meter-input');
+        const stokRollWarning = row.querySelector('.stok-roll-warning');
 
-            // Filter bahan yang belum dipilih ATAU bahan yang sedang dipilih di dropdown ini
-            const availableBahan = bahanData.filter(p =>
-                !selectedBahan.includes(p.id_bahan) || p.id_bahan == currentValue
-            );
+        if (!select.value) return;
 
-            let options = '<option value="">Pilih Bahan</option>';
-            availableBahan.forEach(bahan => {
-                const selected = bahan.id_bahan == currentValue ? 'selected' : '';
-                options += `<option value="${bahan.id_bahan}" data-harga="${bahan.harga_per_satuan}" ${selected}>${bahan.nama_bahan}</option>`;
+        const bahan = bahanData.find(b => b.id_bahan == select.value);
+        if (!bahan) return;
+
+        const qty = parseInt(qtyInput.value) || 0;
+        const meterPerRoll = parseFloat(meterInput.value) || 0;
+        const totalMeter = qty * meterPerRoll;
+
+        // Validasi stok roll
+        if (qty > bahan.jumlah_stok) {
+            stokRollWarning.style.display = 'block';
+            qtyInput.value = bahan.jumlah_stok;
+            hitungTotalMeter(rowId);
+            hitungSubtotal(rowId);
+        } else {
+            stokRollWarning.style.display = 'none';
+        }
+
+        // Validasi stok meter (tampilkan alert jika melebihi)
+        if (totalMeter > (bahan.jumlah_meter || 0)) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Stok Meter Tidak Cukup',
+                text: `Total meter (${totalMeter}m) melebihi stok tersedia (${bahan.jumlah_meter || 0}m)`,
+                confirmButtonText: 'OK'
             });
-
-            select.innerHTML = options;
-        });
+            // Reset ke nilai maksimal
+            const maxMeterPerRoll = Math.floor((bahan.jumlah_meter || 0) / qty);
+            meterInput.value = maxMeterPerRoll > 0 ? maxMeterPerRoll : 0;
+            hitungTotalMeter(rowId);
+        }
     }
 
-    function formatCurrency(amount) {
-        return 'Rp ' + Number(amount).toLocaleString('id-ID');
+    // Fungsi hitung total meter
+    function hitungTotalMeter(rowId) {
+        const row = document.getElementById(`row-${rowId}`);
+        const qty = parseInt(row.querySelector('.qty').value) || 0;
+        const meterPerRoll = parseFloat(row.querySelector('.meter-input').value) || 0;
+        const totalMeter = qty * meterPerRoll;
+        row.querySelector('.total-meter').textContent = totalMeter.toFixed(0) + ' m';
     }
 
+    // Fungsi hitung subtotal
     function hitungSubtotal(rowId) {
         const row = document.getElementById(`row-${rowId}`);
         const harga = parseFloat(row.querySelector('.harga-input').value) || 0;
         const qty = parseInt(row.querySelector('.qty').value) || 0;
-        const subtotal = harga * qty;
+        const totalMeter = parseFloat(row.querySelector('.total-meter').textContent) || 0;
+        const subtotal = harga * totalMeter;
         row.querySelector('.subtotal').textContent = formatCurrency(subtotal);
         hitungTotal();
+    }
+
+    // Update semua dropdown bahan
+    function updateBahanDropdowns() {
+        document.querySelectorAll('.select-bahan').forEach(select => {
+            const currentValue = select.value;
+            const row = select.closest('tr');
+            const currentMeter = row ? row.querySelector('.meter-input').value : 0;
+
+            const availableBahans = bahanData.filter(bahan =>
+                !selectedBahans.includes(bahan.id_bahan) || bahan.id_bahan == currentValue
+            );
+
+            let options = '<option value="">Pilih Bahan</option>';
+            availableBahans.forEach(bahan => {
+                const stokLabel = `${bahan.nama_bahan} (Stok: ${bahan.jumlah_stok} Roll, ${bahan.jumlah_meter || 0} Meter)`;
+                const selected = bahan.id_bahan == currentValue ? 'selected' : '';
+                options += `<option value="${bahan.id_bahan}" 
+                            data-harga="${bahan.harga_per_satuan}" 
+                            data-stok="${bahan.jumlah_stok}"
+                            data-meter="${bahan.meter_per_roll || 0}" 
+                            ${selected}>
+                            ${stokLabel}
+                        </option>`;
+            });
+
+            select.innerHTML = options;
+
+            // Set nilai meter jika bahan masih sama
+            if (currentValue) {
+                const bahan = bahanData.find(b => b.id_bahan == currentValue);
+                if (bahan && row) {
+                    row.querySelector('.meter-input').value = currentMeter || bahan.meter_per_roll || 0;
+                    hitungTotalMeter(row.id.replace('row-', ''));
+                    hitungSubtotal(row.id.replace('row-', ''));
+                }
+            }
+        });
     }
 
     function hitungTotal() {
         let total = 0;
         document.querySelectorAll('#bahanContainer tr').forEach(row => {
-            const subtotal = parseFloat(row.querySelector('.subtotal').textContent.replace(/[^0-9]/g, '')) || 0;
-            total += subtotal;
+            const subtotalText = row.querySelector('.subtotal').textContent.replace(/[^\d]/g, '');
+            total += parseFloat(subtotalText) || 0;
         });
         document.getElementById('totalHarga').textContent = formatCurrency(total);
     }
 
-    // Tambahkan satu bahan secara default saat halaman dimuat
+    // Tambahkan validasi form sebelum submit
+    document.getElementById('formPenjualan').addEventListener('submit', function(e) {
+        const rows = document.querySelectorAll('#bahanContainer tr');
+        let isValid = true;
+        let errorMessage = '';
+
+        // Validasi reseller
+        const reseller = document.querySelector('select[name="id_reseller"]').value;
+        if (!reseller) {
+            isValid = false;
+            errorMessage = 'Pilih reseller terlebih dahulu';
+        }
+
+        if (rows.length === 0) {
+            isValid = false;
+            errorMessage = 'Minimal harus ada satu bahan yang dijual';
+        }
+
+        // Validasi setiap baris bahan
+        rows.forEach((row, index) => {
+            const select = row.querySelector('.select-bahan');
+            const harga = row.querySelector('.harga-input').value;
+            const qty = row.querySelector('.qty').value;
+            const meter = row.querySelector('.meter-input').value;
+
+            if (!select.value) {
+                isValid = false;
+                errorMessage = `Pilih bahan untuk baris ${index + 1}`;
+            } else if (harga <= 0) {
+                isValid = false;
+                errorMessage = `Harga tidak valid untuk baris ${index + 1}`;
+            } else if (qty <= 0) {
+                isValid = false;
+                errorMessage = `Jumlah roll tidak valid untuk baris ${index + 1}`;
+            } else if (meter <= 0) {
+                isValid = false;
+                errorMessage = `Meter per roll tidak valid untuk baris ${index + 1}`;
+            }
+        });
+
+        if (!isValid) {
+            e.preventDefault();
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: errorMessage,
+                confirmButtonText: 'OK'
+            });
+        }
+    });
+
     document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('tambahBahan').click();
     });
 </script>
-
 
 </html>

@@ -26,11 +26,28 @@ try {
     foreach ($details as $d) {
         $id_bahan = intval($d['id_bahan']);
         $jumlah = intval($d['jumlah']);
+        $meter = floatval($d['meter']);
+
+        // Validasi: Pastikan meter ada di tabel detail
+        if (!isset($d['meter'])) {
+            throw new Exception("Kolom meter tidak ditemukan pada detail_pembelian_bahan. Pastikan tabel sudah diupdate.");
+        }
 
         // Kembalikan stok bahan (dikurangi karena ini pembelian bahan baku)
-        $sql_update = "UPDATE bahan_baku SET jumlah_stok = jumlah_stok - $jumlah WHERE id_bahan = $id_bahan";
+        // Perbaikan: tambahkan pengurangan jumlah_meter
+        $sql_update = "UPDATE bahan_baku 
+                       SET jumlah_stok = jumlah_stok - $jumlah, 
+                           jumlah_meter = jumlah_meter - $meter 
+                       WHERE id_bahan = $id_bahan";
+
         if (!$conn->query($sql_update)) {
             throw new Exception("Gagal mengembalikan stok bahan ID $id_bahan");
+        }
+
+        // Cek apakah stok tidak menjadi negatif
+        $check_stok = query("SELECT jumlah_stok, jumlah_meter FROM bahan_baku WHERE id_bahan = $id_bahan")[0];
+        if ($check_stok['jumlah_stok'] < 0 || $check_stok['jumlah_meter'] < 0) {
+            throw new Exception("Stok tidak mencukupi untuk pengembalian bahan ID $id_bahan");
         }
     }
 

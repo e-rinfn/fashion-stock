@@ -251,9 +251,6 @@ switch ($produksi['status_potong']) {
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h2>Detail Produksi</h2>
                     <div>
-                        <a href="edit.php?id=<?= $id_hasil_potong_fix ?>" class="btn btn-warning m-1">
-                            <i class="ti ti-pencil"></i> Edit Produksi
-                        </a>
                         <a href="list.php" class="btn btn-secondary m-1">
                             <i class="ti ti-arrow-back"></i> Kembali ke Daftar
                         </a>
@@ -594,14 +591,14 @@ switch ($produksi['status_potong']) {
                                             <th style="width: 120px;">Quantity (Roll)</th>
                                             <th style="width: 120px;">Meter per Roll</th>
                                             <th style="width: 120px;">Total Meter</th>
-                                            <th style="width: 150px;">Harga Satuan</th>
-                                            <th style="width: 150px;">Subtotal</th>
+                                            <!-- <th style="width: 150px;">Harga Satuan</th>
+                                            <th style="width: 150px;">Subtotal</th> -->
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <?php if (empty($detail)): ?>
                                             <tr>
-                                                <td colspan="7" class="text-center text-muted">Tidak ada data bahan</td>
+                                                <td colspan="5" class="text-center text-muted">Tidak ada data bahan</td>
                                             </tr>
                                         <?php else: ?>
                                             <?php
@@ -624,28 +621,28 @@ switch ($produksi['status_potong']) {
                                                     <td class="text-center"><?= $d['jumlah'] ?> Roll</td>
                                                     <td class="text-center"><?= number_format($meter_per_roll) ?> m</td>
                                                     <td class="text-center"><?= number_format($total_meter) ?> m</td>
-                                                    <td class="text-end"><?= formatRupiah($d['harga_per_satuan']) ?></td>
-                                                    <td class="text-end fw-bold"><?= formatRupiah($subtotal) ?></td>
+                                                    <!-- <td class="text-end"><?= formatRupiah($d['harga_per_satuan']) ?></td>
+                                                    <td class="text-end fw-bold"><?= formatRupiah($subtotal) ?></td> -->
                                                 </tr>
                                             <?php endforeach; ?>
                                         <?php endif; ?>
                                     </tbody>
                                     <?php if (!empty($detail)): ?>
                                         <tfoot class="table-light">
-                                            <tr>
-                                                <td colspan="5" class="text-end fw-bold">Total Harga Bahan:</td>
+                                            <!-- <tr>
+                                                <td colspan="3" class="text-end fw-bold">Total Harga Bahan:</td>
                                                 <td colspan="2" class="text-end fw-bold text-primary"><?= formatRupiah($total_harga_bahan) ?></td>
-                                            </tr>
+                                            </tr> -->
                                             <tr>
-                                                <td colspan="5" class="text-end fw-bold">Total Roll Digunakan:</td>
+                                                <td colspan="3" class="text-end fw-bold">Total Roll Digunakan:</td>
                                                 <td colspan="2" class="text-end fw-bold"><?= $total_roll_used ?> Roll</td>
                                             </tr>
                                             <tr>
-                                                <td colspan="5" class="text-end fw-bold">Total Meter Digunakan:</td>
+                                                <td colspan="3" class="text-end fw-bold">Total Meter Digunakan:</td>
                                                 <td colspan="2" class="text-end fw-bold"><?= number_format($total_meter_used) ?> Meter</td>
                                             </tr>
                                             <tr>
-                                                <td colspan="5" class="text-end fw-bold">Efisiensi Meter per Potongan:</td>
+                                                <td colspan="3" class="text-end fw-bold">Efisiensi Meter per Potongan:</td>
                                                 <td colspan="2" class="text-end fw-bold">
                                                     <?php
                                                     if ($produksi['total_hasil'] > 0 && $total_meter_used > 0) {

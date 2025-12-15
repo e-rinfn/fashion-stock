@@ -18,59 +18,32 @@ if (!isset($_GET['id']) || empty($_GET['id'])) {
 $id_hasil_kirim_finishing = intval($_GET['id']);
 
 // ✅ FUNGSI BARU: untuk membatalkan hasil finishing koko
-function batalkanHasilFinishingKoko($id_hasil_kirim_finishing, $tanggal_finishing = null)
+function batalkanHasilFinishingKoko($id_hasil_kirim_finishing)
 {
     global $conn;
 
     try {
         // 1. Ambil data hasil finishing koko yang akan dibatalkan
-        if ($tanggal_finishing) {
-            // Batalkan berdasarkan tanggal tertentu
-            $sql_data = "SELECT 
-                dhfk.*,
-                dh.id_hasil_kirim_finishing,
-                dh.id_koko,
-                dh.jumlah as jumlah_dikirim,
-                k.nama_koko,
-                k.id_produk as id_produk_koko,
-                p.nama_produk as nama_produk_koko,
-                hk.id_produk as id_produk_utama,
-                hk.total_hasil_finishing,
-                hk.id_petugas_finishing
-            FROM detail_hasil_finishing_koko dhfk
-            JOIN detail_hasil_kirim_finishing dh ON dhfk.id_detail_hasil_kirim_finishing = dh.id_detail_hasil_kirim_finishing
-            JOIN koko k ON dhfk.id_koko = k.id_koko
-            LEFT JOIN produk p ON k.id_produk = p.id_produk
-            JOIN hasil_kirim_finishing hk ON dh.id_hasil_kirim_finishing = hk.id_hasil_kirim_finishing
-            WHERE dh.id_hasil_kirim_finishing = ? 
-            AND dhfk.tanggal_finishing = ?";
+        $sql_data = "SELECT 
+            dhfk.*,
+            dh.id_hasil_kirim_finishing,
+            dh.id_koko,
+            dh.jumlah as jumlah_dikirim,
+            k.nama_koko,
+            k.id_produk as id_produk_koko,
+            p.nama_produk as nama_produk_koko,
+            hk.id_produk as id_produk_utama,
+            hk.total_hasil_finishing,
+            hk.id_petugas_finishing
+        FROM detail_hasil_finishing_koko dhfk
+        JOIN detail_hasil_kirim_finishing dh ON dhfk.id_detail_hasil_kirim_finishing = dh.id_detail_hasil_kirim_finishing
+        JOIN koko k ON dhfk.id_koko = k.id_koko
+        LEFT JOIN produk p ON k.id_produk = p.id_produk
+        JOIN hasil_kirim_finishing hk ON dh.id_hasil_kirim_finishing = hk.id_hasil_kirim_finishing
+        WHERE dh.id_hasil_kirim_finishing = ?";
 
-            $stmt = $conn->prepare($sql_data);
-            $stmt->bind_param("is", $id_hasil_kirim_finishing, $tanggal_finishing);
-        } else {
-            // Batalkan semua hasil finishing untuk pengiriman ini
-            $sql_data = "SELECT 
-                dhfk.*,
-                dh.id_hasil_kirim_finishing,
-                dh.id_koko,
-                dh.jumlah as jumlah_dikirim,
-                k.nama_koko,
-                k.id_produk as id_produk_koko,
-                p.nama_produk as nama_produk_koko,
-                hk.id_produk as id_produk_utama,
-                hk.total_hasil_finishing,
-                hk.id_petugas_finishing
-            FROM detail_hasil_finishing_koko dhfk
-            JOIN detail_hasil_kirim_finishing dh ON dhfk.id_detail_hasil_kirim_finishing = dh.id_detail_hasil_kirim_finishing
-            JOIN koko k ON dhfk.id_koko = k.id_koko
-            LEFT JOIN produk p ON k.id_produk = p.id_produk
-            JOIN hasil_kirim_finishing hk ON dh.id_hasil_kirim_finishing = hk.id_hasil_kirim_finishing
-            WHERE dh.id_hasil_kirim_finishing = ?";
-
-            $stmt = $conn->prepare($sql_data);
-            $stmt->bind_param("i", $id_hasil_kirim_finishing);
-        }
-
+        $stmt = $conn->prepare($sql_data);
+        $stmt->bind_param("i", $id_hasil_kirim_finishing);
         $stmt->execute();
         $result = $stmt->get_result();
 
@@ -167,58 +140,28 @@ function batalkanHasilFinishingKoko($id_hasil_kirim_finishing, $tanggal_finishin
             }
         }
 
-        // 5. Hapus data hasil finishing koko
-        if ($tanggal_finishing) {
-            $sql_delete = "DELETE FROM detail_hasil_finishing_koko 
-                          WHERE id_detail_hasil_kirim_finishing IN (
-                              SELECT id_detail_hasil_kirim_finishing 
-                              FROM detail_hasil_kirim_finishing 
-                              WHERE id_hasil_kirim_finishing = ?
-                          ) AND tanggal_finishing = ?";
-            $stmt_delete = $conn->prepare($sql_delete);
-            $stmt_delete->bind_param("is", $id_hasil_kirim_finishing, $tanggal_finishing);
-        } else {
-            $sql_delete = "DELETE FROM detail_hasil_finishing_koko 
-                          WHERE id_detail_hasil_kirim_finishing IN (
-                              SELECT id_detail_hasil_kirim_finishing 
-                              FROM detail_hasil_kirim_finishing 
-                              WHERE id_hasil_kirim_finishing = ?
-                          )";
-            $stmt_delete = $conn->prepare($sql_delete);
-            $stmt_delete->bind_param("i", $id_hasil_kirim_finishing);
-        }
+        // 5. Hapus semua data hasil finishing koko
+        $sql_delete = "DELETE FROM detail_hasil_finishing_koko 
+                      WHERE id_detail_hasil_kirim_finishing IN (
+                          SELECT id_detail_hasil_kirim_finishing 
+                          FROM detail_hasil_kirim_finishing 
+                          WHERE id_hasil_kirim_finishing = ?
+                      )";
+        $stmt_delete = $conn->prepare($sql_delete);
+        $stmt_delete->bind_param("i", $id_hasil_kirim_finishing);
 
         if (!$stmt_delete->execute()) {
             throw new Exception("Gagal menghapus data hasil finishing koko: " . $conn->error);
         }
 
-        // 6. Update status dan total hasil di tabel utama
-        // Hitung ulang total hasil yang masih ada
-        $sql_total_sisa = "SELECT 
-            COALESCE(SUM(dhfk.jumlah_selesai), 0) as total_selesai_sisa,
-            COALESCE(SUM(dhfk.jumlah_rusak), 0) as total_rusak_sisa
-            FROM detail_hasil_finishing_koko dhfk
-            JOIN detail_hasil_kirim_finishing dh ON dhfk.id_detail_hasil_kirim_finishing = dh.id_detail_hasil_kirim_finishing
-            WHERE dh.id_hasil_kirim_finishing = ?";
-
-        $stmt_total = $conn->prepare($sql_total_sisa);
-        $stmt_total->bind_param("i", $id_hasil_kirim_finishing);
-        $stmt_total->execute();
-        $result_total = $stmt_total->get_result();
-        $totals_sisa = $result_total->fetch_assoc();
-
-        $total_selesai_sisa = $totals_sisa['total_selesai_sisa'];
-
-        // Update status berdasarkan apakah masih ada hasil finishing
-        $status_baru = ($total_selesai_sisa > 0) ? 'diproses' : 'pengiriman';
-
+        // 6. Update status di tabel utama
         $sql_update_status = "UPDATE hasil_kirim_finishing 
-                             SET status_finishing = ?,
-                                 tanggal_hasil_finishing = CASE WHEN ? > 0 THEN NOW() ELSE NULL END,
-                                 total_hasil_finishing = ?
+                             SET status_finishing = 'pengiriman',
+                                 tanggal_hasil_finishing = NULL,
+                                 total_hasil_finishing = 0
                              WHERE id_hasil_kirim_finishing = ?";
         $stmt_status = $conn->prepare($sql_update_status);
-        $stmt_status->bind_param("siii", $status_baru, $total_selesai_sisa, $total_selesai_sisa, $id_hasil_kirim_finishing);
+        $stmt_status->bind_param("i", $id_hasil_kirim_finishing);
 
         if (!$stmt_status->execute()) {
             throw new Exception("Gagal update status finishing: " . $conn->error);
@@ -253,36 +196,9 @@ function batalkanHasilFinishingKoko($id_hasil_kirim_finishing, $tanggal_finishin
         $conn->commit();
         $conn->autocommit(TRUE);
 
-        // 8. Siapkan pesan sukses
-        $pesan_koko = "";
-        if (!empty($stok_koko_dikembalikan)) {
-            $pesan_koko = "<br><strong>Stok koko yang dikembalikan:</strong><br>";
-            foreach ($stok_koko_dikembalikan as $koko) {
-                $total = $koko['jumlah_selesai'] + $koko['jumlah_rusak'];
-                if ($total > 0) {
-                    $pesan_koko .= "- " . $koko['nama_koko'] . ": " . $total . " pcs (selesai: " . $koko['jumlah_selesai'] . ", rusak: " . $koko['jumlah_rusak'] . ")<br>";
-                }
-            }
-        }
-
-        $pesan_produk = "";
-        if (!empty($produk_dikurangi)) {
-            $pesan_produk = "<br><strong>Stok produk yang dikurangi:</strong><br>";
-            foreach ($produk_dikurangi as $id_produk => $data) {
-                if ($data['jumlah'] > 0) {
-                    $pesan_produk .= "- " . $data['nama'] . ": " . $data['jumlah'] . " pcs<br>";
-                }
-            }
-        }
-
         return [
             'success' => true,
-            'message' => "✅ Hasil finishing koko berhasil dibatalkan!<br>" .
-                "<strong>Total Selesai Dibatalkan:</strong> " . $total_selesai_dibatalkan . " pcs<br>" .
-                "<strong>Total Rusak Dibatalkan:</strong> " . $total_rusak_dibatalkan . " pcs<br>" .
-                "<strong>Total Upah Dibatalkan:</strong> " . formatRupiah($total_upah_dibatalkan) . "<br>" .
-                "<strong>Status Baru:</strong> " . $status_baru . "<br>" .
-                $pesan_koko . $pesan_produk
+            'message' => "✅ Finishing koko berhasil dibatalkan"
         ];
     } catch (Exception $e) {
         if ($conn->autocommit === FALSE) {
@@ -303,7 +219,8 @@ $sql_main = "SELECT
     hk.tanggal_kirim_finishing,
     hk.seri,
     hk.status_finishing,
-    hk.total_kirim
+    hk.total_kirim,
+    hk.tanggal_hasil_finishing
 FROM hasil_kirim_finishing hk
 LEFT JOIN produk p ON hk.id_produk = p.id_produk 
 LEFT JOIN petugas_finishing pet ON hk.id_petugas_finishing = pet.id_petugas_finishing 
@@ -324,10 +241,8 @@ $main_data = $result->fetch_assoc();
 
 // ✅ PROSES PEMBATALAN HASIL FINISHING KOKO
 if (isset($_GET['action']) && $_GET['action'] == 'batal_hasil_koko') {
-    $tanggal_finishing = isset($_GET['tanggal']) ? $_GET['tanggal'] : null;
-
     try {
-        $result = batalkanHasilFinishingKoko($id_hasil_kirim_finishing, $tanggal_finishing);
+        $result = batalkanHasilFinishingKoko($id_hasil_kirim_finishing);
         $_SESSION['success'] = $result['message'];
     } catch (Exception $e) {
         $_SESSION['error'] = "❌ " . $e->getMessage();
@@ -374,26 +289,36 @@ while ($row = $details_result->fetch_assoc()) {
     $details_data[] = $row;
 }
 
-// Ambil daftar tanggal finishing yang sudah ada
-$sql_tanggal_finishing = "SELECT DISTINCT dhfk.tanggal_finishing,
-    SUM(dhfk.jumlah_selesai) as total_selesai,
-    SUM(dhfk.jumlah_rusak) as total_rusak,
-    SUM(dhfk.total_upah) as total_upah
+// Ambil data hasil finishing koko yang sudah ada
+$sql_finishing_data = "SELECT 
+    dhfk.*,
+    k.nama_koko,
+    p.nama_produk as nama_produk_koko,
+    dh.jumlah as jumlah_dikirim
 FROM detail_hasil_finishing_koko dhfk
 JOIN detail_hasil_kirim_finishing dh ON dhfk.id_detail_hasil_kirim_finishing = dh.id_detail_hasil_kirim_finishing
+JOIN koko k ON dhfk.id_koko = k.id_koko
+LEFT JOIN produk p ON k.id_produk = p.id_produk
 WHERE dh.id_hasil_kirim_finishing = ?
-GROUP BY dhfk.tanggal_finishing
-ORDER BY dhfk.tanggal_finishing DESC";
+ORDER BY k.nama_koko";
 
-$stmt_tanggal = $conn->prepare($sql_tanggal_finishing);
-$stmt_tanggal->bind_param("i", $id_hasil_kirim_finishing);
-$stmt_tanggal->execute();
-$tanggal_result = $stmt_tanggal->get_result();
-$tanggal_finishing_data = [];
+$stmt_finishing = $conn->prepare($sql_finishing_data);
+$stmt_finishing->bind_param("i", $id_hasil_kirim_finishing);
+$stmt_finishing->execute();
+$finishing_result = $stmt_finishing->get_result();
+$finishing_data = [];
+$total_selesai_finishing = 0;
+$total_rusak_finishing = 0;
+$total_upah_finishing = 0;
 
-while ($row = $tanggal_result->fetch_assoc()) {
-    $tanggal_finishing_data[] = $row;
+while ($row = $finishing_result->fetch_assoc()) {
+    $finishing_data[] = $row;
+    $total_selesai_finishing += $row['jumlah_selesai'];
+    $total_rusak_finishing += $row['jumlah_rusak'];
+    $total_upah_finishing += $row['total_upah'];
 }
+
+$has_finishing = (count($finishing_data) > 0);
 
 // Ambil tarif upah standar untuk finishing dari tabel tarif_upah
 $sql_tarif = "SELECT tarif_per_unit FROM tarif_upah 
@@ -420,6 +345,13 @@ while ($row = $upah_dropdown_result->fetch_assoc()) {
 
 // Proses submit form
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_finishing_koko'])) {
+    // Validasi jika sudah ada data finishing
+    if ($has_finishing) {
+        $_SESSION['error'] = "❌ Hasil finishing sudah ada. Tidak bisa input lagi. Silakan batalkan terlebih dahulu.";
+        header("Location: hasil_finishing_koko.php?id=" . $id_hasil_kirim_finishing);
+        exit();
+    }
+
     $tanggal_finishing = $_POST['tanggal_finishing'];
     $id_petugas_finishing = $main_data['id_petugas_finishing']; // Petugas dari pengiriman utama
     $id_produk_utama = $main_data['id_produk_utama'];
@@ -435,11 +367,27 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_finishing_koko'
     $total_selesai = 0;
     $total_rusak = 0;
     $total_upah = 0;
-    $stok_dikembalikan = [];
     $produk_ditambahkan = [];
-    $stok_rusak_dikembalikan = []; // Array untuk menyimpan stok rusak yang dikembalikan
+    $stok_rusak_dikembalikan = [];
 
     try {
+        // Validasi bahwa semua koko harus diproses
+        foreach ($details_data as $detail) {
+            $id_detail = $detail['id_detail_hasil_kirim_finishing'];
+            $id_koko = $detail['id_koko'];
+            $nama_koko = $detail['nama_koko'];
+            $jumlah_kirim = $detail['jumlah'];
+
+            $jumlah_selesai = intval($_POST['jumlah_selesai_' . $id_detail] ?? 0);
+            $jumlah_rusak = intval($_POST['jumlah_rusak_' . $id_detail] ?? 0);
+
+            // Validasi: total harus sama dengan jumlah dikirim
+            $total_input = $jumlah_selesai + $jumlah_rusak;
+            if ($total_input != $jumlah_kirim) {
+                throw new Exception("Total input untuk koko <strong>$nama_koko</strong> ($total_input) harus sama dengan jumlah yang dikirim ($jumlah_kirim)");
+            }
+        }
+
         foreach ($details_data as $detail) {
             $id_detail = $detail['id_detail_hasil_kirim_finishing'];
             $id_koko = $detail['id_koko'];
@@ -447,13 +395,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_finishing_koko'
             $id_produk_koko = $detail['id_produk_koko'];
             $nama_produk_koko = $detail['nama_produk_koko'];
             $jumlah_kirim = $detail['jumlah'];
-            $sudah_selesai = $detail['sudah_selesai'];
-            $sudah_rusak = $detail['sudah_rusak'];
 
-            // Gunakan petugas finishing dari pengiriman utama (TIDAK BISA DIUBAH)
-            $id_petugas_koko = $main_data['id_petugas_finishing']; // SELALU gunakan petugas dari pengiriman utama
+            // Gunakan petugas finishing dari pengiriman utama
+            $id_petugas_koko = $main_data['id_petugas_finishing'];
 
-            // Ambil upah per unit (dropdown atau input manual)
+            // Ambil upah per unit
             $upah_per_unit = 0;
             $upah_input_type = $_POST['upah_input_type_' . $id_detail] ?? 'dropdown';
 
@@ -466,87 +412,37 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_finishing_koko'
             $jumlah_selesai = intval($_POST['jumlah_selesai_' . $id_detail] ?? 0);
             $jumlah_rusak = intval($_POST['jumlah_rusak_' . $id_detail] ?? 0);
 
-            // Validasi: total input tidak boleh melebihi yang dikirim
-            $total_input = $jumlah_selesai + $jumlah_rusak + $sudah_selesai + $sudah_rusak;
-            if ($total_input > $jumlah_kirim) {
-                throw new Exception("Total input untuk koko <strong>$nama_koko</strong> ($total_input) melebihi jumlah yang dikirim ($jumlah_kirim). Sudah selesai: $sudah_selesai, Sudah rusak: $sudah_rusak");
-            }
-
-            // Hitung sisa yang bisa dikembalikan ke stok koko
-            $sisa_koko = $jumlah_kirim - ($sudah_selesai + $sudah_rusak + $jumlah_selesai + $jumlah_rusak);
-
-            // Insert atau update data finishing koko
+            // Insert data finishing koko
             if ($jumlah_selesai > 0 || $jumlah_rusak > 0) {
-                $sql_check_existing = "SELECT id_detail_hasil_finishing_koko 
-                          FROM detail_hasil_finishing_koko 
-                          WHERE id_detail_hasil_kirim_finishing = ? 
-                          AND tanggal_finishing = ?";
-                $stmt_check = $conn->prepare($sql_check_existing);
-                $stmt_check->bind_param("is", $id_detail, $tanggal_finishing);
-                $stmt_check->execute();
-                $result_check = $stmt_check->get_result();
+                $total_upah_item = $jumlah_selesai * $upah_per_unit;
+                $sql_insert = "INSERT INTO detail_hasil_finishing_koko 
+                  (id_detail_hasil_kirim_finishing, id_koko, 
+                   jumlah_selesai, jumlah_rusak, 
+                   tanggal_finishing, upah_per_unit, total_upah, created_at)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, NOW())";
 
-                if ($result_check->num_rows > 0) {
-                    // Update existing
-                    $existing = $result_check->fetch_assoc();
+                $stmt_insert = $conn->prepare($sql_insert);
+                $stmt_insert->bind_param(
+                    "iiiisdd",
+                    $id_detail,
+                    $id_koko,
+                    $jumlah_selesai,
+                    $jumlah_rusak,
+                    $tanggal_finishing,
+                    $upah_per_unit,
+                    $total_upah_item
+                );
 
-                    // Hitung upah tambahan
-                    $additional_upah = $jumlah_selesai * $upah_per_unit;
-
-                    // HAPUS updated_at dari query karena tidak ada di tabel
-                    $sql_update = "UPDATE detail_hasil_finishing_koko 
-                      SET jumlah_selesai = jumlah_selesai + ?,
-                          jumlah_rusak = jumlah_rusak + ?,
-                          upah_per_unit = ?,
-                          total_upah = total_upah + ?
-                      WHERE id_detail_hasil_finishing_koko = ?";
-
-                    $stmt_update = $conn->prepare($sql_update);
-                    $stmt_update->bind_param(
-                        "iiddi",  // i = integer, d = double/decimal
-                        $jumlah_selesai,
-                        $jumlah_rusak,
-                        $upah_per_unit,
-                        $additional_upah,
-                        $existing['id_detail_hasil_finishing_koko']
-                    );
-
-                    if (!$stmt_update->execute()) {
-                        throw new Exception("Gagal update data finishing koko: " . $stmt_update->error);
-                    }
-                } else {
-                    // Insert new
-                    $total_upah_item = $jumlah_selesai * $upah_per_unit;
-                    $sql_insert = "INSERT INTO detail_hasil_finishing_koko 
-                      (id_detail_hasil_kirim_finishing, id_koko, 
-                       jumlah_selesai, jumlah_rusak, 
-                       tanggal_finishing, upah_per_unit, total_upah, created_at)
-                      VALUES (?, ?, ?, ?, ?, ?, ?, NOW())";
-
-                    $stmt_insert = $conn->prepare($sql_insert);
-                    $stmt_insert->bind_param(
-                        "iiiisdd",
-                        $id_detail,
-                        $id_koko,
-                        $jumlah_selesai,
-                        $jumlah_rusak,
-                        $tanggal_finishing,
-                        $upah_per_unit,
-                        $total_upah_item
-                    );
-
-                    if (!$stmt_insert->execute()) {
-                        throw new Exception("Gagal menyimpan data finishing koko: " . $stmt_insert->error);
-                    }
+                if (!$stmt_insert->execute()) {
+                    throw new Exception("Gagal menyimpan data finishing koko: " . $stmt_insert->error);
                 }
 
                 $total_selesai += $jumlah_selesai;
                 $total_rusak += $jumlah_rusak;
-                $total_upah += ($jumlah_selesai * $upah_per_unit);
+                $total_upah += $total_upah_item;
 
                 // Tambahkan hasil finishing ke stok produk yang sesuai
                 if ($jumlah_selesai > 0 && $id_produk_koko > 0) {
-                    // Cek apakah produk sudah ada dalam array
                     if (!isset($produk_ditambahkan[$id_produk_koko])) {
                         $produk_ditambahkan[$id_produk_koko] = [
                             'nama' => $nama_produk_koko,
@@ -556,7 +452,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_finishing_koko'
                     $produk_ditambahkan[$id_produk_koko]['jumlah'] += $jumlah_selesai;
                 }
 
-                // Tambahkan upah ke hutang petugas finishing (petugas dari pengiriman utama)
+                // Tambahkan upah ke hutang petugas finishing
                 if ($jumlah_selesai > 0 && $id_petugas_koko > 0) {
                     $upah_koko = $jumlah_selesai * $upah_per_unit;
 
@@ -596,38 +492,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_finishing_koko'
                         }
                     }
                 }
-            }
 
-            // Kembalikan sisa koko ke stok (termasuk yang rusak)
-            if ($sisa_koko > 0) {
-                $sql_update_stok = "UPDATE koko SET stok = stok + ? WHERE id_koko = ?";
-                $stmt_stok = $conn->prepare($sql_update_stok);
-                $stmt_stok->bind_param("ii", $sisa_koko, $id_koko);
+                // Kembalikan stok koko rusak ke tabel koko
+                if ($jumlah_rusak > 0) {
+                    $sql_update_koko_rusak = "UPDATE koko SET stok = stok + ? WHERE id_koko = ?";
+                    $stmt_koko_rusak = $conn->prepare($sql_update_koko_rusak);
+                    $stmt_koko_rusak->bind_param("ii", $jumlah_rusak, $id_koko);
 
-                if (!$stmt_stok->execute()) {
-                    throw new Exception("Gagal mengembalikan stok koko $nama_koko: " . $conn->error);
+                    if (!$stmt_koko_rusak->execute()) {
+                        throw new Exception("Gagal mengembalikan stok rusak koko $nama_koko: " . $conn->error);
+                    }
+
+                    $stok_rusak_dikembalikan[] = [
+                        'nama' => $nama_koko,
+                        'jumlah' => $jumlah_rusak
+                    ];
                 }
-
-                $stok_dikembalikan[] = [
-                    'nama' => $nama_koko,
-                    'jumlah' => $sisa_koko
-                ];
-            }
-
-            // Kembalikan stok koko rusak ke tabel koko
-            if ($jumlah_rusak > 0) {
-                $sql_update_koko_rusak = "UPDATE koko SET stok = stok + ? WHERE id_koko = ?";
-                $stmt_koko_rusak = $conn->prepare($sql_update_koko_rusak);
-                $stmt_koko_rusak->bind_param("ii", $jumlah_rusak, $id_koko);
-
-                if (!$stmt_koko_rusak->execute()) {
-                    throw new Exception("Gagal mengembalikan stok rusak koko $nama_koko: " . $conn->error);
-                }
-
-                $stok_rusak_dikembalikan[] = [
-                    'nama' => $nama_koko,
-                    'jumlah' => $jumlah_rusak
-                ];
             }
         }
 
@@ -673,47 +553,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_finishing_koko'
             }
         }
 
-        // Update total hasil di tabel utama jika semua sudah selesai
-        $sql_total_selesai = "SELECT 
-            COALESCE(SUM(jumlah_selesai), 0) as total_selesai,
-            COALESCE(SUM(jumlah_rusak), 0) as total_rusak
-            FROM detail_hasil_finishing_koko dhfk
-            JOIN detail_hasil_kirim_finishing dh ON dhfk.id_detail_hasil_kirim_finishing = dh.id_detail_hasil_kirim_finishing
-            WHERE dh.id_hasil_kirim_finishing = ?";
-
-        $stmt_total = $conn->prepare($sql_total_selesai);
-        $stmt_total->bind_param("i", $id_hasil_kirim_finishing);
-        $stmt_total->execute();
-        $result_total = $stmt_total->get_result();
-        $totals = $result_total->fetch_assoc();
-
-        $total_selesai_all = $totals['total_selesai'];
-        $total_rusak_all = $totals['total_rusak'];
-
-        // Cek apakah semua koko sudah diproses
-        $sql_check_all = "SELECT 
-            SUM(dh.jumlah) as total_dikirim,
-            COALESCE(SUM(dhfk.jumlah_selesai + dhfk.jumlah_rusak), 0) as total_diproses
-            FROM detail_hasil_kirim_finishing dh
-            LEFT JOIN detail_hasil_finishing_koko dhfk ON dh.id_detail_hasil_kirim_finishing = dhfk.id_detail_hasil_kirim_finishing
-            WHERE dh.id_hasil_kirim_finishing = ?";
-
-        $stmt_all = $conn->prepare($sql_check_all);
-        $stmt_all->bind_param("i", $id_hasil_kirim_finishing);
-        $stmt_all->execute();
-        $result_all = $stmt_all->get_result();
-        $all_data = $result_all->fetch_assoc();
-
-        // Update status jika semua sudah diproses
-        $status_baru = ($all_data['total_diproses'] >= $all_data['total_dikirim']) ? 'selesai' : 'diproses';
-
+        // Update status menjadi selesai
         $sql_update_status = "UPDATE hasil_kirim_finishing 
-                             SET status_finishing = ?,
+                             SET status_finishing = 'selesai',
                                  tanggal_hasil_finishing = NOW(),
                                  total_hasil_finishing = ?
                              WHERE id_hasil_kirim_finishing = ?";
         $stmt_status = $conn->prepare($sql_update_status);
-        $stmt_status->bind_param("sii", $status_baru, $total_selesai_all, $id_hasil_kirim_finishing);
+        $stmt_status->bind_param("ii", $total_selesai, $id_hasil_kirim_finishing);
 
         if (!$stmt_status->execute()) {
             throw new Exception("Gagal update status finishing: " . $conn->error);
@@ -722,40 +569,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_finishing_koko'
         $conn->commit();
         $conn->autocommit(TRUE);
 
-        // Buat pesan stok yang dikembalikan
-        $pesan_stok = "";
-        if (!empty($stok_dikembalikan)) {
-            $pesan_stok = "<br><strong>Stok koko sisa yang dikembalikan:</strong><br>";
-            foreach ($stok_dikembalikan as $koko) {
-                $pesan_stok .= "- " . $koko['nama'] . ": " . $koko['jumlah'] . " pcs<br>";
-            }
-        }
-
-        // Buat pesan stok rusak yang dikembalikan
-        $pesan_rusak = "";
-        if (!empty($stok_rusak_dikembalikan)) {
-            $pesan_rusak = "<br><strong>Stok koko rusak yang dikembalikan:</strong><br>";
-            foreach ($stok_rusak_dikembalikan as $koko) {
-                $pesan_rusak .= "- " . $koko['nama'] . ": " . $koko['jumlah'] . " pcs<br>";
-            }
-        }
-
-        // Buat pesan produk yang ditambahkan
-        $pesan_produk = "";
-        if (!empty($produk_ditambahkan)) {
-            $pesan_produk = "<br><strong>Stok produk yang ditambahkan:</strong><br>";
-            foreach ($produk_ditambahkan as $id_produk => $data) {
-                $pesan_produk .= "- " . $data['nama'] . ": " . $data['jumlah'] . " pcs<br>";
-            }
-        }
-
-        $_SESSION['success'] = "✅ Hasil finishing koko berhasil disimpan!<br>" .
-            "<strong>Total Selesai:</strong> " . $total_selesai . " pcs<br>" .
-            "<strong>Total Rusak:</strong> " . $total_rusak . " pcs<br>" .
-            "<strong>Total Upah:</strong> " . formatRupiah($total_upah) . "<br>" .
-            "<strong>Petugas:</strong> " . htmlspecialchars($main_data['nama_petugas']) . "<br>" .
-            $pesan_stok . $pesan_rusak . $pesan_produk;
-
+        $_SESSION['success'] = "✅ Hasil finishing koko berhasil disimpan!";
         header("Location: hasil_finishing_koko.php?id=" . $id_hasil_kirim_finishing);
         exit();
     } catch (Exception $e) {
@@ -845,72 +659,17 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
         margin-bottom: 20px;
     }
 
-    .remaining-stock {
-        font-size: 0.85rem;
-        color: #6c757d;
-    }
-
-    .progress-info {
-        background-color: #e7f3ff;
-        padding: 15px;
-        border-radius: 5px;
-        margin-bottom: 20px;
-    }
-
-    .tarif-info {
-        background-color: #fff3cd;
-        padding: 10px;
-        border-radius: 5px;
-        margin-bottom: 20px;
-    }
-
-    .produk-info {
-        background-color: #d4edda;
-        padding: 15px;
-        border-radius: 5px;
-        margin-bottom: 20px;
-    }
-
-    .history-section {
-        background-color: #f8f9fa;
-        padding: 15px;
-        border-radius: 5px;
-        margin-bottom: 20px;
-    }
-
-    .history-table th {
-        background-color: #e9ecef;
-        font-size: 0.8rem;
-        vertical-align: middle;
-    }
-
-    .history-table td {
-        font-size: 0.8rem;
-        vertical-align: middle;
-    }
-
-    .btn-batal-koko {
-        background-color: #ff6b6b;
-        border-color: #ff6b6b;
-        color: white;
-        padding: 0.15rem 0.4rem;
-        font-size: 0.75rem;
-    }
-
-    .btn-batal-koko:hover {
-        background-color: #ff5252;
-        border-color: #ff5252;
-    }
-
     .btn-batal-semua {
         background-color: #dc3545;
         border-color: #dc3545;
         color: white;
+        cursor: pointer !important;
     }
 
     .btn-batal-semua:hover {
         background-color: #c82333;
         border-color: #bd2130;
+        cursor: pointer !important;
     }
 
     .upah-section {
@@ -919,13 +678,6 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
         border-radius: 5px;
         margin-bottom: 5px;
         border-left: 4px solid #0d6efd;
-    }
-
-    .upah-input-group {
-        display: flex;
-        gap: 5px;
-        align-items: center;
-        margin-bottom: 5px;
     }
 
     .upah-dropdown {
@@ -969,14 +721,6 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
     .upah-wrapper {
         min-width: 250px;
         max-width: 500px;
-    }
-
-    .upah-wrapper .btn {
-        padding: 0.25rem 0.5rem;
-    }
-
-    .upah-wrapper small {
-        font-size: 0.75rem;
     }
 
     .table-koko .jumlah-input {
@@ -1024,6 +768,115 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
 
     .form-select {
         padding: 0.25rem 2.25rem 0.25rem 0.5rem;
+    }
+
+    .validation-message {
+        font-size: 0.75rem;
+        margin-top: 5px;
+    }
+
+    .valid-message {
+        color: #198754;
+    }
+
+    .invalid-message {
+        color: #dc3545;
+    }
+
+    .input-valid {
+        border-color: #198754 !important;
+        background-color: #f8fff9 !important;
+    }
+
+    .input-invalid {
+        border-color: #dc3545 !important;
+        background-color: #fff8f8 !important;
+    }
+
+    .warning-box {
+        background-color: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 5px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+
+    .detail-box {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .detail-box h5 {
+        color: #495057;
+        border-bottom: 2px solid #0d6efd;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+
+    .summary-card {
+        background-color: #e7f3ff;
+        border: 1px solid #b6d4fe;
+        border-radius: 5px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+
+    .summary-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-size: 0.9rem;
+    }
+
+    .summary-label {
+        font-weight: 500;
+        color: #495057;
+    }
+
+    .summary-value {
+        font-weight: 600;
+        color: #0d6efd;
+    }
+
+    .finishing-table th {
+        background-color: #e9ecef;
+        font-weight: 600;
+    }
+
+    .finishing-table td {
+        vertical-align: middle;
+    }
+
+    .totals-row {
+        background-color: #f8f9fa;
+        font-weight: 600;
+    }
+
+    .status-badge {
+        font-size: 0.8rem;
+        padding: 0.3em 0.6em;
+    }
+
+    /* Fix untuk tombol batal */
+    .btn-batal-action {
+        background-color: #dc3545;
+        border-color: #dc3545;
+        color: white;
+        cursor: pointer;
+        padding: 8px 16px;
+        font-size: 14px;
+        border-radius: 4px;
+        transition: all 0.3s;
+    }
+
+    .btn-batal-action:hover {
+        background-color: #c82333;
+        border-color: #bd2130;
+        color: white;
+        cursor: pointer;
     }
 </style>
 
@@ -1128,7 +981,7 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
                                 <div class="info-item">
                                     <span class="info-label">Status:</span>
                                     <span class="info-value">
-                                        <span class="badge bg-<?= $main_data['status_finishing'] == 'selesai' ? 'success' : ($main_data['status_finishing'] == 'diproses' ? 'warning' : 'secondary') ?>">
+                                        <span class="badge bg-<?= $main_data['status_finishing'] == 'selesai' ? 'success' : ($main_data['status_finishing'] == 'diproses' ? 'warning' : 'secondary') ?> status-badge">
                                             <?= ucfirst($main_data['status_finishing']) ?>
                                         </span>
                                     </span>
@@ -1137,331 +990,362 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
                         </div>
                     </div>
 
-                    <!-- Progress Info -->
-                    <?php
-                    // Hitung total progress
-                    $total_dikirim = 0;
-                    $total_diproses = 0;
-                    foreach ($details_data as $detail) {
-                        $total_dikirim += $detail['jumlah'];
-                        $total_diproses += ($detail['sudah_selesai'] + $detail['sudah_rusak']);
-                    }
-                    $persentase = ($total_dikirim > 0) ? round(($total_diproses / $total_dikirim) * 100, 2) : 0;
-                    ?>
+                    <!-- TAMPILAN DETAIL FINISHING JIKA SUDAH ADA -->
+                    <?php if ($has_finishing): ?>
+                        <div class="detail-box">
+                            <h5><i class="ti ti-check"></i> Detail Hasil Finishing</h5>
 
-                    <div hidden class="progress-info">
-                        <h5>Progress Finishing Koko</h5>
-                        <div class="progress mb-2">
-                            <div class="progress-bar bg-success" role="progressbar"
-                                style="width: <?= $persentase ?>%;"
-                                aria-valuenow="<?= $persentase ?>"
-                                aria-valuemin="0"
-                                aria-valuemax="100">
-                                <?= $persentase ?>%
+                            <!-- Summary Card -->
+                            <div class="summary-card">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="summary-item">
+                                            <span class="summary-label">Tanggal Finishing:</span>
+                                            <span class="summary-value">
+                                                <?= date('d/m/Y', strtotime($finishing_data[0]['tanggal_finishing'])) ?>
+                                            </span>
+                                        </div>
+                                        <div class="summary-item">
+                                            <span class="summary-label">Petugas:</span>
+                                            <span class="summary-value"><?= htmlspecialchars($main_data['nama_petugas']) ?></span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="summary-item">
+                                            <span class="summary-label">Total Selesai:</span>
+                                            <span class="summary-value"><?= $total_selesai_finishing ?> pcs</span>
+                                        </div>
+                                        <div class="summary-item">
+                                            <span class="summary-label">Total Kembali (Rusak):</span>
+                                            <span class="summary-value"><?= $total_rusak_finishing ?> pcs</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="summary-item">
+                                            <span class="summary-label">Total Upah:</span>
+                                            <span class="summary-value"><?= formatRupiah($total_upah_finishing) ?></span>
+                                        </div>
+                                        <div class="summary-item">
+                                            <span class="summary-label">Status:</span>
+                                            <span class="summary-value">
+                                                <span class="badge bg-success status-badge">Selesai</span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        <p class="mb-1">
-                            <strong>Total Dikirim:</strong> <?= $total_dikirim ?> pcs |
-                            <strong>Sudah Diproses:</strong> <?= $total_diproses ?> pcs |
-                            <strong>Sisa:</strong> <?= $total_dikirim - $total_diproses ?> pcs
-                        </p>
-                    </div>
 
-                    <!-- History Hasil Finishing Koko -->
-                    <?php if (!empty($tanggal_finishing_data)): ?>
-                        <div class="history-section">
-                            <h5>Riwayat Hasil Finishing Koko</h5>
+                            <!-- Table Detail Finishing -->
                             <div class="table-responsive">
-                                <table class="table table-sm table-bordered history-table">
-                                    <thead>
+                                <table class="table table-bordered table-hover finishing-table">
+                                    <thead class="table-light">
                                         <tr class="text-center">
-                                            <th>Tanggal Finishing</th>
-                                            <th>Total Selesai</th>
-                                            <th>Total Kembali</th>
-                                            <th>Total Upah</th>
-                                            <th>Aksi</th>
+                                            <th width="20%">Jenis Koko</th>
+                                            <th width="10%">Dikirim</th>
+                                            <th width="10%">Selesai</th>
+                                            <th width="10%">Kembali (Rusak)</th>
+                                            <th width="10%">Upah per Unit</th>
+                                            <th width="15%">Total Upah</th>
+                                            <th width="15%">Produk Hasil</th>
+                                            <th width="10%">Tanggal</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <?php foreach ($tanggal_finishing_data as $history): ?>
+                                        <?php foreach ($finishing_data as $finish): ?>
                                             <tr>
+                                                <td><?= htmlspecialchars($finish['nama_koko']) ?></td>
+                                                <td class="text-center"><?= $finish['jumlah_dikirim'] ?> pcs</td>
                                                 <td class="text-center">
-                                                    <?= date('d/m/Y', strtotime($history['tanggal_finishing'])) ?>
+                                                    <span class="badge bg-success"><?= $finish['jumlah_selesai'] ?> pcs</span>
                                                 </td>
                                                 <td class="text-center">
-                                                    <?= $history['total_selesai'] ?> pcs
+                                                    <span class="badge bg-danger"><?= $finish['jumlah_rusak'] ?> pcs</span>
                                                 </td>
+                                                <td class="text-center"><?= formatRupiah($finish['upah_per_unit']) ?></td>
+                                                <td class="text-center fw-bold text-success"><?= formatRupiah($finish['total_upah']) ?></td>
                                                 <td class="text-center">
-                                                    <?= $history['total_rusak'] ?> pcs
+                                                    <?php if (!empty($finish['nama_produk_koko'])): ?>
+                                                        <span class="badge bg-info"><?= htmlspecialchars($finish['nama_produk_koko']) ?></span>
+                                                    <?php else: ?>
+                                                        <span class="badge bg-secondary">-</span>
+                                                    <?php endif; ?>
                                                 </td>
-                                                <td class="text-center">
-                                                    <?= formatRupiah($history['total_upah']) ?>
-                                                </td>
-                                                <td class="text-center">
-                                                    <button class="btn btn-batal-koko btn-batal-tanggal"
-                                                        data-tanggal="<?= $history['tanggal_finishing'] ?>"
-                                                        data-seri="<?= htmlspecialchars($main_data['seri']) ?>"
-                                                        data-selesai="<?= $history['total_selesai'] ?>"
-                                                        data-rusak="<?= $history['total_rusak'] ?>"
-                                                        data-upah="<?= $history['total_upah'] ?>"
-                                                        title="Batalkan hasil finishing tanggal ini">
-                                                        <i class="ti ti-trash"></i> Batal
-                                                    </button>
-                                                </td>
+                                                <td class="text-center"><?= date('d/m/Y', strtotime($finish['tanggal_finishing'])) ?></td>
                                             </tr>
                                         <?php endforeach; ?>
                                     </tbody>
                                     <tfoot>
-                                        <tr>
-                                            <td colspan="5" class="text-end">
-                                                <button class="btn btn-batal-semua btn-batal-semua-koko"
-                                                    data-id="<?= $id_hasil_kirim_finishing ?>"
-                                                    data-seri="<?= htmlspecialchars($main_data['seri']) ?>"
-                                                    title="Batalkan semua hasil finishing koko">
-                                                    <i class="ti ti-trash"></i> Batalkan Semua Hasil
-                                                </button>
+                                        <tr class="totals-row">
+                                            <td class="text-end fw-bold">TOTAL:</td>
+                                            <td class="text-center fw-bold">
+                                                <?php
+                                                $total_dikirim_finishing = 0;
+                                                foreach ($finishing_data as $finish) {
+                                                    $total_dikirim_finishing += $finish['jumlah_dikirim'];
+                                                }
+                                                echo $total_dikirim_finishing . ' pcs';
+                                                ?>
                                             </td>
+                                            <td class="text-center fw-bold text-success"><?= $total_selesai_finishing ?> pcs</td>
+                                            <td class="text-center fw-bold text-danger"><?= $total_rusak_finishing ?> pcs</td>
+                                            <td class="text-center fw-bold">-</td>
+                                            <td class="text-center fw-bold text-success"><?= formatRupiah($total_upah_finishing) ?></td>
+                                            <td colspan="2"></td>
                                         </tr>
                                     </tfoot>
                                 </table>
                             </div>
-                        </div>
-                    <?php endif; ?>
 
-                    <!-- Informasi Produk -->
-                    <div hidden class="produk-info">
-                        <h5>Informasi Produk Hasil Finishing</h5>
-                        <p class="mb-1">
-                            <strong>Produk Utama:</strong> <?= htmlspecialchars($main_data['nama_produk']) ?>
-                        </p>
-                        <p class="mb-1">
-                            <strong>Produk dari Koko:</strong>
-                            <?php
-                            $produk_koko_list = [];
-                            foreach ($details_data as $detail) {
-                                if (!empty($detail['nama_produk_koko'])) {
-                                    $produk_koko_list[] = $detail['nama_produk_koko'];
-                                }
-                            }
-                            $produk_koko_list = array_unique($produk_koko_list);
-                            if (!empty($produk_koko_list)) {
-                                echo implode(", ", $produk_koko_list);
-                            } else {
-                                echo "-";
-                            }
-                            ?>
-                        </p>
-                        <p class="mb-0 text-success">
-                            <i class="ti ti-info-circle"></i> Hasil finishing selesai akan otomatis ditambahkan ke stok produk yang sesuai.
-                        </p>
-                    </div>
-
-                    <!-- Form Input Hasil Finishing Koko -->
-                    <form method="POST" action="" id="formFinishingKoko">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="mb-0">Input Hasil Finishing Koko</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="row mb-3">
-                                    <div class="col-md-4">
-                                        <label for="tanggal_finishing" class="form-label">
-                                            <strong>Tanggal Finishing *</strong>
-                                        </label>
-                                        <input type="date"
-                                            class="form-control"
-                                            id="tanggal_finishing"
-                                            name="tanggal_finishing"
-                                            value="<?= date('Y-m-d') ?>"
-                                            required>
+                            <!-- Informasi Produk -->
+                            <div class="mt-4">
+                                <h6><i class="ti ti-package"></i> Informasi Stok Produk</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="alert alert-info">
+                                            <p class="mb-1"><strong>Produk Utama:</strong> <?= htmlspecialchars($main_data['nama_produk']) ?></p>
+                                            <p class="mb-0"><strong>Ditambahkan ke Stok:</strong> <?= $total_selesai_finishing ?> pcs</p>
+                                        </div>
                                     </div>
-                                    <div class="col-md-8">
-                                        <div class="petugas-info">
-                                            <strong>Petugas Finishing:</strong>
-                                            <span class="petugas-fixed"><?= htmlspecialchars($main_data['nama_petugas']) ?></span>
-                                            <small class="petugas-note">(Otomatis sesuai pengiriman, upah akan ditambahkan ke hutang petugas ini)</small>
+                                    <div class="col-md-6">
+                                        <div class="alert alert-warning">
+                                            <p class="mb-1"><strong>Kembali ke Stok Koko (Rusak):</strong></p>
+                                            <p class="mb-0">
+                                                <?php
+                                                $koko_rusak_list = [];
+                                                foreach ($finishing_data as $finish) {
+                                                    if ($finish['jumlah_rusak'] > 0) {
+                                                        $koko_rusak_list[] = $finish['nama_koko'] . ' (' . $finish['jumlah_rusak'] . ' pcs)';
+                                                    }
+                                                }
+                                                if (!empty($koko_rusak_list)) {
+                                                    echo implode(", ", $koko_rusak_list);
+                                                } else {
+                                                    echo 'Tidak ada koko rusak';
+                                                }
+                                                ?>
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
+                            </div>
 
-                                <div class="table-responsive">
-                                    <table class="table table-bordered table-hover table-koko">
-                                        <thead class="table-light">
-                                            <tr class="text-center">
-                                                <th width="15%">Jenis Koko</th>
-                                                <th width="6%">Dikirim</th>
-                                                <th width="6%">Sudah Selesai</th>
-                                                <th width="6%">Sudah Kembali</th>
-                                                <th width="8%">Selesai</th>
-                                                <th width="8%">Kembali</th>
-                                                <th width="6%">Sisa</th>
-                                                <th hidden width="12%">Petugas Finishing</th>
-                                                <th width="18%">Upah per Unit</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <?php if (empty($details_data)): ?>
-                                                <tr>
-                                                    <td colspan="8" class="text-center">Tidak ada data koko</td>
-                                                </tr>
-                                            <?php else: ?>
-                                                <?php foreach ($details_data as $detail): ?>
-                                                    <?php
-                                                    $id_detail = $detail['id_detail_hasil_kirim_finishing'];
-                                                    $sisa = $detail['jumlah'] - ($detail['sudah_selesai'] + $detail['sudah_rusak']);
-                                                    $max_input = $sisa;
-                                                    ?>
-                                                    <tr>
-                                                        <td>
-                                                            <?= htmlspecialchars($detail['nama_koko']) ?>
-                                                        </td>
-                                                        <td class="text-center">
-                                                            <?= $detail['jumlah'] ?> pcs
-                                                        </td>
-                                                        <td class="text-center">
-                                                            <span class="badge bg-success">
-                                                                <?= $detail['sudah_selesai'] ?> pcs
-                                                            </span>
-                                                        </td>
-                                                        <td class="text-center">
-                                                            <span class="badge bg-danger">
-                                                                <?= $detail['sudah_rusak'] ?> pcs
-                                                            </span>
-                                                        </td>
-                                                        <td>
-                                                            <input type="number"
-                                                                class="form-control form-control-sm jumlah-input text-center"
-                                                                name="jumlah_selesai_<?= $id_detail ?>"
-                                                                id="jumlah_selesai_<?= $id_detail ?>"
-                                                                value="0"
-                                                                min="0"
-                                                                max="<?= $max_input ?>"
-                                                                data-max="<?= $max_input ?>"
-                                                                onchange="updateSisa(<?= $id_detail ?>)">
-                                                        </td>
-                                                        <td>
-                                                            <input type="number"
-                                                                class="form-control form-control-sm jumlah-input text-center"
-                                                                name="jumlah_rusak_<?= $id_detail ?>"
-                                                                id="jumlah_rusak_<?= $id_detail ?>"
-                                                                value="0"
-                                                                min="0"
-                                                                max="<?= $max_input ?>"
-                                                                data-max="<?= $max_input ?>"
-                                                                onchange="updateSisa(<?= $id_detail ?>)">
-                                                        </td>
-                                                        <td class="text-center">
-                                                            <span id="sisa_<?= $id_detail ?>" class="badge bg-info">
-                                                                <?= $sisa ?> pcs
-                                                            </span>
-                                                        </td>
-                                                        <td hidden class="text-center">
-                                                            <span class="badge bg-primary">
-                                                                <?= htmlspecialchars($main_data['nama_petugas']) ?>
-                                                            </span>
-                                                            <input type="hidden"
-                                                                name="id_petugas_finishing_<?= $id_detail ?>"
-                                                                value="<?= $main_data['id_petugas_finishing'] ?>">
-                                                        </td>
-                                                        <td>
-                                                            <div class="upah-wrapper">
-                                                                <!-- mode input -->
-                                                                <input type="hidden"
-                                                                    name="upah_input_type_<?= $id_detail ?>"
-                                                                    id="upah_input_type_<?= $id_detail ?>"
-                                                                    value="dropdown">
-
-                                                                <!-- DROPDOWN -->
-                                                                <div class="input-group input-group-sm" id="upah_dropdown_<?= $id_detail ?>">
-                                                                    <select name="upah_dropdown_<?= $id_detail ?>"
-                                                                        class="form-select upah-select"
-                                                                        onchange="updateTotalUpah(<?= $id_detail ?>)">
-                                                                        <?php foreach ($upah_dropdown_options as $option): ?>
-                                                                            <?php if ($option['tarif_per_unit'] > 0): ?>
-                                                                                <option value="<?= $option['tarif_per_unit'] ?>">
-                                                                                    Rp <?= number_format($option['tarif_per_unit'], 0, ',', '.') ?>
-                                                                                    <?= !empty($option['keterangan']) ? ' - ' . htmlspecialchars($option['keterangan']) : '' ?>
-                                                                                </option>
-                                                                            <?php endif; ?>
-                                                                        <?php endforeach; ?>
-                                                                    </select>
-
-                                                                    <button type="button"
-                                                                        class="m-1 btn btn-outline-secondary btn-toggle-upah"
-                                                                        title="Input manual"
-                                                                        onclick="toggleUpahInput(<?= $id_detail ?>)">
-                                                                        <i class="ti ti-pencil"></i>
-                                                                    </button>
-                                                                </div>
-
-                                                                <!-- MANUAL -->
-                                                                <div class="input-group input-group-sm mt-1 d-none"
-                                                                    id="upah_manual_<?= $id_detail ?>">
-                                                                    <span class="input-group-text">Rp</span>
-                                                                    <input type="number"
-                                                                        name="upah_manual_<?= $id_detail ?>"
-                                                                        id="upah_manual_input_<?= $id_detail ?>"
-                                                                        class="form-control upah-input"
-                                                                        min="0"
-                                                                        step="100"
-                                                                        value="0"
-                                                                        placeholder="Masukkan upah"
-                                                                        onchange="updateTotalUpah(<?= $id_detail ?>)">
-
-                                                                    <button type="button"
-                                                                        class="m-1 btn btn-outline-secondary btn-toggle-upah"
-                                                                        title="Pilih dari tarif"
-                                                                        onclick="toggleUpahInput(<?= $id_detail ?>)">
-                                                                        <i class="ti ti-list"></i>
-                                                                    </button>
-                                                                </div>
-
-                                                                <!-- TOTAL -->
-                                                                <div class="mt-1">
-                                                                    <small class="text-muted">Total:</small>
-                                                                    <div class="fw-bold text-success" id="total_upah_<?= $id_detail ?>">
-                                                                        Rp 0
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                <?php endforeach; ?>
-                                            <?php endif; ?>
-                                        </tbody>
-                                        <tfoot>
-                                            <tr>
-                                                <td colspan="6" class="text-end fw-bold">
-                                                    <div class="pt-2">Total Upah Keseluruhan:</div>
-                                                </td>
-                                                <td class="text-center">
-                                                    <div class="fw-bold fs-5 text-success" id="grand_total_upah">
-                                                        Rp 0
-                                                    </div>
-                                                    <div class="small text-muted mt-1">
-                                                        Hutang: <?= htmlspecialchars($main_data['nama_petugas']) ?>
-                                                    </div>
-                                                </td>
-                                                <td></td>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
-                                </div>
-
-                                <div class="mt-2">
-                                    <button type="submit"
-                                        name="submit_finishing_koko"
-                                        class="btn btn-primary btn-save">
-                                        <i class="ti ti-check"></i> Simpan Hasil Finishing
-                                    </button>
-
-                                    <a href="finishing.php" class="btn btn-secondary ms-2">
-                                        <i class="ti ti-x"></i> Batal
-                                    </a>
-                                </div>
+                            <!-- Tombol Batal -->
+                            <div class="d-flex justify-content-end mt-4">
+                                <button class="btn btn-batal-semua btn-batal-semua-koko"
+                                    data-id="<?= $id_hasil_kirim_finishing ?>"
+                                    data-seri="<?= htmlspecialchars($main_data['seri']) ?>"
+                                    title="Batalkan semua hasil finishing koko">
+                                    <i class="ti ti-trash"></i> Batalkan Semua Hasil
+                                </button>
                             </div>
                         </div>
-                    </form>
+                    <?php else: ?>
+                        <!-- Warning jika belum ada finishing -->
+                        <div class="warning-box">
+                            <h5><i class="ti ti-info-circle"></i> Informasi</h5>
+                            <p class="mb-2">Hasil finishing untuk pengiriman ini belum diinput.</p>
+                            <p class="mb-0"><strong>Perhatian:</strong> Input hasil finishing hanya bisa dilakukan sekali! Pastikan semua data sudah benar sebelum disimpan.</p>
+                        </div>
+                    <?php endif; ?>
+
+                    <!-- Form Input Hasil Finishing Koko -->
+                    <?php if (!$has_finishing): ?>
+                        <form method="POST" action="" id="formFinishingKoko">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Input Hasil Finishing Koko</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row mb-3">
+                                        <div class="col-md-4">
+                                            <label for="tanggal_finishing" class="form-label">
+                                                <strong>Tanggal Finishing *</strong>
+                                            </label>
+                                            <input type="date"
+                                                class="form-control"
+                                                id="tanggal_finishing"
+                                                name="tanggal_finishing"
+                                                value="<?= date('Y-m-d') ?>"
+                                                required>
+                                        </div>
+                                        <div class="col-md-8">
+                                            <div class="petugas-info">
+                                                <strong>Petugas Finishing:</strong>
+                                                <span class="petugas-fixed"><?= htmlspecialchars($main_data['nama_petugas']) ?></span>
+                                                <small class="petugas-note">(Otomatis sesuai pengiriman, upah akan ditambahkan ke hutang petugas ini)</small>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-hover table-koko">
+                                            <thead class="table-light">
+                                                <tr class="text-center">
+                                                    <th width="15%">Jenis Koko</th>
+                                                    <th width="6%">Dikirim</th>
+                                                    <th width="8%">Selesai</th>
+                                                    <th width="8%">Kembali</th>
+                                                    <th width="6%">Total</th>
+                                                    <th hidden width="12%">Petugas Finishing</th>
+                                                    <th width="18%">Upah per Unit</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php if (empty($details_data)): ?>
+                                                    <tr>
+                                                        <td colspan="8" class="text-center">Tidak ada data koko</td>
+                                                    </tr>
+                                                <?php else: ?>
+                                                    <?php foreach ($details_data as $detail): ?>
+                                                        <?php
+                                                        $id_detail = $detail['id_detail_hasil_kirim_finishing'];
+                                                        $jumlah_dikirim = $detail['jumlah'];
+                                                        ?>
+                                                        <tr>
+                                                            <td>
+                                                                <?= htmlspecialchars($detail['nama_koko']) ?>
+                                                            </td>
+                                                            <td class="text-center">
+                                                                <?= $jumlah_dikirim ?> pcs
+                                                                <input type="hidden" id="jumlah_dikirim_<?= $id_detail ?>" value="<?= $jumlah_dikirim ?>">
+                                                            </td>
+                                                            <td>
+                                                                <input type="number"
+                                                                    class="form-control form-control-sm jumlah-input text-center"
+                                                                    name="jumlah_selesai_<?= $id_detail ?>"
+                                                                    id="jumlah_selesai_<?= $id_detail ?>"
+                                                                    value="0"
+                                                                    min="0"
+                                                                    max="<?= $jumlah_dikirim ?>"
+                                                                    data-max="<?= $jumlah_dikirim ?>"
+                                                                    onchange="validateTotal(<?= $id_detail ?>)">
+                                                            </td>
+                                                            <td>
+                                                                <input type="number"
+                                                                    class="form-control form-control-sm jumlah-input text-center"
+                                                                    name="jumlah_rusak_<?= $id_detail ?>"
+                                                                    id="jumlah_rusak_<?= $id_detail ?>"
+                                                                    value="0"
+                                                                    min="0"
+                                                                    max="<?= $jumlah_dikirim ?>"
+                                                                    data-max="<?= $jumlah_dikirim ?>"
+                                                                    onchange="validateTotal(<?= $id_detail ?>)">
+                                                            </td>
+                                                            <td class="text-center">
+                                                                <span id="total_<?= $id_detail ?>" class="badge bg-secondary">
+                                                                    0 pcs
+                                                                </span>
+                                                                <div id="validation_<?= $id_detail ?>" class="validation-message"></div>
+                                                            </td>
+                                                            <td hidden class="text-center">
+                                                                <span class="badge bg-primary">
+                                                                    <?= htmlspecialchars($main_data['nama_petugas']) ?>
+                                                                </span>
+                                                                <input type="hidden"
+                                                                    name="id_petugas_finishing_<?= $id_detail ?>"
+                                                                    value="<?= $main_data['id_petugas_finishing'] ?>">
+                                                            </td>
+                                                            <td>
+                                                                <div class="upah-wrapper">
+                                                                    <!-- mode input -->
+                                                                    <input type="hidden"
+                                                                        name="upah_input_type_<?= $id_detail ?>"
+                                                                        id="upah_input_type_<?= $id_detail ?>"
+                                                                        value="dropdown">
+
+                                                                    <!-- DROPDOWN -->
+                                                                    <div class="input-group input-group-sm" id="upah_dropdown_<?= $id_detail ?>">
+                                                                        <select name="upah_dropdown_<?= $id_detail ?>"
+                                                                            class="form-select upah-select"
+                                                                            onchange="updateTotalUpah(<?= $id_detail ?>)">
+                                                                            <?php foreach ($upah_dropdown_options as $option): ?>
+                                                                                <?php if ($option['tarif_per_unit'] > 0): ?>
+                                                                                    <option value="<?= $option['tarif_per_unit'] ?>">
+                                                                                        Rp <?= number_format($option['tarif_per_unit'], 0, ',', '.') ?>
+                                                                                        <?= !empty($option['keterangan']) ? ' - ' . htmlspecialchars($option['keterangan']) : '' ?>
+                                                                                    </option>
+                                                                                <?php endif; ?>
+                                                                            <?php endforeach; ?>
+                                                                        </select>
+
+                                                                        <button type="button"
+                                                                            class="m-1 btn btn-outline-secondary btn-toggle-upah"
+                                                                            title="Input manual"
+                                                                            onclick="toggleUpahInput(<?= $id_detail ?>)">
+                                                                            <i class="ti ti-pencil"></i>
+                                                                        </button>
+                                                                    </div>
+
+                                                                    <!-- MANUAL -->
+                                                                    <div class="input-group input-group-sm mt-1 d-none"
+                                                                        id="upah_manual_<?= $id_detail ?>">
+                                                                        <span class="input-group-text">Rp</span>
+                                                                        <input type="number"
+                                                                            name="upah_manual_<?= $id_detail ?>"
+                                                                            id="upah_manual_input_<?= $id_detail ?>"
+                                                                            class="form-control upah-input"
+                                                                            min="0"
+                                                                            step="100"
+                                                                            value="0"
+                                                                            placeholder="Masukkan upah"
+                                                                            onchange="updateTotalUpah(<?= $id_detail ?>)">
+
+                                                                        <button type="button"
+                                                                            class="m-1 btn btn-outline-secondary btn-toggle-upah"
+                                                                            title="Pilih dari tarif"
+                                                                            onclick="toggleUpahInput(<?= $id_detail ?>)">
+                                                                            <i class="ti ti-list"></i>
+                                                                        </button>
+                                                                    </div>
+
+                                                                    <!-- TOTAL -->
+                                                                    <div class="mt-1">
+                                                                        <small class="text-muted">Total:</small>
+                                                                        <div class="fw-bold text-success" id="total_upah_<?= $id_detail ?>">
+                                                                            Rp 0
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    <?php endforeach; ?>
+                                                <?php endif; ?>
+                                            </tbody>
+                                            <tfoot>
+                                                <tr>
+                                                    <td colspan="4" class="text-end fw-bold">
+                                                        <div class="pt-2">Total Upah Keseluruhan:</div>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <div id="all_validation" class="validation-message mb-2"></div>
+                                                        <div class="fw-bold fs-5 text-success" id="grand_total_upah">
+                                                            Rp 0
+                                                        </div>
+                                                        <div class="small text-muted mt-1">
+                                                            Hutang: <?= htmlspecialchars($main_data['nama_petugas']) ?>
+                                                        </div>
+                                                    </td>
+                                                    <td></td>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+
+                                    <div class="mt-4">
+                                        <button type="submit"
+                                            name="submit_finishing_koko"
+                                            class="btn btn-primary btn-save">
+                                            <i class="ti ti-check"></i> Simpan Hasil Finishing
+                                        </button>
+
+                                        <a href="finishing.php" class="btn btn-secondary ms-2">
+                                            <i class="ti ti-x"></i> Batal
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -1476,39 +1360,86 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    function updateSisa(id_detail) {
+    // Fungsi untuk validasi total per baris
+    function validateTotal(id_detail) {
         const inputSelesai = document.getElementById('jumlah_selesai_' + id_detail);
         const inputRusak = document.getElementById('jumlah_rusak_' + id_detail);
-        const spanSisa = document.getElementById('sisa_' + id_detail);
+        const totalElement = document.getElementById('total_' + id_detail);
+        const validationElement = document.getElementById('validation_' + id_detail);
+        const jumlahDikirim = parseInt(document.getElementById('jumlah_dikirim_' + id_detail).value);
 
-        const maxInput = parseInt(inputSelesai.getAttribute('data-max'));
         const jumlahSelesai = parseInt(inputSelesai.value) || 0;
         const jumlahRusak = parseInt(inputRusak.value) || 0;
         const totalInput = jumlahSelesai + jumlahRusak;
 
-        // Validasi tidak melebihi maksimum
-        if (totalInput > maxInput) {
-            alert('Total input tidak boleh melebihi ' + maxInput + ' pcs!');
-            inputSelesai.value = 0;
-            inputRusak.value = 0;
-            spanSisa.textContent = maxInput + ' pcs';
-            return;
-        }
+        // Update total display
+        totalElement.textContent = totalInput + ' pcs';
 
-        const sisa = maxInput - totalInput;
-        spanSisa.textContent = sisa + ' pcs';
-
-        // Update badge color based on remaining
-        if (sisa === 0) {
-            spanSisa.className = 'badge bg-success';
-        } else if (sisa < maxInput * 0.5) {
-            spanSisa.className = 'badge bg-warning';
+        // Validasi
+        if (totalInput === jumlahDikirim) {
+            // Valid - total sesuai
+            inputSelesai.classList.remove('input-invalid');
+            inputSelesai.classList.add('input-valid');
+            inputRusak.classList.remove('input-invalid');
+            inputRusak.classList.add('input-valid');
+            totalElement.className = 'badge bg-success';
+            validationElement.innerHTML = '<span class="valid-message">✓ Jumlah sesuai</span>';
+        } else if (totalInput > jumlahDikirim) {
+            // Invalid - melebihi
+            inputSelesai.classList.add('input-invalid');
+            inputSelesai.classList.remove('input-valid');
+            inputRusak.classList.add('input-invalid');
+            inputRusak.classList.remove('input-valid');
+            totalElement.className = 'badge bg-danger';
+            validationElement.innerHTML = '<span class="invalid-message">✗ Melebihi jumlah dikirim</span>';
         } else {
-            spanSisa.className = 'badge bg-info';
+            // Invalid - kurang
+            inputSelesai.classList.add('input-invalid');
+            inputSelesai.classList.remove('input-valid');
+            inputRusak.classList.add('input-invalid');
+            inputRusak.classList.remove('input-valid');
+            totalElement.className = 'badge bg-warning';
+            validationElement.innerHTML = '<span class="invalid-message">✗ Belum mencapai jumlah dikirim</span>';
         }
 
         // Update total upah
         updateTotalUpah(id_detail);
+        validateAllRows();
+    }
+
+    // Fungsi untuk validasi semua baris
+    function validateAllRows() {
+        let allValid = true;
+        let totalRows = 0;
+        let validRows = 0;
+
+        <?php foreach ($details_data as $detail): ?>
+            totalRows++;
+            const jumlahDikirim_<?= $detail['id_detail_hasil_kirim_finishing'] ?> =
+                parseInt(document.getElementById('jumlah_dikirim_<?= $detail['id_detail_hasil_kirim_finishing'] ?>').value);
+            const jumlahSelesai_<?= $detail['id_detail_hasil_kirim_finishing'] ?> =
+                parseInt(document.getElementById('jumlah_selesai_<?= $detail['id_detail_hasil_kirim_finishing'] ?>').value) || 0;
+            const jumlahRusak_<?= $detail['id_detail_hasil_kirim_finishing'] ?> =
+                parseInt(document.getElementById('jumlah_rusak_<?= $detail['id_detail_hasil_kirim_finishing'] ?>').value) || 0;
+            const totalInput_<?= $detail['id_detail_hasil_kirim_finishing'] ?> =
+                jumlahSelesai_<?= $detail['id_detail_hasil_kirim_finishing'] ?> + jumlahRusak_<?= $detail['id_detail_hasil_kirim_finishing'] ?>;
+
+            if (totalInput_<?= $detail['id_detail_hasil_kirim_finishing'] ?> === jumlahDikirim_<?= $detail['id_detail_hasil_kirim_finishing'] ?>) {
+                validRows++;
+            } else {
+                allValid = false;
+            }
+        <?php endforeach; ?>
+
+        const allValidationElement = document.getElementById('all_validation');
+
+        if (allValid) {
+            allValidationElement.innerHTML = '<span class="valid-message">✓ Semua koko sudah diproses dengan benar</span>';
+        } else {
+            allValidationElement.innerHTML = '<span class="invalid-message">✗ ' + validRows + ' dari ' + totalRows + ' koko sudah sesuai</span>';
+        }
+
+        return allValid;
     }
 
     function toggleUpahInput(id_detail) {
@@ -1613,133 +1544,14 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
         }
     }
 
-    // Initialize semua sisa saat halaman dimuat
-    document.addEventListener('DOMContentLoaded', function() {
-        <?php foreach ($details_data as $detail): ?>
-            updateSisa(<?= $detail['id_detail_hasil_kirim_finishing'] ?>);
-        <?php endforeach; ?>
+    // Konfirmasi batal semua hasil finishing
+    $(document).on('click', '.btn-batal-semua-koko', function() {
+        const id = $(this).data('id');
+        const seri = $(this).data('seri');
 
-        // Validasi form sebelum submit
-        document.getElementById('formFinishingKoko').addEventListener('submit', function(e) {
-            let totalInput = 0;
-            let hasInput = false;
-            let hasUpahError = false;
-
-            // Hitung total input dan validasi upah
-            <?php foreach ($details_data as $detail): ?>
-                const selesai_<?= $detail['id_detail_hasil_kirim_finishing'] ?> =
-                    parseInt(document.getElementById('jumlah_selesai_<?= $detail['id_detail_hasil_kirim_finishing'] ?>').value) || 0;
-                const rusak_<?= $detail['id_detail_hasil_kirim_finishing'] ?> =
-                    parseInt(document.getElementById('jumlah_rusak_<?= $detail['id_detail_hasil_kirim_finishing'] ?>').value) || 0;
-
-                totalInput += selesai_<?= $detail['id_detail_hasil_kirim_finishing'] ?> + rusak_<?= $detail['id_detail_hasil_kirim_finishing'] ?>;
-
-                if (selesai_<?= $detail['id_detail_hasil_kirim_finishing'] ?> > 0 || rusak_<?= $detail['id_detail_hasil_kirim_finishing'] ?> > 0) {
-                    hasInput = true;
-
-                    // Check upah for items with selesai > 0
-                    if (selesai_<?= $detail['id_detail_hasil_kirim_finishing'] ?> > 0) {
-                        const inputType_<?= $detail['id_detail_hasil_kirim_finishing'] ?> =
-                            document.getElementById('upah_input_type_<?= $detail['id_detail_hasil_kirim_finishing'] ?>').value;
-                        let upahValue = 0;
-
-                        if (inputType_<?= $detail['id_detail_hasil_kirim_finishing'] ?> === 'dropdown') {
-                            const dropdown_<?= $detail['id_detail_hasil_kirim_finishing'] ?> =
-                                document.querySelector('select[name="upah_dropdown_<?= $detail['id_detail_hasil_kirim_finishing'] ?>"]');
-                            upahValue = parseFloat(dropdown_<?= $detail['id_detail_hasil_kirim_finishing'] ?>.value) || 0;
-                        } else {
-                            const manualInput_<?= $detail['id_detail_hasil_kirim_finishing'] ?> =
-                                document.getElementById('upah_manual_input_<?= $detail['id_detail_hasil_kirim_finishing'] ?>');
-                            upahValue = parseFloat(manualInput_<?= $detail['id_detail_hasil_kirim_finishing'] ?>.value) || 0;
-                        }
-
-                        if (upahValue <= 0) {
-                            hasUpahError = true;
-                        }
-                    }
-                }
-            <?php endforeach; ?>
-
-            // Validasi minimal ada 1 input
-            if (!hasInput) {
-                e.preventDefault();
-                alert('Silakan input minimal 1 hasil finishing (selesai atau rusak)');
-                return false;
-            }
-
-            // Validasi upah untuk item yang selesai > 0
-            if (hasUpahError) {
-                e.preventDefault();
-                alert('Silakan isi upah per unit yang valid (lebih dari 0) untuk koko yang memiliki hasil selesai');
-                return false;
-            }
-
-            // Konfirmasi sebelum submit
-            if (totalInput > 0) {
-                const message = 'Anda yakin ingin menyimpan hasil finishing?\n\n' +
-                    'Petugas: <?= htmlspecialchars($main_data['nama_petugas']) ?>\n' +
-                    'Hasil finishing selesai akan ditambahkan ke stok produk.\n' +
-                    'Hasil finishing rusak akan dikembalikan ke stok koko.\n' +
-                    'Sisa koko akan dikembalikan ke stok.\n' +
-                    'Upah akan ditambahkan ke hutang petugas: <?= htmlspecialchars($main_data['nama_petugas']) ?>';
-
-                if (!confirm(message)) {
-                    e.preventDefault();
-                    return false;
-                }
-            }
-        });
-
-        // Konfirmasi batal hasil finishing berdasarkan tanggal
-        $(document).on('click', '.btn-batal-tanggal', function() {
-            const tanggal = $(this).data('tanggal');
-            const seri = $(this).data('seri');
-            const selesai = $(this).data('selesai');
-            const rusak = $(this).data('rusak');
-            const upah = $(this).data('upah');
-
-            Swal.fire({
-                title: 'Batalkan Hasil Finishing?',
-                html: `<div class="text-left">
-                      <p>Apakah Anda yakin ingin membatalkan hasil finishing untuk:</p>
-                      <ul>
-                        <li><strong>Seri:</strong> ${seri}</li>
-                        <li><strong>Tanggal:</strong> ${tanggal}</li>
-                        <li><strong>Hasil Selesai:</strong> ${selesai} pcs</li>
-                        <li><strong>Hasil Rusak:</strong> ${rusak} pcs</li>
-                        <li><strong>Total Upah:</strong> ${formatRupiahJS(upah)}</li>
-                        <li><strong>Petugas:</strong> <?= htmlspecialchars($main_data['nama_petugas']) ?></li>
-                      </ul>
-                      <p class="text-warning mt-3"><strong>Konsekuensi:</strong></p>
-                      <ul class="text-warning">
-                        <li>Stok produk yang sudah ditambahkan akan dikurangi</li>
-                        <li>Stok koko akan dikembalikan (selesai + rusak)</li>
-                        <li>Hutang upah petugas <?= htmlspecialchars($main_data['nama_petugas']) ?> akan dikurangi</li>
-                        <li>Status mungkin berubah</li>
-                      </ul>
-                    </div>`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#ff6b6b',
-                cancelButtonColor: '#6c757d',
-                confirmButtonText: 'Ya, Batalkan!',
-                cancelButtonText: 'Batal',
-                width: '600px'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    window.location.href = 'hasil_finishing_koko.php?id=<?= $id_hasil_kirim_finishing ?>&action=batal_hasil_koko&tanggal=' + tanggal;
-                }
-            });
-        });
-
-        // Konfirmasi batal semua hasil finishing
-        $(document).on('click', '.btn-batal-semua-koko', function() {
-            const id = $(this).data('id');
-            const seri = $(this).data('seri');
-
-            Swal.fire({
-                title: 'Batalkan Semua Hasil Finishing?',
-                html: `<div class="text-left">
+        Swal.fire({
+            title: 'Batalkan Semua Hasil Finishing?',
+            html: `<div class="text-left">
                       <p>Apakah Anda yakin ingin membatalkan <strong>SEMUA</strong> hasil finishing untuk:</p>
                       <ul>
                         <li><strong>Seri:</strong> ${seri}</li>
@@ -1755,16 +1567,116 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
                         <li><strong>Aksi ini tidak dapat dibatalkan!</strong></li>
                       </ul>
                     </div>`,
+            icon: 'error',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Batalkan Semua!',
+            cancelButtonText: 'Batal',
+            width: '600px'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = 'hasil_finishing_koko.php?id=<?= $id_hasil_kirim_finishing ?>&action=batal_hasil_koko';
+            }
+        });
+    });
+
+    // Initialize semua saat halaman dimuat
+    document.addEventListener('DOMContentLoaded', function() {
+        <?php foreach ($details_data as $detail): ?>
+            validateTotal(<?= $detail['id_detail_hasil_kirim_finishing'] ?>);
+            updateTotalUpah(<?= $detail['id_detail_hasil_kirim_finishing'] ?>);
+        <?php endforeach; ?>
+
+        // Validasi form sebelum submit
+        <?php if (!$has_finishing): ?>
+            document.getElementById('formFinishingKoko').addEventListener('submit', function(e) {
+                let allValid = validateAllRows();
+
+                // Validasi tanggal
+                const tanggal = document.getElementById('tanggal_finishing').value;
+                if (!tanggal) {
+                    e.preventDefault();
+                    alert('Tanggal finishing harus diisi');
+                    return false;
+                }
+
+                // Validasi minimal ada 1 input
+                let totalSelesai = 0;
+                <?php foreach ($details_data as $detail): ?>
+                    totalSelesai += parseInt(document.getElementById('jumlah_selesai_<?= $detail['id_detail_hasil_kirim_finishing'] ?>').value) || 0;
+                <?php endforeach; ?>
+
+                if (totalSelesai === 0) {
+                    e.preventDefault();
+                    alert('Minimal ada 1 hasil finishing selesai');
+                    return false;
+                }
+
+                // Validasi semua koko harus diproses
+                if (!allValid) {
+                    e.preventDefault();
+                    alert('Semua koko harus diproses! Pastikan total (selesai + rusak) sama dengan jumlah dikirim untuk setiap koko.');
+                    return false;
+                }
+
+                // Konfirmasi sebelum submit
+                const message = 'Anda yakin ingin menyimpan hasil finishing?\n\n' +
+                    'Petugas: <?= htmlspecialchars($main_data['nama_petugas']) ?>\n' +
+                    'Hasil finishing selesai akan ditambahkan ke stok produk.\n' +
+                    'Hasil finishing rusak akan dikembalikan ke stok koko.\n' +
+                    'Upah akan ditambahkan ke hutang petugas: <?= htmlspecialchars($main_data['nama_petugas']) ?>\n\n' +
+                    'Catatan: Hasil finishing hanya bisa diinput sekali!';
+
+                if (!confirm(message)) {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+        <?php endif; ?>
+
+        // Event listener untuk tombol batal dengan ID yang jelas
+        document.getElementById('btnBatalFinishing').addEventListener('click', function(e) {
+            e.preventDefault();
+
+            const id = this.getAttribute('data-id');
+            const seri = this.getAttribute('data-seri');
+            const tanggal = this.getAttribute('data-tanggal');
+            const selesai = this.getAttribute('data-selesai');
+            const rusak = this.getAttribute('data-rusak');
+            const upah = this.getAttribute('data-upah');
+
+            Swal.fire({
+                title: 'Batalkan Hasil Finishing?',
+                html: `<div class="text-left">
+                      <p>Apakah Anda yakin ingin membatalkan <strong>SEMUA</strong> hasil finishing untuk:</p>
+                      <ul>
+                        <li><strong>Seri:</strong> ${seri}</li>
+                        <li><strong>Tanggal Finishing:</strong> ${tanggal}</li>
+                        <li><strong>Petugas:</strong> <?= htmlspecialchars($main_data['nama_petugas']) ?></li>
+                        <li><strong>Total Selesai:</strong> ${selesai} pcs</li>
+                        <li><strong>Total Rusak:</strong> ${rusak} pcs</li>
+                        <li><strong>Total Upah:</strong> ${formatRupiahJS(upah)}</li>
+                      </ul>
+                      <p class="text-danger mt-3"><strong>PERINGATAN:</strong></p>
+                      <ul class="text-danger">
+                        <li>Semua stok produk yang sudah ditambahkan akan dikurangi</li>
+                        <li>Semua stok koko akan dikembalikan</li>
+                        <li>Semua hutang upah petugas <?= htmlspecialchars($main_data['nama_petugas']) ?> akan dikurangi</li>
+                        <li>Status akan kembali ke "pengiriman"</li>
+                        <li><strong>Aksi ini tidak dapat dibatalkan!</strong></li>
+                      </ul>
+                    </div>`,
                 icon: 'error',
                 showCancelButton: true,
                 confirmButtonColor: '#dc3545',
                 cancelButtonColor: '#6c757d',
-                confirmButtonText: 'Ya, Batalkan Semua!',
+                confirmButtonText: 'Ya, Batalkan!',
                 cancelButtonText: 'Batal',
                 width: '600px'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    window.location.href = 'hasil_finishing_koko.php?id=<?= $id_hasil_kirim_finishing ?>&action=batal_hasil_koko';
+                    window.location.href = 'hasil_finishing_koko.php?id=' + id + '&action=batal_hasil_koko';
                 }
             });
         });
@@ -1772,7 +1684,12 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
 
     // Fungsi helper untuk format rupiah di JavaScript
     function formatRupiahJS(angka) {
-        if (!angka) return 'Rp 0';
+        if (!angka || angka == '0') return 'Rp 0';
+
+        // Pastikan angka adalah number
+        angka = parseFloat(angka);
+        if (isNaN(angka)) return 'Rp 0';
+
         const number_string = angka.toString().replace(/[^,\d]/g, '');
         const split = number_string.split(',');
         const sisa = split[0].length % 3;
@@ -1787,14 +1704,6 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
         rupiah = split[1] !== undefined ? rupiah + ',' + split[1] : rupiah;
         return 'Rp ' + rupiah;
     }
-
-    // Initialize semua nilai saat halaman dimuat
-    document.addEventListener('DOMContentLoaded', function() {
-        <?php foreach ($details_data as $detail): ?>
-            updateSisa(<?= $detail['id_detail_hasil_kirim_finishing'] ?>);
-            updateTotalUpah(<?= $detail['id_detail_hasil_kirim_finishing'] ?>);
-        <?php endforeach; ?>
-    });
 </script>
 
 </html>

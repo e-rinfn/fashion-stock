@@ -1,6 +1,8 @@
 <?php
 require_once 'database.php';
 
+date_default_timezone_set('Asia/Jakarta');
+
 // Bersihkan lock yang expired di awal setiap request
 // cleanupExpiredLocks();
 

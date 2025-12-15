@@ -151,13 +151,19 @@ function isActive($path)
                     <i class="ti ti-dashboard"></i>
                 </li>
 
-
+                <li class="pc-item <?= isActive('/kas') ?>">
+                    <a href="<?= $base_url ?>/admin/kas/kas.php" class="pc-link">
+                        <span class="pc-micon"><i class="ti ti-zoom-money"></i></span>
+                        <span class="pc-mtext">Kas</span>
+                    </a>
+                </li>
                 <li class="pc-item <?= isActive('/laporan') ?>">
                     <a href="<?= $base_url ?>/admin/laporan/keuangan.php" class="pc-link">
                         <span class="pc-micon"><i class="ti ti-zoom-money"></i></span>
                         <span class="pc-mtext">Keuangan</span>
                     </a>
                 </li>
+
 
             </ul>
         </div>

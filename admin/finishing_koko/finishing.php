@@ -808,10 +808,10 @@ function formatTime($datetime)
                                             <td class="text-center">
                                                 <div class="btn-group-actions">
                                                     <!-- Tombol Detail -->
-                                                    <a href="detail.php?id=<?= $data['id_hasil_kirim_finishing'] ?>"
+                                                    <!-- <a href="detail.php?id=<?= $data['id_hasil_kirim_finishing'] ?>"
                                                         class="btn btn-sm btn-primary" title="Detail">
                                                         <i class="ti ti-eye"></i>
-                                                    </a>
+                                                    </a> -->
 
                                                     <a href="hasil_finishing_koko.php?id=<?= $data['id_hasil_kirim_finishing'] ?>"
                                                         class="btn btn-sm btn-warning" title="Finishing Koko">

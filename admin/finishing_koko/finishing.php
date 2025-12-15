@@ -557,13 +557,11 @@ if (!empty($end_date)) {
     $sql .= " AND hk.tanggal_kirim_finishing <= '$end_date'";
 }
 
-// GROUP BY dengan semua kolom non-aggregated dari hasil_kirim_finishing
-$sql .= " GROUP BY hk.id_hasil_kirim_finishing, hk.seri, hk.id_produk, hk.id_petugas_finishing, 
-          hk.tanggal_kirim_finishing, hk.total_kirim, hk.status_finishing, 
-          hk.tanggal_hasil_finishing, hk.total_hasil_finishing, hk.created_at, hk.updated_at,
-          p.nama_produk, pet.nama_petugas";
+// GROUP BY dengan kolom utama yang diperlukan untuk unique record
+$sql .= " GROUP BY hk.id_hasil_kirim_finishing, hk.seri, hk.tanggal_kirim_finishing, hk.id_produk, hk.total_kirim, hk.status_finishing, p.nama_produk, pet.nama_petugas";
 
 $sql .= " ORDER BY hk.tanggal_kirim_finishing DESC";
+
 
 $data_finishing = query($sql);
 

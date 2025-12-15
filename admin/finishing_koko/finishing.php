@@ -484,6 +484,45 @@ $end_date = isset($_GET['end_date']) ? $_GET['end_date'] : '';
 //         LEFT JOIN petugas_finishing pet ON hk.id_petugas_finishing = pet.id_petugas_finishing 
 //         WHERE 1=1";
 
+// $sql = "SELECT 
+//             hk.*, 
+//             p.nama_produk, 
+//             pet.nama_petugas,
+//             GROUP_CONCAT(DISTINCT k.nama_koko ORDER BY k.nama_koko SEPARATOR ', ') as jenis_bahan,
+//             COUNT(DISTINCT dh.id_koko) as jumlah_jenis_bahan,
+//             SUM(dh.jumlah) as total_bahan
+//         FROM hasil_kirim_finishing hk 
+//         LEFT JOIN produk p ON hk.id_produk = p.id_produk 
+//         LEFT JOIN petugas_finishing pet ON hk.id_petugas_finishing = pet.id_petugas_finishing 
+//         LEFT JOIN detail_hasil_kirim_finishing dh ON hk.id_hasil_kirim_finishing = dh.id_hasil_kirim_finishing
+//         LEFT JOIN koko k ON dh.id_koko = k.id_koko
+//         WHERE 1=1
+//         GROUP BY hk.id_hasil_kirim_finishing";
+
+// // Filter produk
+// if ($id_produk > 0) {
+//     $sql .= " AND hk.id_produk = $id_produk";
+// }
+
+// // Filter status
+// if ($status != 'all') {
+//     $sql .= " AND hk.status_finishing = '$status'";
+// }
+
+// // Filter periode
+// if (!empty($start_date)) {
+//     $sql .= " AND hk.tanggal_kirim_finishing >= '$start_date'";
+// }
+
+// if (!empty($end_date)) {
+//     $end_date .= ' 23:59:59';
+//     $sql .= " AND hk.tanggal_kirim_finishing <= '$end_date'";
+// }
+
+// $sql .= " ORDER BY hk.tanggal_kirim_finishing DESC";
+
+
+// Query untuk mengambil data kirim finishing
 $sql = "SELECT 
             hk.*, 
             p.nama_produk, 
@@ -496,8 +535,7 @@ $sql = "SELECT
         LEFT JOIN petugas_finishing pet ON hk.id_petugas_finishing = pet.id_petugas_finishing 
         LEFT JOIN detail_hasil_kirim_finishing dh ON hk.id_hasil_kirim_finishing = dh.id_hasil_kirim_finishing
         LEFT JOIN koko k ON dh.id_koko = k.id_koko
-        WHERE 1=1
-        GROUP BY hk.id_hasil_kirim_finishing";
+        WHERE 1=1";
 
 // Filter produk
 if ($id_produk > 0) {
@@ -518,6 +556,12 @@ if (!empty($end_date)) {
     $end_date .= ' 23:59:59';
     $sql .= " AND hk.tanggal_kirim_finishing <= '$end_date'";
 }
+
+// GROUP BY dengan semua kolom non-aggregated dari hasil_kirim_finishing
+$sql .= " GROUP BY hk.id_hasil_kirim_finishing, hk.seri, hk.id_produk, hk.id_petugas_finishing, 
+          hk.tanggal_kirim_finishing, hk.total_kirim, hk.status_finishing, 
+          hk.tanggal_hasil_finishing, hk.total_hasil_finishing, hk.created_at, hk.updated_at,
+          p.nama_produk, pet.nama_petugas";
 
 $sql .= " ORDER BY hk.tanggal_kirim_finishing DESC";
 

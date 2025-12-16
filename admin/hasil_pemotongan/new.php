@@ -104,10 +104,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
     } else {
         $id_produk = intval($_POST['id_produk']);
         $id_pemotong = intval($_POST['id_pemotong']);
-        $status_potong = $conn->real_escape_string($_POST['status_potong']);
         $items = $_POST['items'];
         $seri = $conn->real_escape_string($_POST['seri']);
         $tanggal_hasil_potong = $conn->real_escape_string($_POST['tanggal_hasil_potong']);
+
+        $status_potong = 'diproses'; // Default value untuk produksi baru
+
+        // Jika ada input dari form, validasi dulu
+        if (isset($_POST['status_potong'])) {
+            $input_status = $_POST['status_potong'];
+
+            // Hanya terima nilai yang valid untuk ENUM
+            $valid_statuses = ['diproses', 'penjahitan', 'selesai'];
+            if (in_array($input_status, $valid_statuses)) {
+                $status_potong = $input_status;
+            } else {
+                $status_potong = 'diproses'; // Default jika tidak valid
+            }
+        }
 
         // Ambil input upah (bisa dari tarif standar atau input manual)
         $upah_per_potongan = floatval($_POST['upah_per_potongan']);
@@ -152,14 +166,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
                     }
 
                     // Hitung total meter yang akan digunakan
-                    $total_meter = $meter * $qty;
+                    $total_meter = floatval($item['total_meter']); // Input langsung total meter
                     if ($total_meter > $bahan_stok['jumlah_meter']) {
                         $error = "Total meter melebihi stok meter tersedia untuk bahan " . $bahan_stok['nama_bahan'];
                         break;
                     }
 
-                    if ($meter <= 0) {
-                        $error = "Meter per roll tidak valid untuk bahan " . $bahan_stok['nama_bahan'];
+                    if ($total_meter <= 0) {
+                        $error = "Total meter tidak valid untuk bahan " . $bahan_stok['nama_bahan'];
                         break;
                     }
                 }
@@ -185,7 +199,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
                         }
 
                         $total_harga += $harga * $qty;
-                        $total_hasil += $meter * $qty; // Total hasil dalam meter
+                        $total_hasil += $meter * $qty;
                     }
 
                     // Ambil nilai total_hasil (pcs) dari form
@@ -195,13 +209,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
                         $total_hasil_pcs = 0;
                     }
 
+                    // Ambil total upah dari form
+                    $total_upah = floatval($_POST['total_upah']); // INI PENTING!
+
                     if (!isset($error)) {
                         $conn->autocommit(FALSE);
                         try {
-                            // Insert hasil potong utama
-                            $stmt = $conn->prepare("INSERT INTO hasil_potong_fix (id_produk, id_pemotong, seri, tanggal_hasil_potong, total_hasil, total_harga, status_potong) 
-                                      VALUES (?, ?, ?, ?, ?, ?, ?)");
-                            $stmt->bind_param("iissids", $id_produk, $id_pemotong, $seri, $tanggal_hasil_potong, $total_hasil_pcs, $total_harga, $status_potong);
+                            // Insert hasil potong utama - TAMBAHKAN total_upah
+                            $stmt = $conn->prepare("INSERT INTO hasil_potong_fix (id_produk, id_pemotong, seri, tanggal_hasil_potong, total_hasil, total_harga, status_potong, total_upah) 
+                                      VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                            // Perhatikan tipe data: i = integer, s = string, d = decimal
+                            // Parameter: id_produk, id_pemotong, seri, tanggal_hasil_potong, total_hasil, total_harga, status_potong, total_upah
+                            $stmt->bind_param("iissidss", $id_produk, $id_pemotong, $seri, $tanggal_hasil_potong, $total_hasil_pcs, $total_harga, $status_potong, $total_upah);
 
                             if (!$stmt->execute()) {
                                 throw new Exception("Gagal menyimpan hasil pemotongan: " . $stmt->error);
@@ -228,7 +247,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
                                 $qty = intval($item['qty']);
                                 $meter_per_roll = floatval($item['meter']);
                                 $harga = floatval($item['harga']);
-                                $total_meter = $meter_per_roll * $qty;
+                                $total_meter = floatval($item['total_meter']); // Input langsung total meter
                                 $subtotal = $harga * $qty;
 
                                 $stmt_detail->bind_param("iiiiddddd", $id_hasil_potong_fix, $id_bahan, $id_produk, $id_pemotong, $qty, $meter_per_roll, $total_meter, $harga, $subtotal);
@@ -576,14 +595,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
     }
 
     // ============================================
-    // FUNGSI BAHAN
+    // FUNGSI BAHAN (DIUBAH: TOTAL METER SAJA)
     // ============================================
     function initRowEvents(rowId) {
         const row = document.getElementById(`row-${rowId}`);
         const select = row.querySelector('.select-bahan');
         const hargaInput = row.querySelector('.harga-input');
         const qtyInput = row.querySelector('.qty');
-        const meterInput = row.querySelector('.meter-input');
+        const totalMeterInput = row.querySelector('.total-meter-input');
         const stokRollDisplay = row.querySelector('.stok-roll');
         const stokMeterDisplay = row.querySelector('.stok-meter');
         const stokRollWarning = row.querySelector('.stok-roll-warning');
@@ -603,37 +622,40 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
                     stokRollDisplay.textContent = bahan.jumlah_stok;
                     stokMeterDisplay.textContent = bahan.jumlah_meter || 0;
 
-                    // Set nilai default meter per roll
-                    meterInput.value = bahan.meter_per_roll || 0;
-
+                    // Set nilai default qty = 1
                     qtyInput.value = 1;
                     qtyInput.max = bahan.jumlah_stok;
 
-                    hitungTotalMeter(rowId);
+                    // Reset total meter input
+                    totalMeterInput.value = '';
+                    row.querySelector('.display-total-meter').textContent = '0 m';
+
                     validateStok(rowId);
+                    updateTotalMeterUsed();
                 }
             } else {
                 select.dataset.previousValue = '';
                 hargaInput.value = 0;
                 stokRollDisplay.textContent = '0';
                 stokMeterDisplay.textContent = '0';
-                meterInput.value = 0;
                 qtyInput.value = 1;
                 qtyInput.max = '';
-                row.querySelector('.total-meter').textContent = '0 m';
+                totalMeterInput.value = '';
+                row.querySelector('.display-total-meter').textContent = '0 m';
             }
 
             updateBahanDropdowns();
         });
 
         qtyInput.addEventListener('input', () => {
-            hitungTotalMeter(rowId);
             validateStok(rowId);
         });
 
-        meterInput.addEventListener('input', () => {
-            hitungTotalMeter(rowId);
+        totalMeterInput.addEventListener('input', () => {
+            const meterValue = parseFloat(totalMeterInput.value) || 0;
+            row.querySelector('.display-total-meter').textContent = meterValue.toFixed(0) + ' m';
             validateStok(rowId);
+            updateTotalMeterUsed();
         });
 
         // Trigger change event jika sudah ada value
@@ -644,8 +666,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
         const row = document.getElementById(`row-${rowId}`);
         const select = row.querySelector('.select-bahan');
         const qtyInput = row.querySelector('.qty');
-        const meterInput = row.querySelector('.meter-input');
+        const totalMeterInput = row.querySelector('.total-meter-input');
         const stokRollWarning = row.querySelector('.stok-roll-warning');
+        const stokMeterWarning = row.querySelector('.stok-meter-warning');
 
         if (!select.value) return;
 
@@ -653,47 +676,42 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
         if (!bahan) return;
 
         const qty = parseInt(qtyInput.value) || 0;
-        const meterPerRoll = parseFloat(meterInput.value) || 0;
-        const totalMeter = qty * meterPerRoll;
+        const totalMeter = parseFloat(totalMeterInput.value) || 0;
 
         // Validasi stok roll
         if (qty > bahan.jumlah_stok) {
             stokRollWarning.style.display = 'block';
+            stokRollWarning.textContent = `Stok hanya ${bahan.jumlah_stok} roll`;
             qtyInput.value = bahan.jumlah_stok;
-            hitungTotalMeter(rowId);
         } else {
             stokRollWarning.style.display = 'none';
         }
 
         // Validasi stok meter
         if (totalMeter > (bahan.jumlah_meter || 0)) {
-            const maxMeterPerRoll = bahan.jumlah_meter / qty;
-            if (maxMeterPerRoll > 0) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Stok Meter Tidak Cukup',
-                    text: `Total meter (${totalMeter.toFixed(0)}m) melebihi stok tersedia (${bahan.jumlah_meter || 0}m)`,
-                    confirmButtonText: 'OK'
-                });
-                meterInput.value = maxMeterPerRoll.toFixed(0);
-                hitungTotalMeter(rowId);
-            }
+            stokMeterWarning.style.display = 'block';
+            stokMeterWarning.textContent = `Stok meter hanya ${bahan.jumlah_meter || 0}m`;
+            totalMeterInput.value = bahan.jumlah_meter || 0;
+            row.querySelector('.display-total-meter').textContent = (bahan.jumlah_meter || 0) + ' m';
+        } else {
+            stokMeterWarning.style.display = 'none';
         }
+
+        // Validasi: total meter harus cukup untuk qty (minimal 1 meter per roll)
+        if (totalMeter > 0 && qty > 0 && totalMeter < qty) {
+            stokMeterWarning.style.display = 'block';
+            stokMeterWarning.textContent = `Minimal ${qty} meter untuk ${qty} roll`;
+            totalMeterInput.value = qty;
+            row.querySelector('.display-total-meter').textContent = qty + ' m';
+        }
+
+        updateTotalMeterUsed();
     }
 
-    function hitungTotalMeter(rowId) {
-        const row = document.getElementById(`row-${rowId}`);
-        const qty = parseInt(row.querySelector('.qty').value) || 0;
-        const meterPerRoll = parseFloat(row.querySelector('.meter-input').value) || 0;
-        const totalMeter = qty * meterPerRoll;
-        row.querySelector('.total-meter').textContent = totalMeter.toFixed(0) + ' m';
-        updateTotalMeter();
-    }
-
-    function updateTotalMeter() {
+    function updateTotalMeterUsed() {
         totalMeterUsed = 0;
         document.querySelectorAll('#bahanContainer tr').forEach(row => {
-            const totalMeterText = row.querySelector('.total-meter').textContent;
+            const totalMeterText = row.querySelector('.display-total-meter').textContent;
             const meterValue = parseFloat(totalMeterText) || 0;
             totalMeterUsed += meterValue;
         });
@@ -704,7 +722,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
         document.querySelectorAll('.select-bahan').forEach(select => {
             const currentValue = select.value;
             const row = select.closest('tr');
-            const currentMeter = row ? row.querySelector('.meter-input').value : 0;
 
             const availableBahans = bahanData.filter(bahan =>
                 !selectedBahans.includes(bahan.id_bahan) || bahan.id_bahan == currentValue
@@ -717,7 +734,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
                 options += `<option value="${bahan.id_bahan}" 
                             data-harga="${bahan.harga_per_satuan}" 
                             data-stok="${bahan.jumlah_stok}"
-                            data-meter="${bahan.meter_per_roll || 0}"
                             data-stok-meter="${bahan.jumlah_meter || 0}" 
                             ${selected}>
                             ${stokLabel}
@@ -726,12 +742,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
 
             select.innerHTML = options;
 
-            // Set nilai meter jika bahan masih sama
+            // Update stok info jika bahan masih sama
             if (currentValue && row) {
                 const bahan = bahanData.find(b => b.id_bahan == currentValue);
                 if (bahan) {
-                    row.querySelector('.meter-input').value = currentMeter || bahan.meter_per_roll || 0;
-                    hitungTotalMeter(row.id.replace('row-', ''));
+                    row.querySelector('.stok-roll').textContent = bahan.jumlah_stok;
+                    row.querySelector('.stok-meter').textContent = bahan.jumlah_meter || 0;
                 }
             }
         });
@@ -823,7 +839,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
             });
         }
 
-        // 7. Tombol Tambah Bahan
+        // 7. Tombol Tambah Bahan (DIUBAH: total meter saja)
         const tambahBahanBtn = document.getElementById('tambahBahan');
         if (tambahBahanBtn) {
             tambahBahanBtn.addEventListener('click', function() {
@@ -850,13 +866,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
                     options += `<option value="${bahan.id_bahan}" 
                                 data-harga="${bahan.harga_per_satuan}" 
                                 data-stok="${bahan.jumlah_stok}"
-                                data-meter="${bahan.meter_per_roll || 0}"
                                 data-stok-meter="${bahan.jumlah_meter || 0}">
                                 ${stokLabel}
                             </option>`;
                 });
 
-                // Tambahkan baris baru ke tabel
+                // Tambahkan baris baru ke tabel (DIUBAH: hanya total meter)
                 const row = document.createElement('tr');
                 row.id = `row-${rowId}`;
                 row.innerHTML = `
@@ -874,17 +889,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
                             <input type="number" name="items[${rowId}][qty]" class="form-control qty" min="1" value="1" required>
                             <span class="input-group-text">Roll</span>
                         </div>
-                        <small class="stok-warning stok-roll-warning" style="display:none">Melebihi stok roll</small>
+                        <small class="stok-warning stok-roll-warning" style="display:none"></small>
                     </td>
                     <td>
                         <div class="input-group">
-                            <input type="number" name="items[${rowId}][meter]" class="form-control meter-input" 
-                                   step="1" min="1" value="0" required>
-                            <span class="input-group-text">m/Roll</span>
+                            <input type="number" name="items[${rowId}][total_meter]" 
+                                   class="form-control total-meter-input" 
+                                   step="1" min="1" placeholder="Total meter" required>
+                            <span class="input-group-text">m</span>
                         </div>
+                        <small class="stok-warning stok-meter-warning" style="display:none"></small>
                         <input type="hidden" name="items[${rowId}][harga]" class="harga-input" value="0">
                     </td>
-                    <td class="total-meter">0 m</td>
+                    <td class="display-total-meter">0 m</td>
                     <td>
                         <button type="button" class="btn btn-sm btn-danger hapus-bahan" data-row="${rowId}">
                             <i class="ti ti-trash"></i>
@@ -893,7 +910,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
                 `;
                 container.appendChild(row);
                 initRowEvents(rowId);
-                updateTotalMeter();
+                updateTotalMeterUsed();
             });
         }
 
@@ -910,13 +927,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
                         selectedBahans = selectedBahans.filter(id => id != select.value);
                     }
                     row.remove();
-                    updateTotalMeter();
+                    updateTotalMeterUsed();
                     updateBahanDropdowns();
                 }
             }
         });
 
-        // 9. Validasi form sebelum submit
+        // 9. Validasi form sebelum submit (DIUBAH: validasi total meter)
         const formPenjualanBahan = document.getElementById('formPenjualanBahan');
         if (formPenjualanBahan) {
             formPenjualanBahan.addEventListener('submit', function(e) {
@@ -956,7 +973,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
                 rows.forEach((row, index) => {
                     const select = row.querySelector('.select-bahan');
                     const qty = row.querySelector('.qty').value;
-                    const meter = row.querySelector('.meter-input').value;
+                    const totalMeter = row.querySelector('.total-meter-input').value;
 
                     if (!select || !select.value) {
                         isValid = false;
@@ -964,9 +981,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
                     } else if (!qty || qty <= 0) {
                         isValid = false;
                         errorMessage = `Jumlah roll tidak valid untuk baris ${index + 1}`;
-                    } else if (!meter || meter <= 0) {
+                    } else if (!totalMeter || totalMeter <= 0) {
                         isValid = false;
-                        errorMessage = `Meter per roll tidak valid untuk baris ${index + 1}`;
+                        errorMessage = `Total meter tidak valid untuk baris ${index + 1}`;
+                    } else if (parseFloat(totalMeter) < parseInt(qty)) {
+                        isValid = false;
+                        errorMessage = `Total meter (${totalMeter}m) tidak cukup untuk ${qty} roll di baris ${index + 1}. Minimal ${qty}m`;
                     }
                 });
 

@@ -184,6 +184,7 @@ $produksi_data = query("SELECT
     pen.nama_penjahit,
     hp.tanggal_hasil_potong,
     hp.total_hasil,
+    hp.total_upah,
     hp.seri,
     hp.total_hasil_jahit
 FROM hasil_potong_fix hp
@@ -206,6 +207,7 @@ $seri = $produksi_data['seri'];
 $tipe_produk = $produksi_data['tipe_produk'];
 $tanggal_hasil_potong = $produksi_data['tanggal_hasil_potong'];
 $status_potong = $produksi_data['status_potong'];
+$total_upah = $produksi_data['total_upah'];
 
 // Validasi: tidak bisa batal jika sudah ada hasil jahit
 if (!empty($total_hasil_jahit) && $total_hasil_jahit > 0) {
@@ -215,8 +217,9 @@ if (!empty($total_hasil_jahit) && $total_hasil_jahit > 0) {
 }
 
 // Hitung upah pemotong yang akan dihapus
-$tarif_pemotong = getTarifUpah('pemotongan', $tanggal_hasil_potong);
-$upah_dihapus = $total_hasil_potong * $tarif_pemotong;
+// $tarif_pemotong = getTarifUpah('pemotongan', $tanggal_hasil_potong);
+// $upah_dihapus = $total_hasil_potong * $tarif_pemotong;
+$upah_dihapus = $produksi_data['total_upah'];
 
 $conn->autocommit(FALSE);
 try {

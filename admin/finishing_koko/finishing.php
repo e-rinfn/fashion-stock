@@ -839,7 +839,6 @@ function formatTime($datetime)
                                             <td class="text-center">
                                                 <?php if (!empty($data['tanggal_hasil_finishing'])): ?>
                                                     <?= formatDateIndo($data['tanggal_hasil_finishing']) ?><br>
-                                                    <small><?= formatTime($data['tanggal_hasil_finishing']) ?></small>
                                                 <?php else: ?>
                                                     -
                                                 <?php endif; ?>

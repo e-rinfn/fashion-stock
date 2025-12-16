@@ -292,7 +292,69 @@ $id_penjahit = isset($_GET['id_penjahit']) ? $_GET['id_penjahit'] : 0; // Bisa s
 $start_date_default = date('Y-m-01');
 $end_date_default   = date('Y-m-t');
 
-// Query untuk mengambil data produksi
+// ============================================
+// 1. HITUNG TOTAL TANPA FILTER (SEMUA DATA)
+// ============================================
+$sql_total_all = "SELECT 
+    SUM(h.total_hasil) as total_hasil_all,
+    SUM(COALESCE(h.total_hasil_jahit, 0)) as total_hasil_jahit_all
+FROM hasil_potong_fix h 
+WHERE 1=1";
+
+$total_all = query($sql_total_all)[0];
+$total_hasil_all = $total_all['total_hasil_all'] ?? 0;
+$total_hasil_jahit_all = $total_all['total_hasil_jahit_all'] ?? 0;
+
+// ============================================
+// 2. HITUNG TOTAL DENGAN FILTER YANG DITERAPKAN
+// ============================================
+$sql_total_filtered = "SELECT 
+    SUM(h.total_hasil) as total_hasil_filtered,
+    SUM(COALESCE(h.total_hasil_jahit, 0)) as total_hasil_jahit_filtered
+FROM hasil_potong_fix h 
+JOIN produk p ON h.id_produk = p.id_produk 
+JOIN pemotong pem ON h.id_pemotong = pem.id_pemotong 
+LEFT JOIN penjahit pen ON h.id_penjahit = pen.id_penjahit 
+WHERE 1=1";
+
+// Filter produk
+if ($id_produk > 0) {
+    $sql_total_filtered .= " AND h.id_produk = $id_produk";
+}
+
+// Filter pemotong
+if ($id_pemotong > 0) {
+    $sql_total_filtered .= " AND h.id_pemotong = $id_pemotong";
+}
+
+// Filter penjahit
+if ($id_penjahit == '-1') {
+    $sql_total_filtered .= " AND (h.id_penjahit IS NULL OR h.id_penjahit = 0)";
+} elseif ($id_penjahit > 0) {
+    $sql_total_filtered .= " AND h.id_penjahit = $id_penjahit";
+}
+
+// Filter status
+if ($status != 'all') {
+    $sql_total_filtered .= " AND h.status_potong = '$status'";
+}
+
+// Filter periode
+if (!empty($start_date)) {
+    $sql_total_filtered .= " AND h.tanggal_hasil_potong >= '$start_date'";
+}
+
+if (!empty($end_date)) {
+    $sql_total_filtered .= " AND h.tanggal_hasil_potong <= '$end_date'";
+}
+
+$total_filtered = query($sql_total_filtered)[0];
+$total_hasil_filtered = $total_filtered['total_hasil_filtered'] ?? 0;
+$total_hasil_jahit_filtered = $total_filtered['total_hasil_jahit_filtered'] ?? 0;
+
+// ============================================
+// 3. QUERY UNTUK DATA TABEL DENGAN FILTER
+// ============================================
 $sql = "SELECT h.*, p.nama_produk, p.tipe_produk, pem.nama_pemotong, 
                pen.nama_penjahit,
                (SELECT SUM(jumlah) FROM detail_hasil_potong_fix WHERE id_hasil_potong_fix = h.id_hasil_potong_fix) as total_hasil_potong
@@ -314,7 +376,6 @@ if ($id_pemotong > 0) {
 
 // Filter penjahit
 if ($id_penjahit == '-1') {
-    // Filter untuk data yang belum ada penjahit
     $sql .= " AND (h.id_penjahit IS NULL OR h.id_penjahit = 0)";
 } elseif ($id_penjahit > 0) {
     $sql .= " AND h.id_penjahit = $id_penjahit";
@@ -334,7 +395,7 @@ if (!empty($end_date)) {
     $sql .= " AND h.tanggal_hasil_potong <= '$end_date'";
 }
 
-$sql .= " ORDER BY h.tanggal_hasil_potong DESC";
+$sql .= " ORDER BY CAST(h.seri AS UNSIGNED) DESC, h.tanggal_hasil_potong DESC";
 
 $produksi = query($sql);
 
@@ -359,6 +420,7 @@ foreach ($produksi as $prod) {
         'produk' => $prod['nama_produk'],
         'tipe_produk' => $prod['tipe_produk'],
         'seri' => $prod['seri'],
+        'seri_numeric' => intval(preg_replace('/[^0-9]/', '', $prod['seri'])), // Ekstrak angka saja
         'pemotong' => $prod['nama_pemotong'],
         'penjahit' => $prod['nama_penjahit'],
         'id_penjahit' => $prod['id_penjahit'],
@@ -376,10 +438,15 @@ foreach ($produksi as $prod) {
     ];
 }
 
-// Urutkan berdasarkan tanggal descending
+// // Urutkan berdasarkan tanggal descending
+// usort($all_data, function ($a, $b) {
+//     return strtotime($b['tanggal']) - strtotime($a['tanggal']);
+// });
+
 usort($all_data, function ($a, $b) {
-    return strtotime($b['tanggal']) - strtotime($a['tanggal']);
+    return (int)$b['seri'] <=> (int)$a['seri'];
 });
+
 
 // PROSES INPUT PENJAHITAN JIKA ADA FORM SUBMIT
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -690,7 +757,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
              WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
 
                 if (!$conn->query($sql_batal)) {
-                    throw new Exception("Gagal membatalkan data hasil jahit, stok koko kurang dari hasil jahit ini.");
+                    throw new Exception("Gagal membatalkan data hasil jahit, stok pada finishing koko kurang dari hasil jahit ini.");
                 }
 
                 // 2. LOGIKA BERBEDA BERDASARKAN TIPE PRODUK
@@ -1042,6 +1109,46 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             font-size: 0.7rem;
             color: #6c757d;
         }
+
+        .total-info {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .total-info h5 {
+            color: #0d6efd;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #0d6efd;
+            padding-bottom: 5px;
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding: 5px 0;
+            border-bottom: 1px dashed #dee2e6;
+        }
+
+        .total-label {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .total-value {
+            font-weight: 700;
+            color: #198754;
+        }
+
+        .total-filtered {
+            background-color: #e7f1ff;
+            padding: 10px;
+            border-radius: 3px;
+            margin-top: 10px;
+        }
     </style>
 </head>
 
@@ -1094,90 +1201,162 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     </div>
                 </div>
 
-                <!-- Filter Form -->
-                <form method="GET" class="row g-3 mb-3">
-                    <div class="col-md-2">
-                        <label class="form-label">Filter Produk</label>
-                        <select name="id_produk" class="form-select">
-                            <option value="0">Semua Produk</option>
-                            <?php foreach ($produk as $p): ?>
-                                <option value="<?= $p['id_produk'] ?>" <?= ($id_produk == $p['id_produk']) ? 'selected' : '' ?>>
-                                    <?= htmlspecialchars($p['nama_produk']) ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
+                <div class="row">
+                    <!-- Filter Form -->
+                    <div class="col-md-8">
+                        <form method="GET" class="row g-3 mb-3">
+                            <div class="col-md-2">
+                                <label class="form-label">Filter Produk</label>
+                                <select name="id_produk" class="form-select">
+                                    <option value="0">Semua Produk</option>
+                                    <?php foreach ($produk as $p): ?>
+                                        <option value="<?= $p['id_produk'] ?>" <?= ($id_produk == $p['id_produk']) ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($p['nama_produk']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+
+                            <!-- Tambah filter pemotong -->
+                            <div class="col-md-2">
+                                <label class="form-label">Filter Pemotong</label>
+                                <select name="id_pemotong" class="form-select">
+                                    <option value="0">Semua Pemotong</option>
+                                    <?php foreach ($pemotong as $pm): ?>
+                                        <option value="<?= $pm['id_pemotong'] ?>" <?= (isset($_GET['id_pemotong']) && $_GET['id_pemotong'] == $pm['id_pemotong']) ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($pm['nama_pemotong']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+
+                            <!-- Tambah filter penjahit -->
+                            <div class="col-md-2">
+                                <label class="form-label">Filter Penjahit</label>
+                                <select name="id_penjahit" class="form-select">
+                                    <option value="0">Semua Penjahit</option>
+                                    <option value="-1" <?= (isset($_GET['id_penjahit']) && $_GET['id_penjahit'] == '-1') ? 'selected' : '' ?>>Belum Ada Penjahit</option>
+                                    <?php foreach ($penjahit as $pj): ?>
+                                        <option value="<?= $pj['id_penjahit'] ?>" <?= (isset($_GET['id_penjahit']) && $_GET['id_penjahit'] == $pj['id_penjahit']) ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($pj['nama_penjahit']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+
+                            <div class="col-md-2">
+                                <label class="form-label">Filter Status</label>
+                                <select name="status" class="form-select">
+                                    <option value="all" <?= ($status == 'all') ? 'selected' : '' ?>>Semua Status</option>
+                                    <option value="diproses" <?= ($status == 'diproses') ? 'selected' : '' ?>>Potong</option>
+                                    <option value="penjahitan" <?= ($status == 'penjahitan') ? 'selected' : '' ?>>Penjahitan</option>
+                                    <option value="selesai" <?= ($status == 'selesai') ? 'selected' : '' ?>>Selesai</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-2">
+                                <label class="form-label">Tanggal Mulai</label>
+                                <input type="date" name="start_date" class="form-control"
+                                    value="<?= htmlspecialchars($start_date ?: $start_date_default) ?>">
+                                <small class="text-muted">Bulan/Tanggal/Tahun</small>
+                            </div>
+
+                            <div class="col-md-2">
+                                <label class="form-label">Tanggal Akhir</label>
+                                <input type="date" name="end_date" class="form-control"
+                                    value="<?= htmlspecialchars($end_date ?: $end_date_default) ?>">
+                                <small class="text-muted">Bulan/Tanggal/Tahun</small>
+
+                            </div>
+
+                            <div class="col-md-4 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary me-2">
+                                    <i class="ti ti-filter"></i> Filter
+                                </button>
+                                <?php
+                                // Cek apakah ada filter yang aktif
+                                $is_filtered = $id_produk > 0 || $id_pemotong > 0 || $id_penjahit != 0 ||
+                                    $status != 'all' || !empty($start_date) || !empty($end_date);
+                                ?>
+
+                                <?php if ($is_filtered): ?>
+                                    <a href="list.php" class="btn btn-secondary me-2">
+                                        <i class="ti ti-rotate"></i> Reset
+                                    </a>
+                                <?php endif; ?>
+
+                                <button type="button" class="btn btn-danger" id="btnPrintPDF">
+                                    <i class="ti ti-file-text"></i> Print PDF
+                                </button>
+                            </div>
+                        </form>
                     </div>
 
-                    <!-- Tambah filter pemotong -->
-                    <div class="col-md-2">
-                        <label class="form-label">Filter Pemotong</label>
-                        <select name="id_pemotong" class="form-select">
-                            <option value="0">Semua Pemotong</option>
-                            <?php foreach ($pemotong as $pm): ?>
-                                <option value="<?= $pm['id_pemotong'] ?>" <?= (isset($_GET['id_pemotong']) && $_GET['id_pemotong'] == $pm['id_pemotong']) ? 'selected' : '' ?>>
-                                    <?= htmlspecialchars($pm['nama_pemotong']) ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
+                    <!-- ============================================
+                    BAGIAN TOTAL INFORMASI
+                    ============================================ -->
+                    <div class="col-md-4 mb-4">
+                        <div class="total-info">
+                            <h5><i class="ti ti-chart-bar"></i> Ringkasan Produksi</h5>
+
+                            <!-- Total Semua Data (Tanpa Filter) -->
+                            <div class="total-row">
+                                <span class="total-label">Total Semua Hasil Potong:</span>
+                                <span class="total-value">
+                                    <?= number_format($total_hasil_all) ?> Pcs
+                                </span>
+                            </div>
+
+                            <div class="total-row">
+                                <span class="total-label">Total Semua Hasil Jahit:</span>
+                                <span class="total-value">
+                                    <?= number_format($total_hasil_jahit_all) ?> Pcs
+                                </span>
+                            </div>
+
+                            <!-- Total Dengan Filter (Jika Ada Filter) -->
+                            <?php if ($is_filtered): ?>
+                                <div class="total-filtered">
+                                    <h6><i class="ti ti-filter"></i> Hasil Setelah Filter:</h6>
+                                    <div class="total-row">
+                                        <span class="total-label">Total Hasil Potong (Filter):</span>
+                                        <span class="total-value text-primary">
+                                            <?= number_format($total_hasil_filtered) ?> Pcs
+                                        </span>
+                                    </div>
+
+                                    <div class="total-row">
+                                        <span class="total-label">Total Hasil Jahit (Filter):</span>
+                                        <span class="total-value text-primary">
+                                            <?= number_format($total_hasil_jahit_filtered) ?> Pcs
+                                        </span>
+                                    </div>
+
+                                    <?php if ($total_hasil_filtered > 0): ?>
+                                        <div class="total-row">
+                                            <span class="total-label">Persentase Hasil Jahit:</span>
+                                            <span class="total-value" style="color: <?= (($total_hasil_jahit_filtered / $total_hasil_filtered) * 100) >= 80 ? '#198754' : '#dc3545' ?>;">
+                                                <?= number_format(($total_hasil_jahit_filtered / $total_hasil_filtered) * 100, 1) ?>%
+                                                (<?= number_format($total_hasil_jahit_filtered) ?> dari <?= number_format($total_hasil_filtered) ?>)
+                                            </span>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            <?php else: ?>
+                                <!-- Jika tidak ada filter, tampilkan persentase semua data -->
+                                <?php if ($total_hasil_all > 0): ?>
+                                    <div class="total-row">
+                                        <span class="total-label">Persentase Hasil Jahit (Semua Data):</span>
+                                        <span class="total-value" style="color: <?= (($total_hasil_jahit_all / $total_hasil_all) * 100) >= 80 ? '#198754' : '#dc3545' ?>;">
+                                            <?= number_format(($total_hasil_jahit_all / $total_hasil_all) * 100, 1) ?>%
+                                            (<?= number_format($total_hasil_jahit_all) ?> dari <?= number_format($total_hasil_all) ?>)
+                                        </span>
+                                    </div>
+                                <?php endif; ?>
+                            <?php endif; ?>
+                        </div>
                     </div>
-
-                    <!-- Tambah filter penjahit -->
-                    <div class="col-md-2">
-                        <label class="form-label">Filter Penjahit</label>
-                        <select name="id_penjahit" class="form-select">
-                            <option value="0">Semua Penjahit</option>
-                            <option value="-1" <?= (isset($_GET['id_penjahit']) && $_GET['id_penjahit'] == '-1') ? 'selected' : '' ?>>Belum Ada Penjahit</option>
-                            <?php foreach ($penjahit as $pj): ?>
-                                <option value="<?= $pj['id_penjahit'] ?>" <?= (isset($_GET['id_penjahit']) && $_GET['id_penjahit'] == $pj['id_penjahit']) ? 'selected' : '' ?>>
-                                    <?= htmlspecialchars($pj['nama_penjahit']) ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-
-                    <div class="col-md-2">
-                        <label class="form-label">Filter Status</label>
-                        <select name="status" class="form-select">
-                            <option value="all" <?= ($status == 'all') ? 'selected' : '' ?>>Semua Status</option>
-                            <option value="diproses" <?= ($status == 'diproses') ? 'selected' : '' ?>>Potong</option>
-                            <option value="penjahitan" <?= ($status == 'penjahitan') ? 'selected' : '' ?>>Penjahitan</option>
-                            <option value="selesai" <?= ($status == 'selesai') ? 'selected' : '' ?>>Selesai</option>
-                        </select>
-                    </div>
-
-                    <div class="col-md-2">
-                        <label class="form-label">Tanggal Mulai</label>
-                        <input type="date" name="start_date" class="form-control"
-                            value="<?= htmlspecialchars($start_date ?: $start_date_default) ?>">
-                    </div>
-
-                    <div class="col-md-2">
-                        <label class="form-label">Tanggal Akhir</label>
-                        <input type="date" name="end_date" class="form-control"
-                            value="<?= htmlspecialchars($end_date ?: $end_date_default) ?>">
-                    </div>
-
-                    <div class="col-md-4 d-flex align-items-end">
-                        <button type="submit" class="btn btn-primary me-2">
-                            <i class="ti ti-filter"></i> Filter
-                        </button>
-                        <?php
-                        // Cek apakah ada filter yang aktif
-                        $is_filtered = $id_produk > 0 || $id_pemotong > 0 || $id_penjahit != 0 ||
-                            $status != 'all' || !empty($start_date) || !empty($end_date);
-                        ?>
-
-                        <?php if ($is_filtered): ?>
-                            <a href="list.php" class="btn btn-secondary me-2">
-                                <i class="ti ti-rotate"></i> Reset
-                            </a>
-                        <?php endif; ?>
-
-                        <button type="button" class="btn btn-danger" id="btnPrintPDF">
-                            <i class="ti ti-file-text"></i> Print PDF
-                        </button>
-                    </div>
-                </form>
+                </div>
 
                 <div class="card p-3">
                     <!-- Tampilkan pesan error atau success -->
@@ -1196,6 +1375,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         </div>
                         <?php unset($_SESSION['success']); ?>
                     <?php endif; ?>
+
+                    <?php if (isset($error_modal)): ?>
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <?= htmlspecialchars($error_modal) ?>
+                            <button type="button"
+                                class="btn-close"
+                                data-bs-dismiss="alert"
+                                aria-label="Close"></button>
+                        </div>
+                    <?php endif; ?>
+
 
                     <div class="table-responsive">
                         <table class="table table-sm table-bordered table-hover align-middle">
@@ -1485,7 +1675,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     <!-- Modal Input Hasil Jahit (Modal Kedua) -->
     <div class="modal fade" id="modalHasilPenjahitan" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="modalTitleHasil">Input Hasil Penjahitan</h5>
@@ -1537,28 +1727,34 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 <input type="text" class="form-control" id="modal_hasil_nama_penjahit" readonly>
                             </div>
 
-                            <div class="col-md-6">
+                            <div hidden class="col-md-6">
                                 <label class="form-label">Tanggal Kirim</label>
                                 <input type="text" class="form-control" id="modal_hasil_tanggal_kirim_text" readonly>
                             </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label">Tanggal Hasil Jahit <span class="text-danger">*</span></label>
-                            <input type="date" name="tanggal_hasil_jahit" class="form-control"
-                                id="modal_hasil_tanggal_jahit" required>
-                            <small class="text-muted">Tanggal ketika penjahitan selesai</small>
+                        <hr>
+                        <div class="row mb-3">
+
+                            <div class=" col-md-6">
+                                <label class="form-label">Total Hasil Jahit (Pcs) <span class="text-danger">*</span></label>
+                                <input type="number" name="total_hasil_jahit" class="form-control"
+                                    min="1" max="" id="modal_hasil_total_jahit" required>
+                                <small class="text-muted">Maksimal: <span id="modal_hasil_max_total">0</span> Pcs</small>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Tanggal Hasil Jahit <span class="text-danger">*</span></label>
+                                <input type="date" name="tanggal_hasil_jahit" class="form-control"
+                                    id="modal_hasil_tanggal_jahit" required>
+                                <small class="text-muted">bulan/tanggal/tahun</small>
+                            </div>
+
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label">Total Hasil Jahit (Pcs) <span class="text-danger">*</span></label>
-                            <input type="number" name="total_hasil_jahit" class="form-control"
-                                min="1" max="" id="modal_hasil_total_jahit" required>
-                            <small class="text-muted">Maksimal: <span id="modal_hasil_max_total">0</span> Pcs</small>
-                        </div>
 
                         <!-- BAGIAN BARU: Input Upah Penjahit -->
-                        <div class="card mt-3 mb-3">
+                        <div class="card mb-3">
                             <div class="card-header bg-light">
                                 <h6 class="mb-0">Upah Penjahit</h6>
                             </div>
@@ -1573,7 +1769,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                                 min="0" step="100" value=""
                                                 placeholder="Input manual upah">
                                         </div>
-                                        <small class="text-muted">Atau pilih tarif standar:</small>
+                                        <small class="text-muted">Pilih tarif dari dropdown:</small>
                                         <select class="form-control mt-1" id="tarif_penjahit_dropdown">
                                             <option value="">-- Pilih Tarif Standar --</option>
                                             <?php
@@ -1583,7 +1779,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                             ?>
                                                 <option value="<?= $tarif['tarif_per_unit'] ?>"
                                                     data-tanggal="<?= $tarif['berlaku_sejak'] ?>">
-                                                    Rp <?= number_format($tarif['tarif_per_unit']) ?> (sejak <?= date('d/m/Y', strtotime($tarif['berlaku_sejak'])) ?>)
+                                                    Rp <?= number_format($tarif['tarif_per_unit']) ?> sejak <?= dateIndo($tarif['berlaku_sejak']) ?>
                                                 </option>
                                             <?php endforeach; ?>
                                         </select>
@@ -1606,14 +1802,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     </div>
                                 </div>
 
-                                <div class="alert alert-info mt-3 mb-0">
+                                <!-- <div class="alert alert-info mt-3 mb-0">
                                     <i class="ti ti-info-circle"></i>
                                     <small>Tarif standar akan otomatis terpilih berdasarkan tanggal hasil jahit.
                                         Anda dapat mengubahnya dengan memilih tarif lain atau input manual.</small>
-                                </div>
+                                </div> -->
                             </div>
-                        </div>
 
+
+                        </div>
                         <div class="alert alert-warning" id="modal_hasil_alert">
                             <i class="ti ti-alert-triangle"></i>
                             <span id="modal_hasil_alert_text">
@@ -1626,7 +1823,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            Tutup
+                        </button>
                         <button type="submit" name="simpan_hasil_jahit" class="btn btn-success" id="modalHasilSubmitBtn">
                             Simpan Hasil Jahit
                         </button>

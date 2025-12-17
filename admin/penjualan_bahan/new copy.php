@@ -257,10 +257,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_penjualan_bahan
                                             <thead>
                                                 <tr class="text-center">
                                                     <th>Bahan</th>
-                                                    <th>Harga per Meter</th>
+                                                    <th>Harga per Roll</th>
                                                     <th>Stok</th>
-                                                    <th>Roll/Yard</th>
-                                                    <th>Meter</th>
+                                                    <th>Qty (Roll)</th>
+                                                    <th>Meter/Roll</th>
                                                     <th>Total Meter</th>
                                                     <th>Subtotal</th>
                                                     <th>Aksi</th>
@@ -284,7 +284,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_penjualan_bahan
 
                                 <div class="mt-3">
                                     <button type="submit" name="simpan_penjualan_bahan" class="btn btn-primary">
-                                        <i class="ti ti-file"></i> Simpan Penjualan
+                                        <i class="ti ti-save"></i> Simpan Penjualan
                                     </button>
                                     <a href="list_penjualan.php" class="btn btn-danger">
                                         <i class="ti ti-x"></i> Batal
@@ -361,23 +361,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_penjualan_bahan
             </td>
             <td class="stok-info">
                 <span class="stok-roll">0</span> Roll<br>
-                <span class="stok-meter">0</span> M
+                <span class="stok-meter">0</span> m
             </td>
             <td class="w-15">
                 <div class="input-group">
                     <input type="number" name="items[${rowId}][qty]" class="form-control qty" min="1" value="1" required>
-                    <span class="input-group-text">Roll/Yard</span>
+                    <span class="input-group-text">Roll</span>
                 </div>
                 <small class="stok-warning stok-roll-warning" style="display:none">Melebihi stok roll</small>
             </td>
             <td class="w-15">
                 <div class="input-group">
                     <input type="number" name="items[${rowId}][meter]" class="form-control meter-input" 
-                            step="1" min="1" value="0" required>
-                    <span class="input-group-text">Meter</span>
+                           step="1" min="1" value="0" required>
+                    <span class="input-group-text">m/Roll</span>
                 </div>
             </td>
-            
             <td class="total-meter">0 m</td>
             <td class="currency-format subtotal">Rp 0</td>
             <td><button type="button" class="btn btn-sm btn-danger hapus-bahan" data-row="${rowId}">Hapus</button></td>
@@ -467,7 +466,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_penjualan_bahan
 
         meterInput.addEventListener('input', () => {
             hitungTotalMeter(rowId);
-            hitungSubtotal(rowId); // INI YANG DITAMBAHKAN
             validateStok(rowId);
         });
 

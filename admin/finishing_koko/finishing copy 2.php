@@ -599,72 +599,6 @@ function formatTime($datetime)
     if (empty($datetime)) return '-';
     return date('H:i', strtotime($datetime));
 }
-
-
-// HITUNG TOTAL UNTUK INFORMASI RINGKASAN
-// ========================================
-
-// 1. Hitung total semua data (tanpa filter)
-$sql_total_all = "SELECT 
-    COUNT(*) as total_kirim,
-    SUM(hk.total_kirim) as total_kirim_pcs,
-    SUM(hk.total_hasil_finishing) as total_hasil_finishing,
-    SUM(CASE WHEN hk.status_finishing = 'selesai' THEN 1 ELSE 0 END) as jumlah_selesai
-FROM hasil_kirim_finishing hk";
-
-$result_total_all = $conn->query($sql_total_all);
-$total_all = $result_total_all->fetch_assoc();
-
-$total_kirim_all = $total_all['total_kirim'] ?? 0;
-$total_kirim_pcs_all = $total_all['total_kirim_pcs'] ?? 0;
-$total_hasil_finishing_all = $total_all['total_hasil_finishing'] ?? 0;
-$jumlah_selesai_all = $total_all['jumlah_selesai'] ?? 0;
-
-// 2. Hitung total dengan filter (jika ada filter)
-$is_filtered = ($id_petugas_finishing > 0 || $status != 'all' || !empty($start_date) || !empty($end_date));
-
-$sql_filtered = "SELECT 
-    COUNT(*) as total_kirim,
-    SUM(hk.total_kirim) as total_kirim_pcs,
-    SUM(hk.total_hasil_finishing) as total_hasil_finishing,
-    SUM(CASE WHEN hk.status_finishing = 'selesai' THEN 1 ELSE 0 END) as jumlah_selesai
-FROM hasil_kirim_finishing hk
-WHERE 1=1";
-
-if ($id_petugas_finishing > 0) {
-    $sql_filtered .= " AND hk.id_petugas_finishing = $id_petugas_finishing";
-}
-
-if ($status != 'all') {
-    $sql_filtered .= " AND hk.status_finishing = '$status'";
-}
-
-if (!empty($start_date)) {
-    $sql_filtered .= " AND hk.tanggal_kirim_finishing >= '$start_date'";
-}
-
-if (!empty($end_date)) {
-    $end_date_temp = $end_date . ' 23:59:59';
-    $sql_filtered .= " AND hk.tanggal_kirim_finishing <= '$end_date_temp'";
-}
-
-$result_filtered = $conn->query($sql_filtered);
-$total_filtered = $result_filtered->fetch_assoc();
-
-$total_kirim_filtered = $total_filtered['total_kirim'] ?? 0;
-$total_kirim_pcs_filtered = $total_filtered['total_kirim_pcs'] ?? 0;
-$total_hasil_finishing_filtered = $total_filtered['total_hasil_finishing'] ?? 0;
-$jumlah_selesai_filtered = $total_filtered['jumlah_selesai'] ?? 0;
-
-// Hitung persentase
-$persentase_selesai_all = ($total_kirim_all > 0) ? ($jumlah_selesai_all / $total_kirim_all) * 100 : 0;
-$persentase_selesai_filtered = ($total_kirim_filtered > 0) ? ($jumlah_selesai_filtered / $total_kirim_filtered) * 100 : 0;
-
-// Hitung total upah (estimasi berdasarkan tarif standar)
-$tarif_standar = getTarifUpah('finishing');
-$total_upah_all = $total_hasil_finishing_all * $tarif_standar;
-$total_upah_filtered = $total_hasil_finishing_filtered * $tarif_standar;
-
 ?>
 
 <style>
@@ -717,53 +651,6 @@ $total_upah_filtered = $total_hasil_finishing_filtered * $tarif_standar;
 
     .table-hover tbody tr:hover {
         background-color: rgba(0, 0, 0, 0.075);
-    }
-</style>
-
-<style>
-    .tarif-info {
-        font-size: 0.7rem;
-        color: #6c757d;
-    }
-
-    .total-info {
-        background-color: #f8f9fa;
-        border: 1px solid #dee2e6;
-        border-radius: 5px;
-        padding: 15px;
-        margin-top: 20px;
-    }
-
-    .total-info h5 {
-        color: #0d6efd;
-        margin-bottom: 15px;
-        border-bottom: 2px solid #0d6efd;
-        padding-bottom: 5px;
-    }
-
-    .total-row {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 8px;
-        padding: 5px 0;
-        border-bottom: 1px dashed #dee2e6;
-    }
-
-    .total-label {
-        font-weight: 600;
-        color: #495057;
-    }
-
-    .total-value {
-        font-weight: 700;
-        color: #198754;
-    }
-
-    .total-filtered {
-        background-color: #e7f1ff;
-        padding: 10px;
-        border-radius: 3px;
-        margin-top: 10px;
     }
 </style>
 
@@ -826,160 +713,47 @@ $total_upah_filtered = $total_hasil_finishing_filtered * $tarif_standar;
                     </div>
                 </div>
 
-                <!-- BAGIAN FILTER DAN RINGKASAN -->
-                <div class="row mb-4">
-                    <!-- FILTER FORM -->
-                    <div class="col-md-8">
-                        <form method="GET" class="row g-3">
-                            <div class="col-md-3">
-                                <label class="form-label">Filter Petugas Finishing</label>
-                                <select name="id_petugas_finishing" class="form-select">
-                                    <option value="0">Semua Petugas</option>
-                                    <?php foreach ($petugas_finishing as $p): ?>
-                                        <option value="<?= $p['id_petugas_finishing'] ?>" <?= ($id_petugas_finishing == $p['id_petugas_finishing']) ? 'selected' : '' ?>>
-                                            <?= htmlspecialchars($p['nama_petugas']) ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label">Filter Status</label>
-                                <select name="status" class="form-select">
-                                    <option value="all" <?= ($status == 'all') ? 'selected' : '' ?>>Semua Status</option>
-                                    <option value="pengiriman" <?= ($status == 'pengiriman') ? 'selected' : '' ?>>Pengiriman</option>
-                                    <option value="diproses" <?= ($status == 'diproses') ? 'selected' : '' ?>>Diproses</option>
-                                    <option value="selesai" <?= ($status == 'selesai') ? 'selected' : '' ?>>Selesai</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Tanggal Mulai</label>
-                                <input type="date" name="start_date" class="form-control" value="<?= htmlspecialchars($start_date) ?>">
-                                <small class="text-muted">Bulan/Tanggal/Tahun</small>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Tanggal Akhir</label>
-                                <input type="date" name="end_date" class="form-control" value="<?= htmlspecialchars($end_date) ?>">
-                                <small class="text-muted">Bulan/Tanggal/Tahun</small>
-                            </div>
-
-
-                            <div class="col-md-4 d-flex align-items-end">
-                                <div class="d-flex">
-                                    <button type="submit" class="btn btn-primary me-2">
-                                        <i class="ti ti-filter"></i> Filter
-                                    </button>
-                                    <?php if ($is_filtered): ?>
-                                        <a href="finishing.php" class="btn btn-secondary">
-                                            <i class="ti ti-rotate"></i> Reset
-                                        </a>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                        </form>
+                <!-- Filter Form -->
+                <form method="GET" class="row g-3 mb-3">
+                    <div class="col-md-2">
+                        <label class="form-label">Filter Petugas Finishing</label>
+                        <select name="id_petugas_finishing" class="form-select">
+                            <option value="0">Semua Petugas</option>
+                            <?php foreach ($petugas_finishing as $p): ?>
+                                <option value="<?= $p['id_petugas_finishing'] ?>" <?= ($id_petugas_finishing == $p['id_petugas_finishing']) ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($p['nama_petugas']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
-
-                    <!-- ============================================
-                    BAGIAN TOTAL INFORMASI FINISHING
-                    ============================================ -->
-                    <div class="col-md-4">
-                        <div class="total-info">
-                            <h5><i class="ti ti-chart-bar"></i> Ringkasan Finishing</h5>
-
-                            <!-- Total Semua Data (Tanpa Filter) -->
-                            <div class="total-row">
-                                <span class="total-label">Total Pengiriman:</span>
-                                <span class="total-value">
-                                    <?= number_format($total_kirim_all) ?> Data
-                                </span>
-                            </div>
-
-                            <div class="total-row">
-                                <span class="total-label">Total Kirim (Pcs):</span>
-                                <span class="total-value">
-                                    <?= number_format($total_kirim_pcs_all) ?> Pcs
-                                </span>
-                            </div>
-
-                            <div class="total-row">
-                                <span class="total-label">Total Hasil Finishing:</span>
-                                <span class="total-value">
-                                    <?= number_format($total_hasil_finishing_all) ?> Pcs
-                                </span>
-                            </div>
-
-                            <!-- Progress Bar Persentase Selesai -->
-                            <div hidden class="progress-container">
-                                <div class="total-row">
-                                    <span class="total-label">Selesai:</span>
-                                    <span class="total-value">
-                                        <?= number_format($persentase_selesai_all, 1) ?>%
-                                        <span class="badge badge-percentage 
-                                            <?= $persentase_selesai_all >= 80 ? 'bg-high-success' : ($persentase_selesai_all >= 50 ? 'bg-medium-warning' : 'bg-low-danger') ?>">
-                                            <?= $jumlah_selesai_all ?>/<?= $total_kirim_all ?>
-                                        </span>
-                                    </span>
-                                </div>
-                                <div class="progress">
-                                    <div class="progress-bar" style="width: <?= min($persentase_selesai_all, 100) ?>%"></div>
-                                </div>
-                            </div>
-
-                            <!-- Total Dengan Filter (Jika Ada Filter) -->
-                            <?php if ($is_filtered): ?>
-                                <div class="total-filtered">
-                                    <h6><i class="ti ti-filter"></i> Hasil Setelah Filter:</h6>
-                                    <div class="total-row">
-                                        <span class="total-label">Pengiriman:</span>
-                                        <span class="total-value">
-                                            <?= number_format($total_kirim_filtered) ?> Data
-                                        </span>
-                                    </div>
-
-                                    <div class="total-row">
-                                        <span class="total-label">Kirim (Pcs):</span>
-                                        <span class="total-value">
-                                            <?= number_format($total_kirim_pcs_filtered) ?> Pcs
-                                        </span>
-                                    </div>
-
-                                    <div class="total-row">
-                                        <span class="total-label">Hasil Finishing:</span>
-                                        <span class="total-value">
-                                            <?= number_format($total_hasil_finishing_filtered) ?> Pcs
-                                        </span>
-                                    </div>
-
-                                    <?php if ($total_kirim_filtered > 0): ?>
-                                        <div hidden class="total-row">
-                                            <span class="total-label">Persentase Selesai:</span>
-                                            <span class="total-value" style="color: 
-                                                <?= $persentase_selesai_filtered >= 80 ? '#28a745' : ($persentase_selesai_filtered >= 50 ? '#ffc107' : '#dc3545') ?>;">
-                                                <?= number_format($persentase_selesai_filtered, 1) ?>%
-                                                <span class="badge badge-percentage 
-                                                    <?= $persentase_selesai_filtered >= 80 ? 'bg-high-success' : ($persentase_selesai_filtered >= 50 ? 'bg-medium-warning' : 'bg-low-danger') ?>">
-                                                    <?= $jumlah_selesai_filtered ?>/<?= $total_kirim_filtered ?>
-                                                </span>
-                                            </span>
-                                        </div>
-                                    <?php endif; ?>
-
-
-                                </div>
-                            <?php else: ?>
-                                <!-- Jika tidak ada filter, tampilkan estimasi upah semua data -->
-                                <?php if ($total_upah_all > 0): ?>
-                                    <div hidden class="total-row mt-2">
-                                        <span class="total-label">Total Estimasi Upah:</span>
-                                        <span class="total-value text-warning">
-                                            <?= formatRupiah($total_upah_all) ?>
-                                            <small class="tarif-info">(@<?= formatRupiah($tarif_standar) ?>/pcs)</small>
-                                        </span>
-                                    </div>
-                                <?php endif; ?>
-                            <?php endif; ?>
-                        </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Filter Status</label>
+                        <select name="status" class="form-select">
+                            <option value="all" <?= ($status == 'all') ? 'selected' : '' ?>>Semua Status</option>
+                            <option value="pengiriman" <?= ($status == 'pengiriman') ? 'selected' : '' ?>>Pengiriman</option>
+                            <option value="diproses" <?= ($status == 'diproses') ? 'selected' : '' ?>>Diproses</option>
+                            <option value="selesai" <?= ($status == 'selesai') ? 'selected' : '' ?>>Selesai</option>
+                        </select>
                     </div>
-                </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Tanggal Mulai</label>
+                        <input type="date" name="start_date" class="form-control" value="<?= htmlspecialchars($start_date) ?>">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Tanggal Akhir</label>
+                        <input type="date" name="end_date" class="form-control" value="<?= htmlspecialchars($end_date) ?>">
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="ti ti-filter"></i> Filter
+                        </button>
+                        <?php if ($id_produk > 0 || $status != 'all' || !empty($start_date) || !empty($end_date)): ?>
+                            <a href="finishing.php" class="btn btn-secondary me-2">
+                                <i class="ti ti-rotate"></i> Reset
+                            </a>
+                        <?php endif; ?>
+                    </div>
+                </form>
 
                 <div class="card p-3">
                     <!-- Tampilkan pesan error atau success -->

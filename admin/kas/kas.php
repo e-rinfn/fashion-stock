@@ -690,35 +690,73 @@ for ($i = $tahun_sekarang; $i >= $tahun_sekarang - 4; $i--) {
             <?php endif; ?>
 
             <!-- Summary Cards -->
-            <div class="row mb-4">
+            <div class="row g-3 mb-4">
+
+                <!-- Total Masuk -->
                 <div class="col-md-4">
-                    <div class="card card-summary card-masuk">
-                        <div class="card-body">
-                            <h5 class="card-title"><i class="ti ti-arrow-down-right text-success"></i> Total Masuk</h5>
-                            <h2 class="card-text text-success"><?= formatRupiah($total_masuk) ?></h2>
-                            <p class="card-text"><small class="text-muted">Total semua pemasukan kas</small></p>
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body d-flex justify-content-between align-items-center">
+                            <div>
+                                <h3 class="text-muted">Total Masuk</h3>
+                                <h4 class="fw-bold text-success mb-1">
+                                    <?= formatRupiah($total_masuk) ?>
+                                </h4>
+                                <small class="text-muted">
+                                    <?= $filter_bulan ? $bulan_list[$filter_bulan] : 'Tahun' ?>
+                                    <?= $filter_tahun ?>
+                                </small>
+                            </div>
+                            <div class="text-success opacity-75 fs-2">
+                                <i class="bi bi-arrow-down-circle"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
+
+                <!-- Total Keluar -->
                 <div class="col-md-4">
-                    <div class="card card-summary card-keluar">
-                        <div class="card-body">
-                            <h5 class="card-title"><i class="ti ti-arrow-up-right text-danger"></i> Total Keluar</h5>
-                            <h2 class="card-text text-danger"><?= formatRupiah($total_keluar) ?></h2>
-                            <p class="card-text"><small class="text-muted">Total semua pengeluaran kas</small></p>
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body d-flex justify-content-between align-items-center">
+                            <div>
+                                <h3 class="text-muted">Total Keluar</h3>
+                                <h4 class="fw-bold text-danger mb-1">
+                                    <?= formatRupiah($total_keluar) ?>
+                                </h4>
+                                <small class="text-muted">
+                                    <?= $filter_bulan ? $bulan_list[$filter_bulan] : 'Tahun' ?>
+                                    <?= $filter_tahun ?>
+                                </small>
+                            </div>
+                            <div class="text-danger opacity-75 fs-2">
+                                <i class="bi bi-arrow-up-circle"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
+
+                <!-- Saldo Kas -->
                 <div class="col-md-4">
-                    <div class="card card-summary card-saldo">
-                        <div class="card-body">
-                            <h5 class="card-title"><i class="ti ti-wallet text-primary"></i> Saldo Kas</h5>
-                            <h2 class="card-text text-primary"><?= formatRupiah($saldo) ?></h2>
-                            <p class="card-text"><small class="text-muted">Saldo kas saat ini</small></p>
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body d-flex justify-content-between align-items-center">
+                            <div>
+                                <h3 class="text-muted">Saldo Kas</h3>
+                                <h4 class="fw-bold <?= $saldo >= 0 ? 'text-primary' : 'text-warning' ?> mb-1">
+                                    <?= formatRupiah($saldo) ?>
+                                </h4>
+                                <small class="text-muted">
+                                    <?= $filter_bulan ? $bulan_list[$filter_bulan] : 'Tahun' ?>
+                                    <?= $filter_tahun ?>
+                                </small>
+                            </div>
+                            <div class="opacity-75 fs-2 text-primary">
+                                <i class="bi bi-graph-up-arrow"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
+
             </div>
+
 
             <!-- Filter Section -->
             <div class="row mb-3">

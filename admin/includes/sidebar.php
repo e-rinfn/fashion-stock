@@ -158,7 +158,7 @@ function isActive($path)
                     </a>
                 </li>
                 <li class="pc-item <?= isActive('/laporan') ?>">
-                    <a href="<?= $base_url ?>/admin/laporan/keuangan.php" class="pc-link">
+                    <a href="<?= $base_url ?>/admin/laporan/laporan.php" class="pc-link">
                         <span class="pc-micon"><i class="ti ti-zoom-money"></i></span>
                         <span class="pc-mtext">Keuangan</span>
                     </a>

@@ -129,10 +129,12 @@ function checkRole($requiredRole)
  * Return:
  *   - string : Nilai rupiah dalam format "Rp 1.000.000".
  ******************************************************/
-function formatRupiah($angka)
+function formatRupiah($angka = 0)
 {
+    $angka = is_numeric($angka) ? (float)$angka : 0;
     return 'Rp ' . number_format($angka, 0, ',', '.');
 }
+
 
 
 

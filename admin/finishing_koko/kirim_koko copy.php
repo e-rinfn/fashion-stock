@@ -12,19 +12,16 @@ require_once '../../config/functions.php';
 $koko = query("SELECT * FROM koko WHERE stok > 0 ORDER BY nama_koko");
 $petugas_finishing = query("SELECT * FROM petugas_finishing ORDER BY nama_petugas");
 
-// Ambil data penjahit dari tabel penjahit
-$penjahit = query("SELECT * FROM penjahit ORDER BY nama_penjahit");
-
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_kirim_finishing'])) {
 
     // VALIDASI INPUT WAJIB
-    if (empty($_POST['id_petugas_finishing']) || empty($_POST['nama_penjahit'])) {
-        $error = "Petugas Finishing dan Nama Penjahit wajib diisi!";
+    if (empty($_POST['id_petugas_finishing']) || empty($_POST['seri'])) {
+        $error = "Petugas Finishing dan Seri wajib diisi!";
     } else {
         $id_petugas_finishing = intval($_POST['id_petugas_finishing']);
-        $nama_penjahit = $conn->real_escape_string($_POST['nama_penjahit']); // Sekarang nama langsung
         $status_finishing = $conn->real_escape_string($_POST['status_finishing']);
         $items = $_POST['items'];
+        $seri = $conn->real_escape_string($_POST['seri']);
         $tanggal_kirim_finishing = $conn->real_escape_string($_POST['tanggal_kirim_finishing']);
 
         // Ambil nilai total_kirim dari form (jumlah total pcs yang dikirim)
@@ -40,19 +37,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_kirim_fin
             }
         }
 
-        // Validasi duplikasi penjahit untuk tanggal yang sama (opsional)
-        // Hapus validasi yang error ini:
-        // $check_penjahit = $conn->query("SELECT id_hasil_kirim_finishing FROM hasil_kirim_finishing 
-        //                               WHERE id_penjahit = $id_penjahit 
-        //                               AND tanggal_kirim_finishing = '$tanggal_kirim_finishing'");
-
-        // Ganti dengan validasi sederhana jika ada kolom nama_penjahit di tabel
-        // Atau hapus validasi ini jika tabel tidak memiliki kolom penjahit
-
-        $check_duplicate = true; // Asumsi tidak ada duplikasi
-        // Jika tabel punya kolom untuk penjahit, bisa validasi di sini
-
-        if ($check_duplicate) {
+        // Validasi duplikasi seri (server-side)
+        $check_seri = $conn->query("SELECT id_hasil_kirim_finishing FROM hasil_kirim_finishing WHERE seri = '$seri'");
+        if ($check_seri->num_rows > 0) {
+            $error = "Nomor seri '$seri' sudah digunakan! Silakan gunakan nomor seri yang berbeda.";
+        } else {
             // Validasi duplikasi bahan
             $bahanIds = array_column($items, 'id_bahan');
             if (count($bahanIds) !== count(array_unique($bahanIds))) {
@@ -89,23 +78,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_kirim_fin
                             $main_id_produk = $koko_data['id_produk'] ?? 0;
                         }
 
-                        // Cek struktur tabel hasil_kirim_finishing
-                        // Jika tabel punya kolom nama_penjahit atau penjahit
-                        $table_check = $conn->query("SHOW COLUMNS FROM hasil_kirim_finishing LIKE '%penjahit%'");
-                        $has_penjahit_column = $table_check->num_rows > 0;
-
-                        // Insert hasil kirim finishing utama - sesuaikan dengan struktur tabel
-                        if ($has_penjahit_column) {
-                            // Jika tabel punya kolom untuk penjahit
-                            $sql_insert = "INSERT INTO hasil_kirim_finishing 
-                                (id_petugas_finishing, id_produk, tanggal_kirim_finishing, total_kirim, status_finishing, nama_penjahit) 
-                                VALUES ($id_petugas_finishing, $main_id_produk, '$tanggal_kirim_finishing', $total_kirim, '$status_finishing', '$nama_penjahit')";
-                        } else {
-                            // Jika tabel TIDAK punya kolom untuk penjahit
-                            $sql_insert = "INSERT INTO hasil_kirim_finishing 
-                                (id_petugas_finishing, id_produk, tanggal_kirim_finishing, total_kirim, status_finishing) 
-                                VALUES ($id_petugas_finishing, $main_id_produk, '$tanggal_kirim_finishing', $total_kirim, '$status_finishing')";
-                        }
+                        // Insert hasil kirim finishing utama
+                        $sql_insert = "INSERT INTO hasil_kirim_finishing 
+                            (id_petugas_finishing, id_produk, seri, tanggal_kirim_finishing, total_kirim, status_finishing) 
+                            VALUES ($id_petugas_finishing, $main_id_produk, '$seri', '$tanggal_kirim_finishing', $total_kirim, '$status_finishing')";
 
                         if (!$conn->query($sql_insert)) {
                             throw new Exception("Gagal menyimpan hasil kirim finishing: " . $conn->error);
@@ -278,26 +254,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_kirim_fin
                                             </div>
 
                                             <div class="col-md-4">
-                                                <label class="form-label">Nama Penjahit</label>
-                                                <select name="nama_penjahit" class="form-control" required>
-                                                    <option value="">-- Pilih Penjahit --</option>
-                                                    <?php foreach ($penjahit as $j): ?>
-                                                        <option value="<?= htmlspecialchars($j['nama_penjahit']) ?>" <?= isset($_POST['nama_penjahit']) && $_POST['nama_penjahit'] == $j['nama_penjahit'] ? 'selected' : '' ?>>
-                                                            <?= htmlspecialchars($j['nama_penjahit']) ?>
-                                                        </option>
-                                                    <?php endforeach; ?>
-                                                </select>
-                                            </div>
-
-                                            <div class="col-md-4">
                                                 <label class="form-label">Tanggal Kirim Finishing</label>
                                                 <input type="date" name="tanggal_kirim_finishing" class="form-control"
                                                     value="<?= isset($_POST['tanggal_kirim_finishing']) ? htmlspecialchars($_POST['tanggal_kirim_finishing']) : date('Y-m-d') ?>"
                                                     required>
                                             </div>
-                                        </div>
 
-                                        <div class="row mt-3 g-3 align-items-center">
                                             <div class="col-md-4">
                                                 <label class="form-label">Total Kirim (Pcs)</label>
                                                 <div class="input-group">
@@ -308,13 +270,35 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_kirim_fin
                                                 </div>
                                                 <small class="text-muted">Total pcs yang dikirim (otomatis terhitung)</small>
                                             </div>
+                                        </div>
+
+                                        <div class="row mt-3 g-3 align-items-center">
+                                            <!-- <div class="col-md-4">
+                                                <label class="form-label">Seri Pengiriman</label>
+                                                <input type="text" name="seri" class="form-control" id="seriInput"
+                                                    value="<?= isset($_POST['seri']) ? htmlspecialchars($_POST['seri']) : '' ?>" required
+                                                    oninput="checkSeri(this.value)">
+                                                <small id="seriFeedback" class="text-muted">Masukkan nomor seri pengiriman</small>
+                                            </div> -->
+
+                                            <div class="col-md-4">
+                                                <label class="form-label">Nama Petugas Finishing</label>
+                                                <select name="id_penjahit" class="form-control" required>
+                                                    <option value="">-- Pilih Petugas Finishing --</option>
+                                                    <?php foreach ($petugas_finishing as $p): ?>
+                                                        <option value="<?= $p['id_penjahit'] ?>" <?= isset($_POST['id_penjahit']) && $_POST['id_penjahit'] == $p['id_penjahit'] ? 'selected' : '' ?>>
+                                                            <?= htmlspecialchars($p['nama_petugas']) ?>
+                                                        </option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                            </div>
 
                                             <div class="col-md-4">
                                                 <label class="form-label">Status Finishing</label>
                                                 <select name="status_finishing" class="form-control" required>
-                                                    <option value="pengiriman" <?= isset($_POST['status_finishing']) && $_POST['status_finishing'] == 'pengiriman' ? 'selected' : '' ?>>Pengiriman</option>
-                                                    <option value="diproses" <?= isset($_POST['status_finishing']) && $_POST['status_finishing'] == 'diproses' ? 'selected' : '' ?>>Diproses</option>
-                                                    <option value="selesai" <?= isset($_POST['status_finishing']) && $_POST['status_finishing'] == 'selesai' ? 'selected' : '' ?>>Selesai</option>
+                                                    <option value="pengiriman" selected>Pengiriman</option>
+                                                    <option value="diproses">Diproses</option>
+                                                    <option value="selesai">Selesai</option>
                                                 </select>
                                             </div>
 
@@ -389,6 +373,35 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_kirim_fin
     let selectedBahans = [];
     let totalPcsKirim = 0;
 
+    // Fungsi untuk memeriksa ketersediaan seri
+    function checkSeri(seriValue) {
+        const feedbackElement = document.getElementById('seriFeedback');
+
+        if (seriValue.trim() === '') {
+            feedbackElement.innerHTML = 'Masukkan nomor seri';
+            feedbackElement.className = 'text-muted';
+            return;
+        }
+
+        // Lakukan AJAX request untuk memeriksa seri
+        fetch('check_seri.php?seri=' + encodeURIComponent(seriValue))
+            .then(response => response.json())
+            .then(data => {
+                if (data.exists) {
+                    feedbackElement.innerHTML = `❌ Nomor seri telah ada! Coba nomor yang lain. <br><small>Seri terakhir: <strong>${data.last_seri}</strong></small>`;
+                    feedbackElement.className = 'text-danger';
+                } else {
+                    feedbackElement.innerHTML = '✅ Nomor seri tersedia';
+                    feedbackElement.className = 'text-success';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                feedbackElement.innerHTML = 'Error memeriksa seri';
+                feedbackElement.className = 'text-warning';
+            });
+    }
+
     // Fungsi untuk update preview produk
     function updateProdukPreview() {
         const produkPreview = document.getElementById('produkPreview');
@@ -416,6 +429,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_kirim_fin
         }
     }
 
+    // Event listener untuk input seri
+    document.getElementById('seriInput').addEventListener('blur', function() {
+        checkSeri(this.value);
+    });
+
     // Tombol Tambah Koko
     document.getElementById('tambahBahan').addEventListener('click', function() {
         const container = document.getElementById('bahanContainer');
@@ -435,23 +453,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_kirim_fin
         }
 
         // Buat opsi dropdown
-        let options = `<option value="">Pilih Koko</option>`;
+        let options = `
+    <option value="">Pilih Koko</option>
+        `;
         availableBahans.forEach(koko => {
             const produkNama = koko.nama_produk || 'Tidak terkait produk';
-            const produkLabel = koko.nama_produk ? ` → ${koko.nama_produk}` : ' (Tidak terkait produk)';
+            const produkLabel = koko.nama_produk ? ` ` : ' (Tidak terkait produk)';
             const stokLabel = `${koko.nama_koko} — Stok: ${koko.stok} pcs${produkLabel}`;
 
             options += `
-                <option 
-                    value="${koko.id_koko}" 
-                    data-stok="${koko.stok}"
-                    data-produk-id="${koko.id_produk || ''}"
-                    data-produk-nama="${produkNama}"
-                >
-                    ${stokLabel}
-                </option>
-            `;
+        <option 
+            value="${koko.id_koko}" 
+            data-stok="${koko.stok}"
+            data-produk-id="${koko.id_produk || ''}"
+            data-produk-nama="${produkNama}"
+        >
+            ${stokLabel}
+        </option>
+        `;
         });
+
 
         // Tambahkan baris baru ke tabel
         const row = document.createElement('tr');
@@ -634,19 +655,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_kirim_fin
 
     // Validasi form sebelum submit
     document.getElementById('formPenjualanBahan').addEventListener('submit', function(e) {
-        const penjahitSelect = document.querySelector('select[name="nama_penjahit"]');
+        const seriInput = document.getElementById('seriInput');
+        const seriFeedback = document.getElementById('seriFeedback');
         const rows = document.querySelectorAll('#bahanContainer tr');
 
-        // Validasi penjahit
-        if (!penjahitSelect.value) {
+        // Validasi seri
+        if (seriFeedback.classList.contains('text-danger')) {
             e.preventDefault();
             Swal.fire({
                 icon: 'error',
-                title: 'Penjahit Belum Dipilih',
-                text: 'Silakan pilih penjahit terlebih dahulu',
+                title: 'Nomor Seri Sudah Ada',
+                text: 'Silakan gunakan nomor seri yang berbeda',
                 confirmButtonText: 'Oke'
             });
-            penjahitSelect.focus();
+            seriInput.focus();
             return;
         }
 

@@ -217,6 +217,7 @@ $sql_main = "SELECT
     pet.nama_petugas,
     pet.id_petugas_finishing,
     hk.tanggal_kirim_finishing,
+    hk.seri,
     hk.status_finishing,
     hk.total_kirim,
     hk.tanggal_hasil_finishing
@@ -954,7 +955,10 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
                     <div hidden class="header-info">
                         <div class="row">
                             <div class="col-md-6">
-
+                                <div class="info-item">
+                                    <span class="info-label">Seri:</span>
+                                    <span class="info-value"><?= htmlspecialchars($main_data['seri']) ?></span>
+                                </div>
                                 <div class="info-item">
                                     <span class="info-label">Produk Utama:</span>
                                     <span class="info-value"><?= htmlspecialchars($main_data['nama_produk']) ?></span>
@@ -1012,7 +1016,7 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
                                             <span class="summary-value"><?= $total_selesai_finishing ?> pcs</span>
                                         </div>
                                         <div class="summary-item">
-                                            <span class="summary-label">Total Kembali:</span>
+                                            <span class="summary-label">Total Kembali (Rusak):</span>
                                             <span class="summary-value"><?= $total_rusak_finishing ?> pcs</span>
                                         </div>
                                     </div>
@@ -1039,7 +1043,7 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
                                             <th width="20%">Jenis Koko</th>
                                             <th width="10%">Dikirim</th>
                                             <th width="10%">Selesai</th>
-                                            <th width="10%">Kembali</th>
+                                            <th width="10%">Kembali (Rusak)</th>
                                             <th width="10%">Upah per Unit</th>
                                             <th width="15%">Total Upah</th>
                                             <th width="15%">Produk Hasil</th>
@@ -1104,7 +1108,7 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
                                     </div>
                                     <div class="col-md-6">
                                         <div class="alert alert-warning">
-                                            <p class="mb-1"><strong>Kembali ke Stok Koko Mentah:</strong></p>
+                                            <p class="mb-1"><strong>Kembali ke Stok Koko (Rusak):</strong></p>
                                             <p class="mb-0">
                                                 <?php
                                                 $koko_rusak_list = [];
@@ -1129,6 +1133,7 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
                             <div class="d-flex justify-content-end mt-4">
                                 <button class="btn btn-batal-semua btn-batal-semua-koko"
                                     data-id="<?= $id_hasil_kirim_finishing ?>"
+                                    data-seri="<?= htmlspecialchars($main_data['seri']) ?>"
                                     title="Batalkan semua hasil finishing koko">
                                     <i class="ti ti-trash"></i> Batalkan Semua Hasil
                                 </button>
@@ -1542,12 +1547,14 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
     // Konfirmasi batal semua hasil finishing
     $(document).on('click', '.btn-batal-semua-koko', function() {
         const id = $(this).data('id');
+        const seri = $(this).data('seri');
 
         Swal.fire({
             title: 'Batalkan Semua Hasil Finishing?',
             html: `<div class="text-left">
                       <p>Apakah Anda yakin ingin membatalkan <strong>SEMUA</strong> hasil finishing untuk:</p>
                       <ul>
+                        <li><strong>Seri:</strong> ${seri}</li>
                         <li><strong>Petugas:</strong> <?= htmlspecialchars($main_data['nama_petugas']) ?></li>
                         <li><strong>Semua tanggal finishing</strong></li>
                       </ul>
@@ -1633,6 +1640,7 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
             e.preventDefault();
 
             const id = this.getAttribute('data-id');
+            const seri = this.getAttribute('data-seri');
             const tanggal = this.getAttribute('data-tanggal');
             const selesai = this.getAttribute('data-selesai');
             const rusak = this.getAttribute('data-rusak');
@@ -1643,6 +1651,7 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
                 html: `<div class="text-left">
                       <p>Apakah Anda yakin ingin membatalkan <strong>SEMUA</strong> hasil finishing untuk:</p>
                       <ul>
+                        <li><strong>Seri:</strong> ${seri}</li>
                         <li><strong>Tanggal Finishing:</strong> ${tanggal}</li>
                         <li><strong>Petugas:</strong> <?= htmlspecialchars($main_data['nama_petugas']) ?></li>
                         <li><strong>Total Selesai:</strong> ${selesai} pcs</li>

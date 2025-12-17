@@ -358,7 +358,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     <th style="width: 10%;">Jenis</th>
                                     <th style="width: 13%;">Total Upah</th>
                                     <th style="width: 13%;">Total Dibayar</th>
-                                    <th style="width: 13%;">Sisa Hutang</th>
+                                    <th style="width: 13%;">Sisa Upah</th>
                                     <th style="width: 10%;">Status</th>
                                     <th style="width: 9%;">Aksi</th>
                                 </tr>

@@ -64,7 +64,7 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
 
 // Hitung upah berdasarkan status
 $tarif_pemotong = getTarifUpah('pemotongan', $produksi['tanggal_hasil_potong']);
-$upah_pemotong = $produksi['total_hasil'] * $tarif_pemotong;
+$upah_pemotong = $produksi['total_upah'];
 
 // Tentukan tarif penjahit berdasarkan tanggal yang sesuai
 $tanggal_referensi_penjahit = !empty($produksi['tanggal_hasil_jahit']) ?
@@ -285,7 +285,7 @@ switch ($produksi['status_potong']) {
                                     <td>
                                         <?= htmlspecialchars($produksi['nama_pemotong']) ?>
                                         <br>
-                                        <small class="text-muted">Rate: <?= formatRupiah($tarif_pemotong) ?>/pcs</small>
+                                        <!-- <small class="text-muted">Rate: <?= formatRupiah($total_upah) ?>/pcs</small> -->
                                     </td>
                                 </tr>
                                 <tr>
@@ -588,8 +588,8 @@ switch ($produksi['status_potong']) {
                                         <tr>
                                             <th style="width: 50px;">No</th>
                                             <th>Nama Bahan</th>
-                                            <th style="width: 120px;">Quantity (Roll)</th>
-                                            <th style="width: 120px;">Meter per Roll</th>
+                                            <th style="width: 120px;">Roll/Yard</th>
+                                            <th style="width: 120px;">-</th>
                                             <th style="width: 120px;">Total Meter</th>
                                             <!-- <th style="width: 150px;">Harga Satuan</th>
                                             <th style="width: 150px;">Subtotal</th> -->
@@ -619,8 +619,8 @@ switch ($produksi['status_potong']) {
                                                     <td class="text-center"><?= $i + 1 ?></td>
                                                     <td><?= htmlspecialchars($d['nama_bahan']) ?></td>
                                                     <td class="text-center"><?= $d['jumlah'] ?> Roll</td>
-                                                    <td class="text-center"><?= number_format($meter_per_roll) ?> m</td>
-                                                    <td class="text-center"><?= number_format($total_meter) ?> m</td>
+                                                    <td class="text-center">-</td>
+                                                    <td class="text-center">-</td>
                                                     <!-- <td class="text-end"><?= formatRupiah($d['harga_per_satuan']) ?></td>
                                                     <td class="text-end fw-bold"><?= formatRupiah($subtotal) ?></td> -->
                                                 </tr>
@@ -641,7 +641,7 @@ switch ($produksi['status_potong']) {
                                                 <td colspan="3" class="text-end fw-bold">Total Meter Digunakan:</td>
                                                 <td colspan="2" class="text-end fw-bold"><?= number_format($total_meter_used) ?> Meter</td>
                                             </tr>
-                                            <tr>
+                                            <!-- <tr>
                                                 <td colspan="3" class="text-end fw-bold">Efisiensi Meter per Potongan:</td>
                                                 <td colspan="2" class="text-end fw-bold">
                                                     <?php
@@ -653,7 +653,7 @@ switch ($produksi['status_potong']) {
                                                     }
                                                     ?>
                                                 </td>
-                                            </tr>
+                                            </tr> -->
                                         </tfoot>
                                     <?php endif; ?>
                                 </table>

@@ -240,7 +240,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_pembelian_bahan
                                                     <th>Harga per Meter</th>
                                                     <th>Stok</th>
                                                     <th>Qty (Roll)</th>
-                                                    <th>Meter/Roll</th>
+                                                    <th>Meter</th>
                                                     <th>Total Meter</th>
                                                     <th>Subtotal</th>
                                                     <th>Aksi</th>
@@ -257,17 +257,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_pembelian_bahan
                                         </table>
 
                                         <button type="button" class="btn btn-secondary mt-3" id="tambahBahan">
-                                            <i class="bx bx-plus"></i> Tambah Bahan
+                                            <i class="ti ti-plus"></i> Tambah Bahan
                                         </button>
                                     </div>
                                 </div>
 
                                 <div class="mt-3">
                                     <button type="submit" name="simpan_pembelian_bahan" class="btn btn-primary">
-                                        <i class="bx bx-save"></i> Simpan Pembelian
+                                        <i class="ti ti-file"></i> Simpan Pembelian
                                     </button>
                                     <a href="list.php" class="btn btn-danger">
-                                        <i class="bx bx-x"></i> Batal
+                                        <i class="ti ti-x"></i> Batal
                                     </a>
                                 </div>
                             </form>
@@ -348,18 +348,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_pembelian_bahan
                     <input type="number" name="items[${rowId}][harga]" class="form-control harga-input" min="1" required>
                 </div>
             </td>
-            <td class="stok">0 Roll</td>
+            <td class="stok-info">
+                <span class="stok-roll">0</span> Roll<br>
+                <span class="stok-meter">0</span> M
+            </td>
             <td class="w-15">
                 <div class="input-group">
                     <input type="number" name="items[${rowId}][qty]" class="form-control qty" min="1" value="1" required>
-                    <span class="input-group-text">Roll</span>
+                    <span class="input-group-text">Roll/Yard</span>
                 </div>
             </td>
             <td class="w-15">
                 <div class="input-group">
                     <input type="number" name="items[${rowId}][meter]" class="form-control meter-input" 
                            step="1" min="1" value="0" required>
-                    <span class="input-group-text">m/Roll</span>
+                    <span class="input-group-text">Meter</span>
                 </div>
             </td>
             <td class="total-meter">0 m</td>
@@ -395,7 +398,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_pembelian_bahan
         const hargaInput = row.querySelector('.harga-input');
         const qtyInput = row.querySelector('.qty');
         const meterInput = row.querySelector('.meter-input');
-        const stokDisplay = row.querySelector('.stok');
+        const stokRollDisplay = row.querySelector('.stok-roll');
+        const stokMeterDisplay = row.querySelector('.stok-meter');
+        const stokRollWarning = row.querySelector('.stok-roll-warning');
         const totalMeterDisplay = row.querySelector('.total-meter');
 
         select.addEventListener('change', function() {
@@ -410,7 +415,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_pembelian_bahan
                 const bahan = bahanData.find(b => b.id_bahan == newId);
                 if (bahan) {
                     hargaInput.value = bahan.harga_per_satuan;
-                    stokDisplay.textContent = bahan.jumlah_stok + ' Roll';
+                    stokRollDisplay.textContent = bahan.jumlah_stok;
+                    stokMeterDisplay.textContent = bahan.jumlah_meter || 0;
 
                     // Set nilai default meter per roll
                     meterInput.value = bahan.meter_per_roll || 0;
@@ -439,6 +445,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_pembelian_bahan
         });
         meterInput.addEventListener('input', () => {
             hitungTotalMeter(rowId);
+            hitungSubtotal(rowId);
+            validateStok(rowId);
         });
 
         // Trigger change event jika sudah ada value
@@ -449,8 +457,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_pembelian_bahan
     function hitungTotalMeter(rowId) {
         const row = document.getElementById(`row-${rowId}`);
         const qty = parseInt(row.querySelector('.qty').value) || 0;
-        const meterPerRoll = parseFloat(row.querySelector('.meter-input').value) || 0;
-        const totalMeter = qty * meterPerRoll;
+        const totalMeter = parseFloat(row.querySelector('.meter-input').value) || 0;
+        // const totalMeter = qty * meterPerRoll;
         row.querySelector('.total-meter').textContent = totalMeter.toFixed(0) + ' m';
     }
 

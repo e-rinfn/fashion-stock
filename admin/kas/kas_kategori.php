@@ -595,6 +595,7 @@ if (isset($_GET['hapus'])) {
                                 <label for="kelompok_kategori" class="form-label">Kelompok Kategori *</label>
                                 <select class="form-select" id="kelompok_kategori" name="kelompok_kategori" required>
                                     <option value="">-- Pilih Kelompok Kategori --</option>
+                                    <option value="KAS MASUK">KAS MASUK</option>
                                     <option value="PEMASUKAN PARTAI">PEMASUKAN PARTAI</option>
                                     <option value="PEMASUKAN SHOPEE">PEMASUKAN SHOPEE</option>
                                     <option value="PENGELUARAN PRODUKSI">PENGELUARAN PRODUKSI</option>
@@ -657,6 +658,7 @@ if (isset($_GET['hapus'])) {
                                 <label for="edit_kelompok_kategori" class="form-label">Kelompok Kategori *</label>
                                 <select class="form-select" id="edit_kelompok_kategori" name="kelompok_kategori" required>
                                     <option value="">-- Pilih Kelompok Kategori --</option>
+                                    <option value="KAS MASUK">KAS MASUK</option>
                                     <option value="PEMASUKAN PARTAI">PEMASUKAN PARTAI</option>
                                     <option value="PEMASUKAN SHOPEE">PEMASUKAN SHOPEE</option>
                                     <option value="PENGELUARAN PRODUKSI">PENGELUARAN PRODUKSI</option>

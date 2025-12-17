@@ -104,24 +104,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
     } else {
         $id_produk = intval($_POST['id_produk']);
         $id_pemotong = intval($_POST['id_pemotong']);
+        $status_potong = $conn->real_escape_string($_POST['status_potong']);
         $items = $_POST['items'];
         $seri = $conn->real_escape_string($_POST['seri']);
         $tanggal_hasil_potong = $conn->real_escape_string($_POST['tanggal_hasil_potong']);
-
-        $status_potong = 'diproses'; // Default value untuk produksi baru
-
-        // Jika ada input dari form, validasi dulu
-        if (isset($_POST['status_potong'])) {
-            $input_status = $_POST['status_potong'];
-
-            // Hanya terima nilai yang valid untuk ENUM
-            $valid_statuses = ['diproses', 'penjahitan', 'selesai'];
-            if (in_array($input_status, $valid_statuses)) {
-                $status_potong = $input_status;
-            } else {
-                $status_potong = 'diproses'; // Default jika tidak valid
-            }
-        }
 
         // Ambil input upah (bisa dari tarif standar atau input manual)
         $upah_per_potongan = floatval($_POST['upah_per_potongan']);
@@ -199,7 +185,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
                         }
 
                         $total_harga += $harga * $qty;
-                        $total_hasil += $meter * $qty;
+                        $total_hasil += $meter * $qty; // Total hasil dalam meter
                     }
 
                     // Ambil nilai total_hasil (pcs) dari form
@@ -209,18 +195,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
                         $total_hasil_pcs = 0;
                     }
 
-                    // Ambil total upah dari form
-                    $total_upah = floatval($_POST['total_upah']); // INI PENTING!
-
                     if (!isset($error)) {
                         $conn->autocommit(FALSE);
                         try {
-                            // Insert hasil potong utama - TAMBAHKAN total_upah
-                            $stmt = $conn->prepare("INSERT INTO hasil_potong_fix (id_produk, id_pemotong, seri, tanggal_hasil_potong, total_hasil, total_harga, status_potong, total_upah) 
-                                      VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-                            // Perhatikan tipe data: i = integer, s = string, d = decimal
-                            // Parameter: id_produk, id_pemotong, seri, tanggal_hasil_potong, total_hasil, total_harga, status_potong, total_upah
-                            $stmt->bind_param("iissidss", $id_produk, $id_pemotong, $seri, $tanggal_hasil_potong, $total_hasil_pcs, $total_harga, $status_potong, $total_upah);
+                            // Insert hasil potong utama
+                            $stmt = $conn->prepare("INSERT INTO hasil_potong_fix (id_produk, id_pemotong, seri, tanggal_hasil_potong, total_hasil, total_harga, status_potong) 
+                                      VALUES (?, ?, ?, ?, ?, ?, ?)");
+                            $stmt->bind_param("iissids", $id_produk, $id_pemotong, $seri, $tanggal_hasil_potong, $total_hasil_pcs, $total_harga, $status_potong);
 
                             if (!$stmt->execute()) {
                                 throw new Exception("Gagal menyimpan hasil pemotongan: " . $stmt->error);
@@ -483,8 +464,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
                                                 <tr class="text-center">
                                                     <th>Bahan</th>
                                                     <th>Stok</th>
-                                                    <th>Roll/Yard</th>
-                                                    <th>Meter</th>
+                                                    <th>Qty (Roll)</th>
+                                                    <th>Meter/Roll</th>
                                                     <th>Total Meter</th>
                                                     <th>Aksi</th>
                                                 </tr>

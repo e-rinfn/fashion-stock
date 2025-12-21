@@ -269,6 +269,7 @@ while ($row = $result_detail->fetch_assoc()) {
         background: linear-gradient(135deg, #2196f3, #21cbf3);
     }
 
+
     /* Responsive */
     @media (max-width: 768px) {
         .summary-card {
@@ -466,10 +467,10 @@ while ($row = $result_detail->fetch_assoc()) {
                                 </div>
                             <?php else: ?>
                                 <div class="table-responsive">
-                                    <table class="table table-bordered table-hover">
+                                    <table class="table table-bordered table-hover" style="table-layout: fixed;">
                                         <thead class="table-light">
                                             <tr>
-                                                <th>Kelompok Kategori</th>
+                                                <th class="text-start">Kelompok Kategori</th>
                                                 <th>Tipe</th>
                                                 <th class="text-center">Jumlah Kategori</th>
                                                 <th class="text-center">Jumlah Transaksi</th>
@@ -670,10 +671,10 @@ while ($row = $result_detail->fetch_assoc()) {
                                                         <table class="table table-bordered table-sm table-hover mb-0">
                                                             <thead class="table-light">
                                                                 <tr>
-                                                                    <th width="45%">Kategori</th>
+                                                                    <th width="40%">Kategori</th>
                                                                     <!-- <th width="20%" class="text-center">Tipe</th> -->
-                                                                    <th width="20%" class="text-center">Jml. Transaksi</th>
-                                                                    <th width="15%" class="text-end">Total</th>
+                                                                    <th width="10%" class="text-center">Transaksi</th>
+                                                                    <th width="30%" class="text-end">Total</th>
                                                                 </tr>
                                                             </thead>
                                                             <tbody>
@@ -687,7 +688,7 @@ while ($row = $result_detail->fetch_assoc()) {
                                                                     $sub_transaksi += $kategori['jumlah_transaksi'];
                                                                     ?>
                                                                     <tr>
-                                                                        <td class="text-truncate" title="<?= htmlspecialchars($kategori['nama_kategori']) ?>">
+                                                                        <td class="text-wrap kategori-wrap" title="<?= htmlspecialchars($kategori['nama_kategori']) ?>">
                                                                             <i class="bi bi-tag me-1"></i>
                                                                             <small><?= htmlspecialchars($kategori['nama_kategori']) ?></small>
                                                                         </td>

@@ -416,6 +416,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
                                         </div>
 
                                         <div class="row mt-3 g-3 align-items-center">
+
+                                            <div class="col-md-3 mt-3">
+                                                <label class="form-label">Seri Produksi</label>
+                                                <input type="text" name="seri" class="form-control" id="seriInput"
+                                                    value="<?= isset($_POST['seri']) ? $_POST['seri'] : '' ?>" required
+                                                    oninput="checkSeri(this.value)">
+                                                <small id="seriFeedback" class="text-muted">Masukkan nomor seri</small>
+                                            </div>
+
                                             <div class="col-md-3">
                                                 <label class="form-label">Total Hasil (Potongan)</label>
                                                 <div class="input-group">
@@ -453,7 +462,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
                                             <div class="col-md-3">
                                                 <label class="form-label">Total Upah Pemotong</label>
                                                 <div class="input-group">
-                                                    <span class="input-group-text">Rp</span>
+                                                    <!-- <span class="input-group-text">Rp</span> -->
                                                     <input type="text" name="total_upah_pemotong" class="form-control"
                                                         id="totalUpahDisplay" readonly>
                                                 </div>
@@ -461,13 +470,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
                                                 <small class="text-muted">Total: <span id="detailUpah">0 potongan × Rp 0</span></small>
                                             </div>
 
-                                            <div class="col-md-3 mt-3">
-                                                <label class="form-label">Seri Produksi</label>
-                                                <input type="text" name="seri" class="form-control" id="seriInput"
-                                                    value="<?= isset($_POST['seri']) ? $_POST['seri'] : '' ?>" required
-                                                    oninput="checkSeri(this.value)">
-                                                <small id="seriFeedback" class="text-muted">Masukkan nomor seri</small>
-                                            </div>
+
                                         </div>
 
                                     </div>
@@ -493,7 +496,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
                                             <tfoot>
                                                 <tr>
                                                     <td colspan="5" class="text-right"><strong>Total Meter Digunakan:</strong></td>
-                                                    <td class="text-center"><span id="totalMeter">0</span> m</td>
+                                                    <td class="text-center"><span id="totalMeter">0</span> Meter</td>
                                                 </tr>
                                             </tfoot>
                                         </table>
@@ -862,7 +865,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
                 // Buat opsi dropdown
                 let options = '<option value="">Pilih Bahan</option>';
                 availableBahans.forEach(bahan => {
-                    const stokLabel = `${bahan.nama_bahan} (Stok: ${bahan.jumlah_stok} Roll, ${bahan.jumlah_meter || 0} m)`;
+                    const stokLabel = `${bahan.nama_bahan} (Stok: ${bahan.jumlah_stok} Roll, ${bahan.jumlah_meter || 0} Meter)`;
                     options += `<option value="${bahan.id_bahan}" 
                                 data-harga="${bahan.harga_per_satuan}" 
                                 data-stok="${bahan.jumlah_stok}"
@@ -882,7 +885,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
                     </td>
                     <td class="stok-info">
                         <span class="stok-roll">0</span> Roll<br>
-                        <span class="stok-meter">0</span> m
+                        <span class="stok-meter">0</span> Meter
                     </td>
                     <td>
                         <div class="input-group">
@@ -895,13 +898,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
                         <div class="input-group">
                             <input type="number" name="items[${rowId}][total_meter]" 
                                    class="form-control total-meter-input" 
-                                   step="1" min="1" placeholder="Total meter" required>
-                            <span class="input-group-text">m</span>
+                                   step="1" min="1" placeholder="Total Meter" required>
+                            <span class="input-group-text">Meter</span>
                         </div>
                         <small class="stok-warning stok-meter-warning" style="display:none"></small>
                         <input type="hidden" name="items[${rowId}][harga]" class="harga-input" value="0">
                     </td>
-                    <td class="display-total-meter">0 m</td>
+                    <td class="display-total-meter">0 Meter</td>
                     <td>
                         <button type="button" class="btn btn-sm btn-danger hapus-bahan" data-row="${rowId}">
                             <i class="ti ti-trash"></i>

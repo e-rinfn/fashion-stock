@@ -352,23 +352,101 @@ while ($row = $result_detail->fetch_assoc()) {
                 <?php unset($_SESSION['success']); ?>
             <?php endif; ?>
 
+            <!-- Summary Cards -->
+            <div class="row g-3 mb-4">
+
+                <!-- Total Pemasukan -->
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body d-flex justify-content-between align-items-center">
+                            <div>
+                                <h3 class="text-muted">Total Pemasukan</h3>
+                                <h4 class="fw-bold text-success mb-1">
+                                    <?= formatRupiah($total_masuk) ?>
+                                </h4>
+                                <small class="text-muted">
+                                    <?= $filter_bulan ? $bulan_list[$filter_bulan] : 'Tahun' ?>
+                                    <?= $filter_tahun ?>
+                                </small>
+                            </div>
+                            <div class="text-success opacity-75 fs-2">
+                                <i class="bi bi-arrow-down-circle"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total Pengeluaran -->
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body d-flex justify-content-between align-items-center">
+                            <div>
+                                <h3 class="text-muted">Total Pengeluaran</h3>
+                                <h4 class="fw-bold text-danger mb-1">
+                                    <?= formatRupiah($total_keluar) ?>
+                                </h4>
+                                <small class="text-muted">
+                                    <?= $filter_bulan ? $bulan_list[$filter_bulan] : 'Tahun' ?>
+                                    <?= $filter_tahun ?>
+                                </small>
+                            </div>
+                            <div class="text-danger opacity-75 fs-2">
+                                <i class="bi bi-arrow-up-circle"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Saldo Bersih -->
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body d-flex justify-content-between align-items-center">
+                            <div>
+                                <h3 class="text-muted">Saldo Bersih</h3>
+                                <h4 class="fw-bold <?= ($total_masuk - $total_keluar) >= 0 ? 'text-primary' : 'text-warning' ?> mb-1">
+                                    <?= formatRupiah($total_masuk - $total_keluar) ?>
+                                </h4>
+                                <small class="text-muted">
+                                    <?= $filter_bulan ? $bulan_list[$filter_bulan] : 'Tahun' ?>
+                                    <?= $filter_tahun ?>
+                                </small>
+                            </div>
+                            <div class="opacity-75 fs-2 text-primary">
+                                <i class="bi bi-graph-up-arrow"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+
             <!-- Filter Section -->
             <div class="card mb-4">
                 <div class="card-body">
-                    <form method="GET" action="" class="row g-2 align-items-end">
-
-                        <!-- Pencarian -->
-                        <div class="col-12 col-lg-4">
-                            <label class="form-label small fw-semibold">Pencarian</label>
-                            <input type="text" name="search" class="form-control form-control-sm"
-                                placeholder="Cari kelompok / kategori..."
+                    <form method="GET" action="" class="row g-3 align-items-end">
+                        <!-- Search -->
+                        <div class="col-12 col-lg-3">
+                            <label class="form-label">Pencarian</label>
+                            <input type="text" name="search" class="form-control"
+                                placeholder="Cari kelompok atau kategori..."
                                 value="<?= htmlspecialchars($search ?? '') ?>">
+                        </div>
+
+                        <!-- Tipe -->
+                        <div class="col-6 col-lg-2">
+                            <label class="form-label">Tipe</label>
+                            <select name="tipe" class="form-select">
+                                <option value="">Semua</option>
+                                <option value="MASUK" <?= ($filter_tipe ?? '') === 'MASUK' ? 'selected' : '' ?>>Masuk</option>
+                                <option value="KELUAR" <?= ($filter_tipe ?? '') === 'KELUAR' ? 'selected' : '' ?>>Keluar</option>
+                            </select>
                         </div>
 
                         <!-- Bulan -->
                         <div class="col-6 col-lg-2">
-                            <label class="form-label small fw-semibold">Bulan</label>
-                            <select name="bulan" class="form-select form-select-sm">
+                            <label class="form-label">Bulan</label>
+                            <select name="bulan" class="form-select">
                                 <option value="">Semua</option>
                                 <?php foreach ($bulan_list as $key => $nama): ?>
                                     <option value="<?= $key ?>" <?= ($filter_bulan ?? '') == $key ? 'selected' : '' ?>>
@@ -380,8 +458,8 @@ while ($row = $result_detail->fetch_assoc()) {
 
                         <!-- Tahun -->
                         <div class="col-6 col-lg-2">
-                            <label class="form-label small fw-semibold">Tahun</label>
-                            <select name="tahun" class="form-select form-select-sm">
+                            <label class="form-label">Tahun</label>
+                            <select name="tahun" class="form-select">
                                 <?php foreach ($tahun_list as $tahun): ?>
                                     <option value="<?= $tahun ?>" <?= ($filter_tahun ?? '') == $tahun ? 'selected' : '' ?>>
                                         <?= $tahun ?>
@@ -390,20 +468,16 @@ while ($row = $result_detail->fetch_assoc()) {
                             </select>
                         </div>
 
-                        <!-- Tombol -->
-                        <div class="col-12 col-lg-4">
-                            <div class="d-flex gap-2">
-                                <button type="submit" class="btn btn-primary btn-sm flex-fill">
-                                    <i class="ti ti-filter me-1"></i> Filter
-                                </button>
-                                <a href="laporan.php" class="btn btn-outline-secondary btn-sm flex-fill">
-                                    <i class="ti ti-rotate me-1"></i> Reset
-                                </a>
-                            </div>
+                        <!-- Button -->
+                        <div class="col-12 col-lg-3">
+                            <button type="submit" class="btn btn-primary w-100 mb-2">
+                                <i class="ti ti-filter me-1"></i> Terapkan Filter
+                            </button>
+                            <a href="laporan.php" class="btn btn-outline-secondary w-100">
+                                <i class="ti ti-rotate me-1"></i> Reset
+                            </a>
                         </div>
-
                     </form>
-
 
                     <!-- Tombol Cetak PDF -->
                     <div class="d-flex justify-content-start mt-3">
@@ -412,7 +486,7 @@ while ($row = $result_detail->fetch_assoc()) {
                             <input type="hidden" name="tipe" value="<?= htmlspecialchars($filter_tipe) ?>">
                             <input type="hidden" name="bulan" value="<?= htmlspecialchars($filter_bulan) ?>">
                             <input type="hidden" name="tahun" value="<?= htmlspecialchars($filter_tahun) ?>">
-                            <button type="submit" class="btn btn-danger">
+                            <button type="submit" class="btn btn-success">
                                 <i class="ti ti-printer me-1"></i> Cetak Laporan PDF
                             </button>
                         </form>
@@ -616,43 +690,23 @@ while ($row = $result_detail->fetch_assoc()) {
             </div>
 
             <!-- Detail per Kelompok Grid -->
-            <?php
-            // Filter data detail untuk HANYA pengeluaran (KELUAR)
-            $filtered_detail_data = [];
-
-            foreach ($detail_data as $kelompok => $kategories) {
-                $filtered_kategories = array_filter($kategories, function ($kategori) {
-                    return $kategori['tipe_kategori'] == 'KELUAR';
-                });
-
-                if (!empty($filtered_kategories)) {
-                    $filtered_detail_data[$kelompok] = array_values($filtered_kategories);
-                }
-            }
-
-            // Hitung ulang statistik hanya untuk pengeluaran
-            $stat_total_kategori_filtered = 0;
-            $stat_total_transaksi_filtered = 0;
-            $stat_total_nilai_filtered = 0;
-
-            foreach ($filtered_detail_data as $kategories) {
-                foreach ($kategories as $kategori) {
-                    $stat_total_kategori_filtered++;
-                    $stat_total_transaksi_filtered += $kategori['jumlah_transaksi'];
-                    $stat_total_nilai_filtered += $kategori['total'];
-                }
-            }
-            ?>
-
-            <?php if (!empty($filtered_detail_data)): ?>
+            <?php if (!empty($detail_data)): ?>
                 <div class="row mt-4">
                     <div class="col-12">
                         <div class="card">
+                            <div class="card-header bg-light">
+                                <h5 class="card-title mb-0">
+                                    <i class="bi bi-list-check me-2"></i>Detail per Kategori
+                                    <span class="badge bg-primary ms-2">
+                                        <?= $stat_total_kategori ?> Kategori
+                                    </span>
+                                </h5>
+                            </div>
                             <div class="card-body">
                                 <div class="row">
                                     <?php
                                     $counter = 0;
-                                    foreach ($filtered_detail_data as $kelompok => $kategories):
+                                    foreach ($detail_data as $kelompok => $kategories):
                                         $counter++;
                                     ?>
                                         <div class="col-lg-6 col-md-6 mb-4">
@@ -663,6 +717,9 @@ while ($row = $result_detail->fetch_assoc()) {
                                                             <i class="bi bi-folder2-open me-2"></i>
                                                             <strong><?= htmlspecialchars($kelompok) ?></strong>
                                                         </h6>
+                                                        <span class="badge bg-primary">
+                                                            <?= count($kategories) ?> Kategori
+                                                        </span>
                                                     </div>
                                                 </div>
                                                 <div class="card-body p-0">
@@ -671,8 +728,8 @@ while ($row = $result_detail->fetch_assoc()) {
                                                             <thead class="table-light">
                                                                 <tr>
                                                                     <th width="45%">Kategori</th>
-                                                                    <!-- <th width="20%" class="text-center">Tipe</th> -->
-                                                                    <th width="20%" class="text-center">Jml. Transaksi</th>
+                                                                    <th width="20%" class="text-center">Tipe</th>
+                                                                    <th width="20%" class="text-center">Jml.</th>
                                                                     <th width="15%" class="text-end">Total</th>
                                                                 </tr>
                                                             </thead>
@@ -691,11 +748,11 @@ while ($row = $result_detail->fetch_assoc()) {
                                                                             <i class="bi bi-tag me-1"></i>
                                                                             <small><?= htmlspecialchars($kategori['nama_kategori']) ?></small>
                                                                         </td>
-                                                                        <!-- <td class="text-center">
-                                                                            <span class="badge badge-sm badge-keluar">
-                                                                                KELUAR
+                                                                        <td class="text-center">
+                                                                            <span class="badge badge-sm <?= $kategori['tipe_kategori'] == 'MASUK' ? 'badge-masuk' : 'badge-keluar' ?>">
+                                                                                <?= $kategori['tipe_kategori'] == 'MASUK' ? 'M' : 'K' ?>
                                                                             </span>
-                                                                        </td> -->
+                                                                        </td>
                                                                         <td class="text-center">
                                                                             <?php if ($kategori['jumlah_transaksi'] > 0): ?>
                                                                                 <span class="badge bg-primary rounded-pill">
@@ -705,7 +762,7 @@ while ($row = $result_detail->fetch_assoc()) {
                                                                                 <span class="text-muted">0</span>
                                                                             <?php endif; ?>
                                                                         </td>
-                                                                        <td class="text-end text-danger fw-bold">
+                                                                        <td class="text-end <?= $kategori['tipe_kategori'] == 'MASUK' ? 'text-success' : 'text-danger' ?>">
                                                                             <small><?= formatRupiah($kategori['total']) ?></small>
                                                                         </td>
                                                                     </tr>
@@ -713,13 +770,13 @@ while ($row = $result_detail->fetch_assoc()) {
                                                             </tbody>
                                                             <tfoot class="table-light">
                                                                 <tr>
-                                                                    <td colspan="1" class="fw-bold">
-                                                                        <small>Sub Total Kelompok</small>
+                                                                    <td colspan="2" class="fw-bold">
+                                                                        <small>Sub Total</small>
                                                                     </td>
                                                                     <td class="text-center fw-bold">
                                                                         <small><?= $sub_transaksi ?></small>
                                                                     </td>
-                                                                    <td class="text-end fw-bold text-danger">
+                                                                    <td class="text-end fw-bold">
                                                                         <small><?= formatRupiah($sub_total) ?></small>
                                                                     </td>
                                                                 </tr>
@@ -733,70 +790,6 @@ while ($row = $result_detail->fetch_assoc()) {
                                             <div class="w-100 d-none d-md-block"></div>
                                         <?php endif; ?>
                                     <?php endforeach; ?>
-                                </div>
-
-                                <!-- Summary Total Pengeluaran -->
-                                <div class="mt-2 pt-3 border-top">
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="card border-danger">
-                                                <div class="card-body py-2">
-                                                    <div class="d-flex justify-content-between align-items-center">
-                                                        <div>
-                                                            <h6 class="mb-0 text-danger">
-                                                                <i class="bi bi-arrow-up-circle me-1"></i>
-                                                                Total Pengeluaran Semua Kategori
-                                                            </h6>
-                                                            <small class="text-muted">Hanya menampilkan kategori pengeluaran</small>
-                                                        </div>
-                                                        <h4 class="mb-0 text-danger fw-bold">
-                                                            <?= formatRupiah($stat_total_nilai_filtered) ?>
-                                                        </h4>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="card border-primary">
-                                                <div class="card-body py-2">
-                                                    <div class="d-flex justify-content-between align-items-center">
-                                                        <div>
-                                                            <h6 class="mb-0 text-primary">
-                                                                <i class="bi bi-folder me-1"></i>
-                                                                Ringkasan
-                                                            </h6>
-                                                            <small class="text-muted">
-                                                                <?= count($filtered_detail_data) ?> Kelompok |
-                                                                <?= $stat_total_kategori_filtered ?> Kategori |
-                                                                <?= $stat_total_transaksi_filtered ?> Transaksi
-                                                            </small>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            <?php elseif (!empty($detail_data)): ?>
-                <!-- Pesan jika ada data tapi tidak ada pengeluaran -->
-                <div class="row mt-4">
-                    <div class="col-12">
-                        <div class="card">
-                            <div class="card-header bg-light">
-                                <h5 class="card-title mb-0">
-                                    <i class="bi bi-list-check me-2"></i>Detail Pengeluaran per Kategori
-                                </h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="alert alert-info">
-                                    <i class="bi bi-info-circle me-2"></i>
-                                    <strong>Tidak ada data pengeluaran ditemukan.</strong><br>
-                                    Semua data yang ditemukan adalah pemasukan. Coba gunakan filter yang berbeda.
                                 </div>
                             </div>
                         </div>

@@ -36,7 +36,7 @@ $bulan_list = [
     '12' => 'Desember'
 ];
 
-// Query untuk detail per kategori dengan filter yang sama
+// Query untuk detail per kategori HANYA untuk PENGELUARAN (KELUAR)
 $sql_detail = "SELECT 
     kk.kelompok_kategori,
     kk.nama_kategori,
@@ -44,17 +44,14 @@ $sql_detail = "SELECT
     COUNT(kt.id_transaksi) as jumlah_transaksi,
     COALESCE(SUM(kt.jumlah), 0) as total
 FROM kas_kategori kk
-LEFT JOIN kas_transaksi kt ON kk.id_kategori = kt.id_kategori";
+LEFT JOIN kas_transaksi kt ON kk.id_kategori = kt.id_kategori
+WHERE kk.tipe_kategori = 'KELUAR'"; // Hanya ambil data pengeluaran
 
-// Build WHERE conditions
+// Build WHERE conditions tambahan
 $where_conditions = [];
 
 if (!empty($search)) {
     $where_conditions[] = "(kk.kelompok_kategori LIKE '%$search%' OR kk.nama_kategori LIKE '%$search%')";
-}
-
-if (!empty($filter_tipe)) {
-    $where_conditions[] = "kk.tipe_kategori = '$filter_tipe'";
 }
 
 if (!empty($filter_bulan)) {
@@ -65,12 +62,17 @@ if (!empty($filter_tahun)) {
     $where_conditions[] = "YEAR(kt.tanggal) = '$filter_tahun'";
 }
 
-if (!empty($where_conditions)) {
-    $sql_detail .= " WHERE " . implode(" AND ", $where_conditions);
+// Tambahkan kondisi filter tipe jika ada (tetap hanya KELUAR)
+if (!empty($filter_tipe) && $filter_tipe === 'KELUAR') {
+    // Sudah di-filter di WHERE utama
 }
 
-$sql_detail .= " GROUP BY kk.kelompok_kategori, kk.nama_kategori, kk.tipe_kategori 
-                 ORDER BY kk.kelompok_kategori, kk.tipe_kategori DESC, total DESC";
+if (!empty($where_conditions)) {
+    $sql_detail .= " AND " . implode(" AND ", $where_conditions);
+}
+
+$sql_detail .= " GROUP BY kk.kelompok_kategori, kk.nama_kategori 
+                 ORDER BY kk.kelompok_kategori, total DESC";
 
 $result_detail = $conn->query($sql_detail);
 if (!$result_detail) {
@@ -107,15 +109,15 @@ $pdf->SetFont('helvetica', '', 10);
 
 // Header
 $pdf->SetFont('helvetica', 'B', 14);
-$pdf->Cell(0, 10, 'LAPORAN KAS', 0, 1, 'C');
-$pdf->SetFont('helvetica', '', 9);
-$pdf->Cell(0, 5, 'Sistem Manajemen Kas', 0, 1, 'C');
+$pdf->Cell(0, 10, 'LAPORAN PENGELUARAN KAS', 0, 1, 'C');
+$pdf->SetFont('helvetica', '', 11);
+$pdf->Cell(0, 6, 'Sistem Manajemen Kas', 0, 1, 'C');
 $pdf->Ln(5);
 
 // Informasi Filter
-$pdf->SetFont('helvetica', 'B', 11);
-$pdf->Cell(0, 6, 'INFORMASI FILTER', 0, 1, 'L');
-$pdf->SetFont('helvetica', '', 9);
+$pdf->SetFont('helvetica', 'B', 10);
+// $pdf->Cell(0, 8, 'INFORMASI FILTER', 0, 1, 'L');
+$pdf->SetFont('helvetica', '', 10);
 
 $filter_info = "Periode: ";
 if (!empty($filter_bulan) && !empty($filter_tahun)) {
@@ -130,42 +132,48 @@ if (!empty($search)) {
     $filter_info .= " | Pencarian: " . $search;
 }
 
-if (!empty($filter_tipe)) {
-    $filter_info .= " | Tipe: " . $filter_tipe;
-}
+$filter_info .= " | Tipe: PENGELUARAN (KELUAR)";
 
-$pdf->Cell(0, 5, $filter_info, 0, 1);
-$pdf->Ln(3);
+$pdf->Cell(0, 6, $filter_info, 0, 1);
+$pdf->Ln(5);
 
+// Summary informasi
+// $pdf->SetFont('helvetica', '', 10);
+// $pdf->Cell(0, 6, "Total Kelompok: " . count($detail_data), 0, 1);
+// $pdf->Cell(0, 6, "Total Kategori: " . $total_all_kategori, 0, 1);
+// $pdf->Cell(0, 6, "Total Transaksi: " . $total_all_transaksi, 0, 1);
+// $pdf->Ln(5);
 
 // Jika tidak ada data
 if (empty($detail_data)) {
-    $pdf->SetFont('helvetica', 'I', 11);
-    $pdf->Cell(0, 10, 'Tidak ada data ditemukan untuk filter yang dipilih.', 0, 1, 'C');
-    $pdf->Output('laporan_kas_kosong.pdf', 'I');
+    $pdf->SetFont('helvetica', 'I', 10);
+    $pdf->Cell(0, 20, 'Tidak ada data pengeluaran ditemukan untuk filter yang dipilih.', 0, 1, 'C');
+    $pdf->SetFont('helvetica', '', 10);
+    $pdf->Cell(0, 10, 'Silakan coba dengan filter yang berbeda.', 0, 1, 'C');
+    $pdf->Output('laporan_pengeluaran_kosong.pdf', 'I');
     exit();
 }
 
 // Tabel Header
-$pdf->SetFont('helvetica', 'B', 11);
-$pdf->Cell(0, 8, 'DETAIL PER KELOMPOK KATEGORI', 0, 1, 'L');
-$pdf->Ln(2);
+$pdf->SetFont('helvetica', 'B', 10);
+$pdf->SetFillColor(220, 220, 220);
+$pdf->Cell(0, 10, 'DETAIL PENGELUARAN PER KELOMPOK', 0, 1, 'L', 1);
+$pdf->Ln(3);
 
 // Loop melalui setiap kelompok
 $counter = 1;
 foreach ($detail_data as $kelompok => $kategories) {
     // Header kelompok
-    $pdf->SetFont('helvetica', 'B', 10);
+    $pdf->SetFont('helvetica', 'B', 11);
     $pdf->SetFillColor(240, 240, 240);
     $pdf->Cell(0, 8, $counter . ". Kelompok: " . $kelompok, 0, 1, 'L', 1);
     $counter++;
 
     // Tabel detail kategori
-    $pdf->SetFont('helvetica', 'B', 9);
-    $pdf->Cell(90, 7, 'Nama Kategori', 1, 0, 'C');
-    $pdf->Cell(30, 7, 'Tipe', 1, 0, 'C');
-    $pdf->Cell(30, 7, 'Jml. Transaksi', 1, 0, 'C');
-    $pdf->Cell(40, 7, 'Total', 1, 1, 'C');
+    $pdf->SetFont('helvetica', 'B', 10);
+    $pdf->Cell(100, 8, 'Nama Kategori', 1, 0, 'C');
+    $pdf->Cell(40, 8, 'Jumlah Transaksi', 1, 0, 'C');
+    $pdf->Cell(50, 8, 'Total Pengeluaran', 1, 1, 'C');
 
     $pdf->SetFont('helvetica', '', 9);
     $sub_total = 0;
@@ -175,46 +183,49 @@ foreach ($detail_data as $kelompok => $kategories) {
         $sub_total += $kategori['total'];
         $sub_transaksi += $kategori['jumlah_transaksi'];
 
-        // Tipe dengan warna
-        $tipe_text = $kategori['tipe_kategori'];
-        $tipe_color = ($kategori['tipe_kategori'] == 'MASUK') ? 0 : 1; // 0=hitam, 1=merah
+        $pdf->Cell(100, 7, $kategori['nama_kategori'], 1);
+        $pdf->Cell(40, 7, $kategori['jumlah_transaksi'], 1, 0, 'C');
 
-        $pdf->Cell(90, 7, $kategori['nama_kategori'], 1);
-        $pdf->SetTextColor($tipe_color * 255, 0, 0);
-        $pdf->Cell(30, 7, $tipe_text, 1, 0, 'C');
-        $pdf->SetTextColor(0, 0, 0);
-        $pdf->Cell(30, 7, $kategori['jumlah_transaksi'], 1, 0, 'C');
-
-        // Format total dengan warna
-        if ($kategori['tipe_kategori'] == 'MASUK') {
-            $pdf->SetTextColor(0, 128, 0); // Hijau untuk masuk
-        } else {
-            $pdf->SetTextColor(255, 0, 0); // Merah untuk keluar
-        }
-        $pdf->Cell(40, 7, formatRupiah($kategori['total']), 1, 1, 'R');
-        $pdf->SetTextColor(0, 0, 0);
+        // Format total dengan warna merah untuk pengeluaran
+        $pdf->SetTextColor(255, 0, 0); // Merah untuk pengeluaran
+        $pdf->Cell(50, 7, formatRupiah($kategori['total']), 1, 1, 'R');
+        $pdf->SetTextColor(0, 0, 0); // Kembali ke hitam
     }
 
     // Sub total per kelompok
-    $pdf->SetFont('helvetica', 'B', 9);
+    $pdf->SetFont('helvetica', 'B', 10);
     $pdf->SetFillColor(220, 220, 220);
-    $pdf->Cell(120, 7, 'Sub Total ' . $kelompok, 1, 0, 'L', 1);
-    $pdf->Cell(30, 7, $sub_transaksi, 1, 0, 'C', 1);
-    $pdf->Cell(40, 7, formatRupiah($sub_total), 1, 1, 'R', 1);
+    $pdf->SetTextColor(255, 0, 0); // Merah untuk total pengeluaran
+    $pdf->Cell(140, 8, 'Sub Total Kelompok ' . $kelompok, 1, 0, 'L', 1);
+    $pdf->Cell(50, 8, formatRupiah($sub_total), 1, 1, 'R', 1);
+    $pdf->SetTextColor(0, 0, 0); // Kembali ke hitam
 
     $pdf->Ln(3);
 }
 
-// Total Keseluruhan
-$pdf->SetFont('helvetica', 'B', 12);
-$pdf->SetFillColor(200, 200, 200);
-$pdf->Cell(120, 8, 'TOTAL KESELURUHAN', 1, 0, 'L', 1);
-$pdf->Cell(30, 8, $total_all_transaksi, 1, 0, 'C', 1);
-$pdf->Cell(40, 8, formatRupiah($total_all_detail), 1, 1, 'R', 1);
+// Garis pemisah
+$pdf->Ln(5);
+$pdf->SetDrawColor(0, 0, 0);
+$pdf->Line(10, $pdf->GetY(), 200, $pdf->GetY());
 $pdf->Ln(5);
 
+// Total Keseluruhan PENGELUARAN
+$pdf->SetFont('helvetica', 'B', 10);
+$pdf->SetFillColor(255, 200, 200); // Warna merah muda untuk total pengeluaran
+$pdf->SetTextColor(255, 0, 0); // Merah untuk total
+$pdf->Cell(140, 8, 'TOTAL PENGELUARAN KESELURUHAN', 1, 0, 'L', 1);
+$pdf->Cell(50, 8, formatRupiah($total_all_detail), 1, 1, 'R', 1);
+$pdf->Ln(10);
 
+// Informasi tambahan
+// $pdf->SetTextColor(0, 0, 0);
+// $pdf->SetFont('helvetica', 'I', 9);
+// $pdf->Cell(0, 6, 'Catatan: Laporan ini hanya menampilkan data pengeluaran (KELUAR) saja.', 0, 1, 'L');
+// $pdf->Cell(0, 6, 'Data pemasukan (MASUK) tidak ditampilkan dalam laporan ini.', 0, 1, 'L');
+// $pdf->Cell(0, 6, 'Tanggal cetak: ' . date('d/m/Y H:i:s'), 0, 1, 'L');
 
 // Output PDF ke browser
-$pdf->Output('laporan_kas_' . date('Ymd_His') . '.pdf', 'I');
+$nama_file = 'Laporan Pengeluaran ' . dateIndo(date('Y-m-d')) . '.pdf';
+$pdf->Output($nama_file, 'I');
+
 exit();

@@ -812,7 +812,7 @@ $total_upah_filtered = $total_hasil_finishing_filtered * $tarif_standar;
             <!-- [ Main Content ] start -->
             <div class="row">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2>Master Data Kirim Finishing</h2>
+                    <h2>Master Data Finishing Koko</h2>
                     <div hidden>
                         <a href="hasil_finishing.php" class="btn btn-success">
                             <i class="ti ti-circle-plus"></i> Hasil Finishing
@@ -830,7 +830,7 @@ $total_upah_filtered = $total_hasil_finishing_filtered * $tarif_standar;
                 <div class="row mb-4">
                     <!-- FILTER FORM -->
                     <div class="col-md-8">
-                        <form method="GET" class="row g-3">
+                        <form method="GET" class="row g-3 mb-3">
                             <div class="col-md-3">
                                 <label class="form-label">Filter Petugas Finishing</label>
                                 <select name="id_petugas_finishing" class="form-select">
@@ -876,6 +876,118 @@ $total_upah_filtered = $total_hasil_finishing_filtered * $tarif_standar;
                                 </div>
                             </div>
                         </form>
+
+                        <!-- ============================================
+                        KARTU INFORMASI FILTER YANG DIGUNAKAN
+                        ============================================ -->
+                        <?php if ($is_filtered): ?>
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <div class="card border-primary">
+                                        <div class="card-header bg-primary text-white py-2">
+                                            <h6 class="mb-0 text-white">
+                                                <i class="ti ti-filter-check"></i> Filter Aktif
+                                            </h6>
+                                        </div>
+                                        <div class="card-body py-2">
+                                            <div class="row g-2">
+                                                <?php
+                                                // Fungsi untuk menampilkan nilai filter dengan label yang sesuai
+                                                function getFilterLabel($key, $value)
+                                                {
+                                                    global $petugas_finishing;
+
+                                                    switch ($key) {
+                                                        case 'id_petugas_finishing':
+                                                            if ($value == 0) return null;
+                                                            foreach ($petugas_finishing as $pf) {
+                                                                if ($pf['id_petugas_finishing'] == $value) {
+                                                                    return '<span class="badge bg-primary">Petugas: ' . htmlspecialchars($pf['nama_petugas']) . '</span>';
+                                                                }
+                                                            }
+                                                            break;
+
+                                                        case 'status':
+                                                            if ($value == 'all') return null;
+                                                            $status_labels = [
+                                                                'pengiriman' => 'Pengiriman',
+                                                                'diproses' => 'Diproses',
+                                                                'selesai' => 'Selesai'
+                                                            ];
+                                                            $status_colors = [
+                                                                'pengiriman' => 'secondary',
+                                                                'diproses' => 'warning',
+                                                                'selesai' => 'success'
+                                                            ];
+                                                            return '<span class="badge bg-' . ($status_colors[$value] ?? 'secondary') . '">Status: ' . $status_labels[$value] . '</span>';
+
+                                                        case 'start_date':
+                                                            if (empty($value)) return null;
+                                                            return '<span class="badge bg-secondary">Mulai: ' . dateIndo($value) . '</span>';
+
+                                                        case 'end_date':
+                                                            if (empty($value)) return null;
+                                                            return '<span class="badge bg-secondary">Akhir: ' . dateIndo($value) . '</span>';
+                                                    }
+                                                    return null;
+                                                }
+                                                ?>
+
+                                                <?php
+                                                // Array filter yang akan ditampilkan
+                                                $filters_to_display = [
+                                                    'id_petugas_finishing' => $id_petugas_finishing,
+                                                    'status' => $status,
+                                                    'start_date' => $start_date,
+                                                    'end_date' => $end_date
+                                                ];
+
+                                                $active_filters = [];
+
+                                                // Loop melalui semua filter
+                                                foreach ($filters_to_display as $key => $value) {
+                                                    $label = getFilterLabel($key, $value);
+                                                    if ($label) {
+                                                        $active_filters[] = $label;
+                                                    }
+                                                }
+                                                ?>
+
+                                                <?php if (!empty($active_filters)): ?>
+                                                    <div class="col-12">
+                                                        <p class="mb-2 small text-muted">
+                                                            <i class="ti ti-info-circle"></i> Menampilkan data dengan filter:
+                                                        </p>
+                                                        <div class="d-flex flex-wrap gap-2">
+                                                            <?php foreach ($active_filters as $filter): ?>
+                                                                <?= $filter ?>
+                                                            <?php endforeach; ?>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Informasi Jumlah Data yang Difilter -->
+                                                    <div class="col-12 mt-2">
+                                                        <div class="d-flex align-items-center justify-content-between">
+                                                            <p class="mb-0 small">
+                                                                <i class="ti ti-database"></i>
+                                                                <strong><?= count($data_finishing) ?> data</strong> ditemukan dengan filter ini
+                                                                (dari total <?= number_format($total_kirim_all) ?> pengiriman)
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                <?php else: ?>
+                                                    <div class="col-12">
+                                                        <p class="mb-0 text-muted">
+                                                            <i class="ti ti-info-circle"></i> Tidak ada filter yang aktif
+                                                        </p>
+                                                    </div>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endif; ?>
                     </div>
 
                     <!-- ============================================
@@ -1073,7 +1185,7 @@ $total_upah_filtered = $total_hasil_finishing_filtered * $tarif_standar;
                                                 <?= $data['total_hasil_finishing'] > 0 ? $data['total_hasil_finishing'] . ' Pcs' : '-' ?>
                                             </td>
                                             <td class="text-center">
-                                                <div class="btn-group-actions">
+                                                <div class="btn-group gap-1 text-center">
                                                     <!-- Tombol Detail -->
                                                     <!-- <a href="detail.php?id=<?= $data['id_hasil_kirim_finishing'] ?>"
                                                         class="btn btn-sm btn-primary" title="Detail">

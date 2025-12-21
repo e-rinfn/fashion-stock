@@ -376,7 +376,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
                                     <div class="card-body">
                                         <div class="row g-3 align-items-center">
                                             <div class="col-md-3">
-                                                <label class="form-label">Nama Produk</label>
+                                                <label class="form-label">Nama Produk <span class="text-danger">*</span></label>
                                                 <select name="id_produk" class="form-control" required>
                                                     <option value="">-- Pilih Produk --</option>
                                                     <?php foreach ($produk as $p): ?>
@@ -388,7 +388,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
                                             </div>
 
                                             <div class="col-md-3">
-                                                <label class="form-label">Nama Pemotong</label>
+                                                <label class="form-label">Nama Pemotong <span class="text-danger">*</span></label>
                                                 <select name="id_pemotong" class="form-control" required>
                                                     <option value="">-- Pilih Pemotong --</option>
                                                     <?php foreach ($pemotong as $p): ?>
@@ -400,14 +400,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
                                             </div>
 
                                             <div class="col-md-3">
-                                                <label class="form-label">Tanggal Hasil Potong</label>
+                                                <label class="form-label">Tanggal Hasil Potong <span class="text-danger">*</span></label>
                                                 <input type="date" name="tanggal_hasil_potong" class="form-control"
                                                     value="<?= isset($_POST['tanggal_hasil_potong']) ? $_POST['tanggal_hasil_potong'] : date('Y-m-d') ?>"
                                                     required>
                                             </div>
 
                                             <div hidden class="col-md-3 mt-3">
-                                                <label class="form-label">Status Potong</label>
+                                                <label class="form-label">Status Potong <span class="text-danger">*</span></label>
                                                 <select name="status_potong" class="form-control" required>
                                                     <option value="diproses" selected>Diproses</option>
                                                     <option value="selesai">Selesai</option>
@@ -418,7 +418,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
                                         <div class="row mt-3 g-3 align-items-center">
 
                                             <div class="col-md-3 mt-3">
-                                                <label class="form-label">Seri Produksi</label>
+                                                <label class="form-label">Seri Produksi <span class="text-danger">*</span></label>
                                                 <input type="text" name="seri" class="form-control" id="seriInput"
                                                     value="<?= isset($_POST['seri']) ? $_POST['seri'] : '' ?>" required
                                                     oninput="checkSeri(this.value)">
@@ -426,7 +426,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
                                             </div>
 
                                             <div class="col-md-3">
-                                                <label class="form-label">Total Hasil (Potongan)</label>
+                                                <label class="form-label">Total Hasil (Potongan) <span class="text-danger">*</span></label>
                                                 <div class="input-group">
                                                     <input type="number" name="total_hasil" class="form-control" min="1"
                                                         value="<?= isset($_POST['total_hasil']) ? $_POST['total_hasil'] : '' ?>"
@@ -437,7 +437,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
                                             </div>
 
                                             <div class="col-md-3">
-                                                <label class="form-label">Upah Pemotong per Potongan</label>
+                                                <label class="form-label">Upah Pemotong per Potongan <span class="text-danger">*</span></label>
                                                 <div class="input-group">
                                                     <span class="input-group-text">Rp</span>
                                                     <input type="number" name="upah_per_potongan" class="form-control"
@@ -460,7 +460,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
                                             </div>
 
                                             <div class="col-md-3">
-                                                <label class="form-label">Total Upah Pemotong</label>
+                                                <label class="form-label">Total Upah Pemotong (Otomatis)</label>
                                                 <div class="input-group">
                                                     <!-- <span class="input-group-text">Rp</span> -->
                                                     <input type="text" name="total_upah_pemotong" class="form-control"
@@ -484,10 +484,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
                                         <table class="table" id="tabelBahan">
                                             <thead>
                                                 <tr class="text-center">
-                                                    <th>Bahan</th>
+                                                    <th>Bahan <span class="text-danger">*</span></th>
                                                     <th>Stok</th>
-                                                    <th>Roll/Yard</th>
-                                                    <th>Meter</th>
+                                                    <th>Roll/Yard <span class="text-danger">*</span></th>
+                                                    <th>Meter <span class="text-danger">*</span></th>
                                                     <th>Total Meter</th>
                                                     <th>Aksi</th>
                                                 </tr>

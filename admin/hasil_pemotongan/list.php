@@ -1425,11 +1425,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                                                         case 'start_date':
                                                             if (empty($value)) return null;
-                                                            return '<span class="badge bg-secondary">Mulai: ' . date('d/m/Y', strtotime($value)) . '</span>';
+                                                            return '<span class="badge bg-secondary">Mulai: ' . dateIndo($value) . '</span>';
 
                                                         case 'end_date':
                                                             if (empty($value)) return null;
-                                                            return '<span class="badge bg-secondary">Akhir: ' . date('d/m/Y', strtotime($value)) . '</span>';
+                                                            return '<span class="badge bg-secondary">Akhir: ' . dateIndo($value) . '</span>';
                                                     }
                                                     return null;
                                                 }
@@ -1683,7 +1683,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                             </td>
 
                                             <td class="text-center">
-                                                <div class="btn-group-actions text-center">
+                                                <div class="btn-group gap-1 text-center">
                                                     <!-- Tombol Detail -->
                                                     <a href="detail.php?id=<?= $data['id'] ?>" class="btn btn-sm btn-primary" title="Detail">
                                                         <i class="ti ti-eye"></i>

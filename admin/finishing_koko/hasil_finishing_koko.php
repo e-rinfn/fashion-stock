@@ -923,425 +923,419 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
         <div class="pc-content">
             <!-- [ Main Content ] start -->
             <div class="row">
-                <div class="form-container">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h2>Input Hasil Finishing Koko</h2>
-                        <div>
-                            <a href="finishing.php" class="btn btn-secondary">
-                                <i class="ti ti-arrow-left"></i> Kembali ke Daftar
-                            </a>
-                        </div>
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Input Hasil Finishing Koko</h2>
+                    <div>
+                        <a href="finishing.php" class="btn btn-secondary">
+                            <i class="ti ti-arrow-left"></i> Kembali ke Daftar
+                        </a>
                     </div>
+                </div>
 
-                    <!-- Tampilkan pesan error atau success -->
-                    <?php if (isset($_SESSION['error'])): ?>
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            <?= htmlspecialchars($_SESSION['error']) ?>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                        <?php unset($_SESSION['error']); ?>
-                    <?php endif; ?>
+                <!-- Tampilkan pesan error atau success -->
+                <?php if (isset($_SESSION['error'])): ?>
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <?= htmlspecialchars($_SESSION['error']) ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    <?php unset($_SESSION['error']); ?>
+                <?php endif; ?>
 
-                    <?php if (isset($_SESSION['success'])): ?>
-                        <div class="alert alert-success alert-dismissible fade show" role="alert">
-                            <?= htmlspecialchars($_SESSION['success']) ?>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                        <?php unset($_SESSION['success']); ?>
-                    <?php endif; ?>
+                <?php if (isset($_SESSION['success'])): ?>
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <?= htmlspecialchars($_SESSION['success']) ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    <?php unset($_SESSION['success']); ?>
+                <?php endif; ?>
 
-                    <!-- Header Info -->
-                    <div hidden class="header-info">
-                        <div class="row">
-                            <div class="col-md-6">
+                <!-- Header Info -->
+                <div hidden class="header-info">
+                    <div class="row">
+                        <div class="col-md-6">
 
-                                <div class="info-item">
-                                    <span class="info-label">Produk Utama:</span>
-                                    <span class="info-value"><?= htmlspecialchars($main_data['nama_produk']) ?></span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Petugas Finishing:</span>
-                                    <span class="info-value petugas-fixed"><?= htmlspecialchars($main_data['nama_petugas']) ?></span>
-                                    <small class="petugas-note">(Tetap sesuai pengiriman)</small>
-                                </div>
+                            <div class="info-item">
+                                <span class="info-label">Produk Utama:</span>
+                                <span class="info-value"><?= htmlspecialchars($main_data['nama_produk']) ?></span>
                             </div>
-                            <div class="col-md-6">
-                                <div class="info-item">
-                                    <span class="info-label">Tanggal Kirim:</span>
-                                    <span class="info-value"><?= date('d/m/Y', strtotime($main_data['tanggal_kirim_finishing'])) ?></span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Total Kirim:</span>
-                                    <span class="info-value"><?= $main_data['total_kirim'] ?> pcs</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Status:</span>
-                                    <span class="info-value">
-                                        <span class="badge bg-<?= $main_data['status_finishing'] == 'selesai' ? 'success' : ($main_data['status_finishing'] == 'diproses' ? 'warning' : 'secondary') ?> status-badge">
-                                            <?= ucfirst($main_data['status_finishing']) ?>
-                                        </span>
+                            <div class="info-item">
+                                <span class="info-label">Petugas Finishing:</span>
+                                <span class="info-value petugas-fixed"><?= htmlspecialchars($main_data['nama_petugas']) ?></span>
+                                <small class="petugas-note">(Tetap sesuai pengiriman)</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <span class="info-label">Tanggal Kirim:</span>
+                                <span class="info-value"><?= date('d/m/Y', strtotime($main_data['tanggal_kirim_finishing'])) ?></span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Total Kirim:</span>
+                                <span class="info-value"><?= $main_data['total_kirim'] ?> pcs</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Status:</span>
+                                <span class="info-value">
+                                    <span class="badge bg-<?= $main_data['status_finishing'] == 'selesai' ? 'success' : ($main_data['status_finishing'] == 'diproses' ? 'warning' : 'secondary') ?> status-badge">
+                                        <?= ucfirst($main_data['status_finishing']) ?>
                                     </span>
-                                </div>
+                                </span>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- TAMPILAN DETAIL FINISHING JIKA SUDAH ADA -->
-                    <?php if ($has_finishing): ?>
-                        <div class="detail-box">
-                            <h5><i class="ti ti-check"></i> Detail Hasil Finishing</h5>
-
-                            <!-- Summary Card -->
-                            <div class="summary-card">
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <div class="summary-item">
-                                            <span class="summary-label">Tanggal Finishing:</span>
-                                            <span class="summary-value">
-                                                <?= date('d/m/Y', strtotime($finishing_data[0]['tanggal_finishing'])) ?>
-                                            </span>
-                                        </div>
-                                        <div class="summary-item">
-                                            <span class="summary-label">Petugas:</span>
-                                            <span class="summary-value"><?= htmlspecialchars($main_data['nama_petugas']) ?></span>
-                                        </div>
+                <!-- TAMPILAN DETAIL FINISHING JIKA SUDAH ADA -->
+                <?php if ($has_finishing): ?>
+                    <div class="detail-box">
+                        <!-- Summary Card -->
+                        <div class="summary-card">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="summary-item">
+                                        <span class="summary-label">Tanggal Finishing:</span>
+                                        <span class="summary-value">
+                                            <?= dateIndo($finishing_data[0]['tanggal_finishing']) ?>
+                                        </span>
                                     </div>
-                                    <div class="col-md-4">
-                                        <div class="summary-item">
-                                            <span class="summary-label">Total Selesai:</span>
-                                            <span class="summary-value"><?= $total_selesai_finishing ?> pcs</span>
-                                        </div>
-                                        <div class="summary-item">
-                                            <span class="summary-label">Total Kembali:</span>
-                                            <span class="summary-value"><?= $total_rusak_finishing ?> pcs</span>
-                                        </div>
+                                    <div class="summary-item">
+                                        <span class="summary-label">Petugas:</span>
+                                        <span class="summary-value"><?= htmlspecialchars($main_data['nama_petugas']) ?></span>
                                     </div>
-                                    <div class="col-md-4">
-                                        <div class="summary-item">
-                                            <span class="summary-label">Total Upah:</span>
-                                            <span class="summary-value"><?= formatRupiah($total_upah_finishing) ?></span>
-                                        </div>
-                                        <div class="summary-item">
-                                            <span class="summary-label">Status:</span>
-                                            <span class="summary-value">
-                                                <span class="badge bg-success status-badge">Selesai</span>
-                                            </span>
-                                        </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="summary-item">
+                                        <span class="summary-label">Total Selesai:</span>
+                                        <span class="summary-value"><?= $total_selesai_finishing ?> pcs</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="summary-label">Total Kembali:</span>
+                                        <span class="summary-value"><?= $total_rusak_finishing ?> pcs</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="summary-item">
+                                        <span class="summary-label">Total Upah:</span>
+                                        <span class="summary-value"><?= formatRupiah($total_upah_finishing) ?></span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="summary-label">Status:</span>
+                                        <span class="summary-value">
+                                            <span class="badge bg-success status-badge">Selesai</span>
+                                        </span>
                                     </div>
                                 </div>
                             </div>
+                        </div>
 
-                            <!-- Table Detail Finishing -->
-                            <div class="table-responsive">
-                                <table class="table table-bordered table-hover finishing-table">
-                                    <thead class="table-light">
-                                        <tr class="text-center">
-                                            <th width="20%">Jenis Koko</th>
-                                            <th width="10%">Dikirim</th>
-                                            <th width="10%">Selesai</th>
-                                            <th width="10%">Kembali</th>
-                                            <th width="10%">Upah per Unit</th>
-                                            <th width="15%">Total Upah</th>
-                                            <th width="15%">Produk Hasil</th>
-                                            <th width="10%">Tanggal</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php foreach ($finishing_data as $finish): ?>
-                                            <tr>
-                                                <td><?= htmlspecialchars($finish['nama_koko']) ?></td>
-                                                <td class="text-center"><?= $finish['jumlah_dikirim'] ?> pcs</td>
-                                                <td class="text-center">
-                                                    <span class="badge bg-success"><?= $finish['jumlah_selesai'] ?> pcs</span>
-                                                </td>
-                                                <td class="text-center">
-                                                    <span class="badge bg-danger"><?= $finish['jumlah_rusak'] ?> pcs</span>
-                                                </td>
-                                                <td class="text-center"><?= formatRupiah($finish['upah_per_unit']) ?></td>
-                                                <td class="text-center fw-bold text-success"><?= formatRupiah($finish['total_upah']) ?></td>
-                                                <td class="text-center">
-                                                    <?php if (!empty($finish['nama_produk_koko'])): ?>
-                                                        <span class="badge bg-info"><?= htmlspecialchars($finish['nama_produk_koko']) ?></span>
-                                                    <?php else: ?>
-                                                        <span class="badge bg-secondary">-</span>
-                                                    <?php endif; ?>
-                                                </td>
-                                                <td class="text-center"><?= date('d/m/Y', strtotime($finish['tanggal_finishing'])) ?></td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                    <tfoot>
-                                        <tr class="totals-row">
-                                            <td class="text-end fw-bold">TOTAL:</td>
-                                            <td class="text-center fw-bold">
-                                                <?php
-                                                $total_dikirim_finishing = 0;
-                                                foreach ($finishing_data as $finish) {
-                                                    $total_dikirim_finishing += $finish['jumlah_dikirim'];
-                                                }
-                                                echo $total_dikirim_finishing . ' pcs';
-                                                ?>
+                        <!-- Table Detail Finishing -->
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover finishing-table">
+                                <thead class="table-light">
+                                    <tr class="text-center">
+                                        <th style="width: 28%">Jenis Koko</th>
+                                        <th style="width: 10%">Dikirim</th>
+                                        <th style="width: 10%">Selesai</th>
+                                        <th style="width: 10%">Kembali</th>
+                                        <th style="width: 14%">Upah / Unit</th>
+                                        <th style="width: 18%">Total Upah</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    <?php foreach ($finishing_data as $finish): ?>
+                                        <tr>
+                                            <td><?= htmlspecialchars($finish['nama_koko']) ?></td>
+                                            <td class="text-center"><?= $finish['jumlah_dikirim'] ?> pcs</td>
+                                            <td class="text-center">
+                                                <span class="badge bg-success"><?= $finish['jumlah_selesai'] ?> pcs</span>
                                             </td>
-                                            <td class="text-center fw-bold text-success"><?= $total_selesai_finishing ?> pcs</td>
-                                            <td class="text-center fw-bold text-danger"><?= $total_rusak_finishing ?> pcs</td>
-                                            <td class="text-center fw-bold">-</td>
-                                            <td class="text-center fw-bold text-success"><?= formatRupiah($total_upah_finishing) ?></td>
-                                            <td colspan="2"></td>
-                                        </tr>
-                                    </tfoot>
-                                </table>
-                            </div>
-
-                            <!-- Informasi Produk -->
-                            <div class="mt-4">
-                                <h6><i class="ti ti-package"></i> Informasi Stok Produk</h6>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="alert alert-info">
-                                            <p class="mb-1"><strong>Produk Utama:</strong> <?= htmlspecialchars($main_data['nama_produk']) ?></p>
-                                            <p class="mb-0"><strong>Ditambahkan ke Stok:</strong> <?= $total_selesai_finishing ?> pcs</p>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="alert alert-warning">
-                                            <p class="mb-1"><strong>Kembali ke Stok Koko Mentah:</strong></p>
-                                            <p class="mb-0">
-                                                <?php
-                                                $koko_rusak_list = [];
-                                                foreach ($finishing_data as $finish) {
-                                                    if ($finish['jumlah_rusak'] > 0) {
-                                                        $koko_rusak_list[] = $finish['nama_koko'] . ' (' . $finish['jumlah_rusak'] . ' pcs)';
-                                                    }
-                                                }
-                                                if (!empty($koko_rusak_list)) {
-                                                    echo implode(", ", $koko_rusak_list);
-                                                } else {
-                                                    echo 'Tidak ada koko rusak';
-                                                }
-                                                ?>
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Tombol Batal -->
-                            <div class="d-flex justify-content-end mt-4">
-                                <button class="btn btn-batal-semua btn-batal-semua-koko"
-                                    data-id="<?= $id_hasil_kirim_finishing ?>"
-                                    title="Batalkan semua hasil finishing koko">
-                                    <i class="ti ti-trash"></i> Batalkan Semua Hasil
-                                </button>
-                            </div>
-                        </div>
-                    <?php else: ?>
-                        <!-- Warning jika belum ada finishing -->
-                        <div class="warning-box">
-                            <h5><i class="ti ti-info-circle"></i> Informasi</h5>
-                            <p class="mb-2">Hasil finishing untuk pengiriman ini belum diinput.</p>
-                            <p class="mb-0"><strong>Perhatian:</strong> Input hasil finishing hanya bisa dilakukan sekali! Pastikan semua data sudah benar sebelum disimpan.</p>
-                        </div>
-                    <?php endif; ?>
-
-                    <!-- Form Input Hasil Finishing Koko -->
-                    <?php if (!$has_finishing): ?>
-                        <form method="POST" action="" id="formFinishingKoko">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5 class="mb-0">Input Hasil Finishing Koko</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row mb-3">
-                                        <div class="col-md-4">
-                                            <label for="tanggal_finishing" class="form-label">
-                                                <strong>Tanggal Finishing *</strong>
-                                            </label>
-                                            <input type="date"
-                                                class="form-control"
-                                                id="tanggal_finishing"
-                                                name="tanggal_finishing"
-                                                value="<?= date('Y-m-d') ?>"
-                                                required>
-                                        </div>
-                                        <div class="col-md-8">
-                                            <div class="petugas-info">
-                                                <strong>Petugas Finishing:</strong>
-                                                <span class="petugas-fixed"><?= htmlspecialchars($main_data['nama_petugas']) ?></span>
-                                                <small class="petugas-note">(Otomatis sesuai pengiriman, upah akan ditambahkan ke hutang petugas ini)</small>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="table-responsive">
-                                        <table class="table table-bordered table-hover table-koko">
-                                            <thead class="table-light">
-                                                <tr class="text-center">
-                                                    <th width="15%">Jenis Koko</th>
-                                                    <th width="6%">Dikirim</th>
-                                                    <th width="8%">Selesai</th>
-                                                    <th width="8%">Kembali</th>
-                                                    <th width="6%">Total</th>
-                                                    <th hidden width="12%">Petugas Finishing</th>
-                                                    <th width="18%">Upah per Unit</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <?php if (empty($details_data)): ?>
-                                                    <tr>
-                                                        <td colspan="8" class="text-center">Tidak ada data koko</td>
-                                                    </tr>
+                                            <td class="text-center">
+                                                <span class="badge bg-danger"><?= $finish['jumlah_rusak'] ?> pcs</span>
+                                            </td>
+                                            <td class="text-center"><?= formatRupiah($finish['upah_per_unit']) ?></td>
+                                            <td class="text-center fw-bold text-success"><?= formatRupiah($finish['total_upah']) ?></td>
+                                            <!-- <td class="text-center">
+                                                <?php if (!empty($finish['nama_produk_koko'])): ?>
+                                                    <span class="badge bg-info"><?= htmlspecialchars($finish['nama_produk_koko']) ?></span>
                                                 <?php else: ?>
-                                                    <?php foreach ($details_data as $detail): ?>
-                                                        <?php
-                                                        $id_detail = $detail['id_detail_hasil_kirim_finishing'];
-                                                        $jumlah_dikirim = $detail['jumlah'];
-                                                        ?>
-                                                        <tr>
-                                                            <td>
-                                                                <?= htmlspecialchars($detail['nama_koko']) ?>
-                                                            </td>
-                                                            <td class="text-center">
-                                                                <?= $jumlah_dikirim ?> pcs
-                                                                <input type="hidden" id="jumlah_dikirim_<?= $id_detail ?>" value="<?= $jumlah_dikirim ?>">
-                                                            </td>
-                                                            <td>
-                                                                <input type="number"
-                                                                    class="form-control form-control-sm jumlah-input text-center"
-                                                                    name="jumlah_selesai_<?= $id_detail ?>"
-                                                                    id="jumlah_selesai_<?= $id_detail ?>"
-                                                                    value="0"
-                                                                    min="0"
-                                                                    max="<?= $jumlah_dikirim ?>"
-                                                                    data-max="<?= $jumlah_dikirim ?>"
-                                                                    onchange="validateTotal(<?= $id_detail ?>)">
-                                                            </td>
-                                                            <td>
-                                                                <input type="number"
-                                                                    class="form-control form-control-sm jumlah-input text-center"
-                                                                    name="jumlah_rusak_<?= $id_detail ?>"
-                                                                    id="jumlah_rusak_<?= $id_detail ?>"
-                                                                    value="0"
-                                                                    min="0"
-                                                                    max="<?= $jumlah_dikirim ?>"
-                                                                    data-max="<?= $jumlah_dikirim ?>"
-                                                                    onchange="validateTotal(<?= $id_detail ?>)">
-                                                            </td>
-                                                            <td class="text-center">
-                                                                <span id="total_<?= $id_detail ?>" class="badge bg-secondary">
-                                                                    0 pcs
-                                                                </span>
-                                                                <div id="validation_<?= $id_detail ?>" class="validation-message"></div>
-                                                            </td>
-                                                            <td hidden class="text-center">
-                                                                <span class="badge bg-primary">
-                                                                    <?= htmlspecialchars($main_data['nama_petugas']) ?>
-                                                                </span>
+                                                    <span class="badge bg-secondary">-</span>
+                                                <?php endif; ?>
+                                            </td> -->
+                                            <!-- <td class="text-center"><?= dateIndo($finish['tanggal_finishing']) ?></td> -->
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                                <tfoot>
+                                    <tr class="totals-row">
+                                        <td class="text-end fw-bold">TOTAL:</td>
+                                        <td class="text-center fw-bold">
+                                            <?php
+                                            $total_dikirim_finishing = 0;
+                                            foreach ($finishing_data as $finish) {
+                                                $total_dikirim_finishing += $finish['jumlah_dikirim'];
+                                            }
+                                            echo $total_dikirim_finishing . ' pcs';
+                                            ?>
+                                        </td>
+                                        <td class="text-center fw-bold text-success"><?= $total_selesai_finishing ?> pcs</td>
+                                        <td class="text-center fw-bold text-danger"><?= $total_rusak_finishing ?> pcs</td>
+                                        <td class="text-center fw-bold">-</td>
+                                        <td class="text-center fw-bold text-success"><?= formatRupiah($total_upah_finishing) ?></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+
+                        <!-- Informasi Produk -->
+                        <div class="mt-4">
+                            <h6><i class="ti ti-package"></i> Informasi Stok Produk</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="alert alert-info">
+                                        <!-- <p class="mb-1"><strong>Produk Utama:</strong> <?= htmlspecialchars($main_data['nama_produk']) ?></p> -->
+                                        <p class="mb-0"><strong>Ditambahkan ke Stok:</strong> <?= $total_selesai_finishing ?> pcs</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="alert alert-warning">
+                                        <p class="mb-1"><strong>Kembali ke Stok Koko Mentah:</strong></p>
+                                        <p class="mb-0">
+                                            <?php
+                                            $koko_rusak_list = [];
+                                            foreach ($finishing_data as $finish) {
+                                                if ($finish['jumlah_rusak'] > 0) {
+                                                    $koko_rusak_list[] = $finish['nama_koko'] . ' (' . $finish['jumlah_rusak'] . ' pcs)';
+                                                }
+                                            }
+                                            if (!empty($koko_rusak_list)) {
+                                                echo implode(", ", $koko_rusak_list);
+                                            } else {
+                                                echo 'Tidak ada koko kembali';
+                                            }
+                                            ?>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tombol Batal -->
+                        <div class="d-flex justify-content-end mt-4">
+                            <button class="btn btn-batal-semua btn-batal-semua-koko"
+                                data-id="<?= $id_hasil_kirim_finishing ?>"
+                                title="Batalkan semua hasil finishing koko">
+                                <i class="ti ti-trash"></i> Batalkan Semua Hasil
+                            </button>
+                        </div>
+                    </div>
+                <?php else: ?>
+                    <!-- Warning jika belum ada finishing -->
+                    <!-- <div class="warning-box">
+                        <h5><i class="ti ti-info-circle"></i> Informasi</h5>
+                        <p class="mb-2">Hasil finishing untuk pengiriman ini belum diinput.</p>
+                        <p class="mb-0"><strong>Perhatian:</strong> Input hasil finishing hanya bisa dilakukan sekali! Pastikan semua data sudah benar sebelum disimpan.</p>
+                    </div> -->
+                <?php endif; ?>
+
+                <!-- Form Input Hasil Finishing Koko -->
+                <?php if (!$has_finishing): ?>
+                    <form method="POST" action="" id="formFinishingKoko">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Input Hasil Finishing Koko</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <label for="tanggal_finishing" class="form-label">
+                                            <strong>Tanggal Finishing *</strong>
+                                        </label>
+                                        <input type="date"
+                                            class="form-control"
+                                            id="tanggal_finishing"
+                                            name="tanggal_finishing"
+                                            value="<?= date('Y-m-d') ?>"
+                                            required>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <div class="petugas-info">
+                                            <strong>Petugas Finishing:</strong>
+                                            <span class="petugas-fixed"><?= htmlspecialchars($main_data['nama_petugas']) ?></span>
+                                            <small class="petugas-note">(Otomatis sesuai pengiriman, upah akan ditambahkan ke hutang petugas ini)</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-hover table-koko">
+                                        <thead class="table-light">
+                                            <tr class="text-center">
+                                                <th width="15%">Jenis Koko</th>
+                                                <th width="6%">Dikirim</th>
+                                                <th width="8%">Selesai</th>
+                                                <th width="8%">Kembali</th>
+                                                <th width="6%">Total</th>
+                                                <th hidden width="12%">Petugas Finishing</th>
+                                                <th width="18%">Upah per Unit</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php if (empty($details_data)): ?>
+                                                <tr>
+                                                    <td colspan="8" class="text-center">Tidak ada data koko</td>
+                                                </tr>
+                                            <?php else: ?>
+                                                <?php foreach ($details_data as $detail): ?>
+                                                    <?php
+                                                    $id_detail = $detail['id_detail_hasil_kirim_finishing'];
+                                                    $jumlah_dikirim = $detail['jumlah'];
+                                                    ?>
+                                                    <tr>
+                                                        <td>
+                                                            <?= htmlspecialchars($detail['nama_koko']) ?>
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <?= $jumlah_dikirim ?> pcs
+                                                            <input type="hidden" id="jumlah_dikirim_<?= $id_detail ?>" value="<?= $jumlah_dikirim ?>">
+                                                        </td>
+                                                        <td>
+                                                            <input type="number"
+                                                                class="form-control form-control-sm jumlah-input text-center"
+                                                                name="jumlah_selesai_<?= $id_detail ?>"
+                                                                id="jumlah_selesai_<?= $id_detail ?>"
+                                                                value="0"
+                                                                min="0"
+                                                                max="<?= $jumlah_dikirim ?>"
+                                                                data-max="<?= $jumlah_dikirim ?>"
+                                                                onchange="validateTotal(<?= $id_detail ?>)">
+                                                        </td>
+                                                        <td>
+                                                            <input type="number"
+                                                                class="form-control form-control-sm jumlah-input text-center"
+                                                                name="jumlah_rusak_<?= $id_detail ?>"
+                                                                id="jumlah_rusak_<?= $id_detail ?>"
+                                                                value="0"
+                                                                min="0"
+                                                                max="<?= $jumlah_dikirim ?>"
+                                                                data-max="<?= $jumlah_dikirim ?>"
+                                                                onchange="validateTotal(<?= $id_detail ?>)">
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <span id="total_<?= $id_detail ?>" class="badge bg-secondary">
+                                                                0 pcs
+                                                            </span>
+                                                            <div id="validation_<?= $id_detail ?>" class="validation-message"></div>
+                                                        </td>
+                                                        <td hidden class="text-center">
+                                                            <span class="badge bg-primary">
+                                                                <?= htmlspecialchars($main_data['nama_petugas']) ?>
+                                                            </span>
+                                                            <input type="hidden"
+                                                                name="id_petugas_finishing_<?= $id_detail ?>"
+                                                                value="<?= $main_data['id_petugas_finishing'] ?>">
+                                                        </td>
+                                                        <td>
+                                                            <div class="upah-wrapper">
+                                                                <!-- mode input -->
                                                                 <input type="hidden"
-                                                                    name="id_petugas_finishing_<?= $id_detail ?>"
-                                                                    value="<?= $main_data['id_petugas_finishing'] ?>">
-                                                            </td>
-                                                            <td>
-                                                                <div class="upah-wrapper">
-                                                                    <!-- mode input -->
-                                                                    <input type="hidden"
-                                                                        name="upah_input_type_<?= $id_detail ?>"
-                                                                        id="upah_input_type_<?= $id_detail ?>"
-                                                                        value="dropdown">
+                                                                    name="upah_input_type_<?= $id_detail ?>"
+                                                                    id="upah_input_type_<?= $id_detail ?>"
+                                                                    value="dropdown">
 
-                                                                    <!-- DROPDOWN -->
-                                                                    <div class="input-group input-group-sm" id="upah_dropdown_<?= $id_detail ?>">
-                                                                        <select name="upah_dropdown_<?= $id_detail ?>"
-                                                                            class="form-select upah-select"
-                                                                            onchange="updateTotalUpah(<?= $id_detail ?>)">
-                                                                            <?php foreach ($upah_dropdown_options as $option): ?>
-                                                                                <?php if ($option['tarif_per_unit'] > 0): ?>
-                                                                                    <option value="<?= $option['tarif_per_unit'] ?>">
-                                                                                        Rp <?= number_format($option['tarif_per_unit'], 0, ',', '.') ?>
-                                                                                        <?= !empty($option['keterangan']) ? ' - ' . htmlspecialchars($option['keterangan']) : '' ?>
-                                                                                    </option>
-                                                                                <?php endif; ?>
-                                                                            <?php endforeach; ?>
-                                                                        </select>
+                                                                <!-- DROPDOWN -->
+                                                                <div class="input-group input-group-sm" id="upah_dropdown_<?= $id_detail ?>">
+                                                                    <select name="upah_dropdown_<?= $id_detail ?>"
+                                                                        class="form-select upah-select"
+                                                                        onchange="updateTotalUpah(<?= $id_detail ?>)">
+                                                                        <?php foreach ($upah_dropdown_options as $option): ?>
+                                                                            <?php if ($option['tarif_per_unit'] > 0): ?>
+                                                                                <option value="<?= $option['tarif_per_unit'] ?>">
+                                                                                    Rp <?= number_format($option['tarif_per_unit'], 0, ',', '.') ?>
+                                                                                    <?= !empty($option['keterangan']) ? ' - ' . htmlspecialchars($option['keterangan']) : '' ?>
+                                                                                </option>
+                                                                            <?php endif; ?>
+                                                                        <?php endforeach; ?>
+                                                                    </select>
 
-                                                                        <button type="button"
-                                                                            class="m-1 btn btn-outline-secondary btn-toggle-upah"
-                                                                            title="Input manual"
-                                                                            onclick="toggleUpahInput(<?= $id_detail ?>)">
-                                                                            <i class="ti ti-pencil"></i>
-                                                                        </button>
-                                                                    </div>
+                                                                    <button type="button"
+                                                                        class="m-1 btn btn-outline-secondary btn-toggle-upah"
+                                                                        title="Input manual"
+                                                                        onclick="toggleUpahInput(<?= $id_detail ?>)">
+                                                                        <i class="ti ti-pencil"></i>
+                                                                    </button>
+                                                                </div>
 
-                                                                    <!-- MANUAL -->
-                                                                    <div class="input-group input-group-sm mt-1 d-none"
-                                                                        id="upah_manual_<?= $id_detail ?>">
-                                                                        <span class="input-group-text">Rp</span>
-                                                                        <input type="number"
-                                                                            name="upah_manual_<?= $id_detail ?>"
-                                                                            id="upah_manual_input_<?= $id_detail ?>"
-                                                                            class="form-control upah-input"
-                                                                            min="0"
-                                                                            step="100"
-                                                                            value="0"
-                                                                            placeholder="Masukkan upah"
-                                                                            onchange="updateTotalUpah(<?= $id_detail ?>)">
+                                                                <!-- MANUAL -->
+                                                                <div class="input-group input-group-sm mt-1 d-none"
+                                                                    id="upah_manual_<?= $id_detail ?>">
+                                                                    <span class="input-group-text">Rp</span>
+                                                                    <input type="number"
+                                                                        name="upah_manual_<?= $id_detail ?>"
+                                                                        id="upah_manual_input_<?= $id_detail ?>"
+                                                                        class="form-control upah-input"
+                                                                        min="0"
+                                                                        step="100"
+                                                                        value="0"
+                                                                        placeholder="Masukkan upah"
+                                                                        onchange="updateTotalUpah(<?= $id_detail ?>)">
 
-                                                                        <button type="button"
-                                                                            class="m-1 btn btn-outline-secondary btn-toggle-upah"
-                                                                            title="Pilih dari tarif"
-                                                                            onclick="toggleUpahInput(<?= $id_detail ?>)">
-                                                                            <i class="ti ti-list"></i>
-                                                                        </button>
-                                                                    </div>
+                                                                    <button type="button"
+                                                                        class="m-1 btn btn-outline-secondary btn-toggle-upah"
+                                                                        title="Pilih dari tarif"
+                                                                        onclick="toggleUpahInput(<?= $id_detail ?>)">
+                                                                        <i class="ti ti-list"></i>
+                                                                    </button>
+                                                                </div>
 
-                                                                    <!-- TOTAL -->
-                                                                    <div class="mt-1">
-                                                                        <small class="text-muted">Total:</small>
-                                                                        <div class="fw-bold text-success" id="total_upah_<?= $id_detail ?>">
-                                                                            Rp 0
-                                                                        </div>
+                                                                <!-- TOTAL -->
+                                                                <div class="mt-1">
+                                                                    <small class="text-muted">Total:</small>
+                                                                    <div class="fw-bold text-success" id="total_upah_<?= $id_detail ?>">
+                                                                        Rp 0
                                                                     </div>
                                                                 </div>
-                                                            </td>
-                                                        </tr>
-                                                    <?php endforeach; ?>
-                                                <?php endif; ?>
-                                            </tbody>
-                                            <tfoot>
-                                                <tr>
-                                                    <td colspan="4" class="text-end fw-bold">
-                                                        <div class="pt-2">Total Upah Keseluruhan:</div>
-                                                    </td>
-                                                    <td class="text-center">
-                                                        <div id="all_validation" class="validation-message mb-2"></div>
-                                                        <div class="fw-bold fs-5 text-success" id="grand_total_upah">
-                                                            Rp 0
-                                                        </div>
-                                                        <div class="small text-muted mt-1">
-                                                            Hutang: <?= htmlspecialchars($main_data['nama_petugas']) ?>
-                                                        </div>
-                                                    </td>
-                                                    <td></td>
-                                                </tr>
-                                            </tfoot>
-                                        </table>
-                                    </div>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                <?php endforeach; ?>
+                                            <?php endif; ?>
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <td colspan="4" class="text-end fw-bold">
+                                                    <div class="pt-2">Total Upah Keseluruhan:</div>
+                                                </td>
+                                                <td class="text-start">
+                                                    <div id="all_validation" class="validation-message mb-2"></div>
+                                                    <div class="fw-bold fs-5 text-success" id="grand_total_upah">
+                                                        Rp 0
+                                                    </div>
+                                                    <div class="small text-muted mt-1">
+                                                        Total Upah: <?= htmlspecialchars($main_data['nama_petugas']) ?>
+                                                    </div>
+                                                </td>
+                                                <td></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
 
-                                    <div class="mt-4">
-                                        <button type="submit"
-                                            name="submit_finishing_koko"
-                                            class="btn btn-primary btn-save">
-                                            <i class="ti ti-check"></i> Simpan Hasil Finishing
-                                        </button>
+                                <div class="mt-4">
+                                    <button type="submit"
+                                        name="submit_finishing_koko"
+                                        class="btn btn-primary btn-save">
+                                        <i class="ti ti-check"></i> Simpan Hasil Finishing
+                                    </button>
 
-                                        <a href="finishing.php" class="btn btn-secondary ms-2">
-                                            <i class="ti ti-x"></i> Batal
-                                        </a>
-                                    </div>
+                                    <a href="finishing.php" class="btn btn-secondary ms-2">
+                                        <i class="ti ti-x"></i> Batal
+                                    </a>
                                 </div>
                             </div>
-                        </form>
-                    <?php endif; ?>
-                </div>
+                        </div>
+                    </form>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -1541,38 +1535,29 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
 
     // Konfirmasi batal semua hasil finishing
     $(document).on('click', '.btn-batal-semua-koko', function() {
-        const id = $(this).data('id');
 
         Swal.fire({
-            title: 'Batalkan Semua Hasil Finishing?',
-            html: `<div class="text-left">
-                      <p>Apakah Anda yakin ingin membatalkan <strong>SEMUA</strong> hasil finishing untuk:</p>
-                      <ul>
-                        <li><strong>Petugas:</strong> <?= htmlspecialchars($main_data['nama_petugas']) ?></li>
-                        <li><strong>Semua tanggal finishing</strong></li>
-                      </ul>
-                      <p class="text-danger mt-3"><strong>PERINGATAN:</strong></p>
-                      <ul class="text-danger">
-                        <li>Semua stok produk yang sudah ditambahkan akan dikurangi</li>
-                        <li>Semua stok koko akan dikembalikan</li>
-                        <li>Semua hutang upah petugas <?= htmlspecialchars($main_data['nama_petugas']) ?> akan dikurangi</li>
-                        <li>Status akan kembali ke "pengiriman"</li>
-                        <li><strong>Aksi ini tidak dapat dibatalkan!</strong></li>
-                      </ul>
-                    </div>`,
-            icon: 'error',
+            title: 'Batalkan Semua Finishing?',
+            html: `
+            <p class="text-danger mt-2">
+                <strong>Aksi ini tidak dapat dibatalkan!</strong>
+            </p>
+        `,
+            icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#dc3545',
             cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Ya, Batalkan Semua!',
-            cancelButtonText: 'Batal',
-            width: '600px'
+            confirmButtonText: 'Ya, Batalkan',
+            cancelButtonText: 'Batal'
         }).then((result) => {
             if (result.isConfirmed) {
-                window.location.href = 'hasil_finishing_koko.php?id=<?= $id_hasil_kirim_finishing ?>&action=batal_hasil_koko';
+                window.location.href =
+                    'hasil_finishing_koko.php?id=<?= $id_hasil_kirim_finishing ?>&action=batal_hasil_koko';
             }
         });
+
     });
+
 
     // Initialize semua saat halaman dimuat
     document.addEventListener('DOMContentLoaded', function() {
@@ -1609,17 +1594,17 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
                 // Validasi semua koko harus diproses
                 if (!allValid) {
                     e.preventDefault();
-                    alert('Semua koko harus diproses! Pastikan total (selesai + rusak) sama dengan jumlah dikirim untuk setiap koko.');
+                    alert('Semua koko harus diproses! Pastikan total (selesai + kembali) sama dengan jumlah dikirim untuk setiap koko.');
                     return false;
                 }
 
                 // Konfirmasi sebelum submit
-                const message = 'Anda yakin ingin menyimpan hasil finishing?\n\n' +
-                    'Petugas: <?= htmlspecialchars($main_data['nama_petugas']) ?>\n' +
-                    'Hasil finishing selesai akan ditambahkan ke stok produk.\n' +
-                    'Hasil finishing rusak akan dikembalikan ke stok koko.\n' +
-                    'Upah akan ditambahkan ke hutang petugas: <?= htmlspecialchars($main_data['nama_petugas']) ?>\n\n' +
-                    'Catatan: Hasil finishing hanya bisa diinput sekali!';
+                // const message = 'Anda yakin ingin menyimpan hasil finishing?\n\n' +
+                //     'Petugas: <?= htmlspecialchars($main_data['nama_petugas']) ?>\n' +
+                //     'Hasil finishing selesai akan ditambahkan ke stok produk.\n' +
+                //     'Hasil finishing rusak akan dikembalikan ke stok koko.\n' +
+                //     'Upah akan ditambahkan ke hutang petugas: <?= htmlspecialchars($main_data['nama_petugas']) ?>\n\n' +
+                //     'Catatan: Hasil finishing hanya bisa diinput sekali!';
 
                 if (!confirm(message)) {
                     e.preventDefault();

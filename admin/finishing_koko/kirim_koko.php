@@ -41,13 +41,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_kirim_fin
         }
 
         // Validasi duplikasi penjahit untuk tanggal yang sama (opsional)
-        // Hapus validasi yang error ini:
-        // $check_penjahit = $conn->query("SELECT id_hasil_kirim_finishing FROM hasil_kirim_finishing 
-        //                               WHERE id_penjahit = $id_penjahit 
-        //                               AND tanggal_kirim_finishing = '$tanggal_kirim_finishing'");
-
-        // Ganti dengan validasi sederhana jika ada kolom nama_penjahit di tabel
-        // Atau hapus validasi ini jika tabel tidak memiliki kolom penjahit
 
         $check_duplicate = true; // Asumsi tidak ada duplikasi
         // Jika tabel punya kolom untuk penjahit, bisa validasi di sini
@@ -266,7 +259,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_kirim_fin
                                     <div class="card-body">
                                         <div class="row g-3 align-items-center">
                                             <div class="col-md-4">
-                                                <label class="form-label">Nama Petugas Finishing</label>
+                                                <label class="form-label">Nama Petugas Finishing <span class="text-danger">*</span></label>
                                                 <select name="id_petugas_finishing" class="form-control" required>
                                                     <option value="">-- Pilih Petugas Finishing --</option>
                                                     <?php foreach ($petugas_finishing as $p): ?>
@@ -278,7 +271,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_kirim_fin
                                             </div>
 
                                             <div class="col-md-4">
-                                                <label class="form-label">Nama Penjahit</label>
+                                                <label class="form-label">Nama Penjahit <span class="text-danger">*</span></label>
                                                 <select name="nama_penjahit" class="form-control" required>
                                                     <option value="">-- Pilih Penjahit --</option>
                                                     <?php foreach ($penjahit as $j): ?>
@@ -290,7 +283,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_kirim_fin
                                             </div>
 
                                             <div class="col-md-4">
-                                                <label class="form-label">Tanggal Kirim Finishing</label>
+                                                <label class="form-label">Tanggal Kirim Finishing <span class="text-danger">*</span></label>
                                                 <input type="date" name="tanggal_kirim_finishing" class="form-control"
                                                     value="<?= isset($_POST['tanggal_kirim_finishing']) ? htmlspecialchars($_POST['tanggal_kirim_finishing']) : date('Y-m-d') ?>"
                                                     required>
@@ -299,27 +292,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_kirim_fin
 
                                         <div class="row mt-3 g-3 align-items-center">
                                             <div class="col-md-4">
-                                                <label class="form-label">Total Kirim (Pcs)</label>
+                                                <label class="form-label">Total Kirim Pcs (Otomatis)</label>
                                                 <div class="input-group">
                                                     <input type="number" name="total_kirim" class="form-control" min="1"
                                                         value="<?= isset($_POST['total_kirim']) ? htmlspecialchars($_POST['total_kirim']) : '' ?>"
                                                         id="totalKirimInput" readonly>
                                                     <span class="input-group-text">Pcs</span>
                                                 </div>
-                                                <small class="text-muted">Total pcs yang dikirim (otomatis terhitung)</small>
                                             </div>
 
                                             <div class="col-md-4">
-                                                <label class="form-label">Status Finishing</label>
-                                                <select name="status_finishing" class="form-control" required>
-                                                    <option value="pengiriman" <?= isset($_POST['status_finishing']) && $_POST['status_finishing'] == 'pengiriman' ? 'selected' : '' ?>>Pengiriman</option>
-                                                    <option value="diproses" <?= isset($_POST['status_finishing']) && $_POST['status_finishing'] == 'diproses' ? 'selected' : '' ?>>Diproses</option>
-                                                    <option value="selesai" <?= isset($_POST['status_finishing']) && $_POST['status_finishing'] == 'selesai' ? 'selected' : '' ?>>Selesai</option>
+                                                <label class="form-label">Status Finishing (Otomatis)</label>
+                                                <select name="status_finishing"
+                                                    class="form-control"
+                                                    style="pointer-events:none; background:#e9ecef;">
+                                                    <option value="pengiriman" selected>Pengiriman</option>
                                                 </select>
                                             </div>
 
                                             <div class="col-md-4">
-                                                <label class="form-label">Produk yang Dihasilkan</label>
+                                                <label class="form-label">Produk yang Dihasilkan (Otomatis)</label>
                                                 <div class="produk-info" id="produkPreview">
                                                     Pilih koko terlebih dahulu
                                                 </div>
@@ -331,16 +323,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_kirim_fin
                                 <div class="card mt-3 border border-dark shadow-sm rounded-3">
                                     <div class="card-header">
                                         <h3>Daftar Koko yang Dikirim</h3>
-                                        <small class="text-muted">Dapat mengirim koko dengan produk yang berbeda</small>
                                     </div>
                                     <div class="card-body">
                                         <table class="table" id="tabelBahan">
                                             <thead>
                                                 <tr class="text-center">
-                                                    <th>Koko Belum Jadi</th>
+                                                    <th>Koko Mentah <span class="text-danger">*</span></th>
                                                     <th>Produk Terkait</th>
                                                     <th>Stok Tersedia</th>
-                                                    <th>Pcs</th>
+                                                    <th>Pcs <span class="text-danger">*</span></th>
                                                     <th>Aksi</th>
                                                 </tr>
                                             </thead>

@@ -4,7 +4,11 @@ require_once '../../config/functions.php';
 
 
 // Ambil semua tarif upah
-$tarif_upah = query("SELECT * FROM tarif_upah ORDER BY berlaku_sejak DESC");
+$tarif_upah = query("
+    SELECT *
+    FROM tarif_upah
+    ORDER BY jenis_tarif ASC, berlaku_sejak DESC
+");
 
 // Tambah tarif baru
 if (isset($_POST['tambah_tarif'])) {

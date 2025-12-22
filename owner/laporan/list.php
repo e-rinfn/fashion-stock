@@ -43,273 +43,6 @@ function getStokKoko($id_produk)
     return 0;
 }
 
-/**
- * Mencatat atau menambah hutang upah karyawan (tanpa periode)
- * @param int $id_karyawan ID karyawan
- * @param string $jenis_karyawan Jenis karyawan ('pemotong' atau 'penjahit')
- * @param string $tanggal_produksi Tanggal produksi
- * @param float $jumlah_upah Jumlah upah yang harus dibayar
- * @return bool True jika berhasil, false jika gagal
- */
-function catatHutangUpah($id_karyawan, $jenis_karyawan, $tanggal_produksi, $jumlah_upah)
-{
-    global $conn;
-
-    /**
-     * 1. Cek catatan hutang tanpa periode
-     * Hanya berdasarkan id_karyawan + jenis_karyawan.
-     */
-    $check = $conn->prepare("
-        SELECT id_hutang, total_upah, sisa_hutang 
-        FROM hutang_upah 
-        WHERE id_karyawan = ? AND jenis_karyawan = ?
-    ");
-    $check->bind_param("is", $id_karyawan, $jenis_karyawan);
-    $check->execute();
-    $result = $check->get_result();
-
-    /**
-     * 2. Jika catatan hutang SUDAH ADA → update total / sisa hutang
-     */
-    if ($result->num_rows > 0) {
-
-        $hutang = $result->fetch_assoc();
-
-        // Tambah upah ke total & sisa
-        $total_upah_baru = $hutang['total_upah'] + $jumlah_upah;
-        $sisa_hutang_baru = $hutang['sisa_hutang'] + $jumlah_upah;
-
-        $update = $conn->prepare("
-            UPDATE hutang_upah 
-            SET total_upah = ?, sisa_hutang = ?, updated_at = NOW()
-            WHERE id_hutang = ?
-        ");
-        $update->bind_param("ddi", $total_upah_baru, $sisa_hutang_baru, $hutang['id_hutang']);
-
-        return $update->execute();
-    }
-
-    /**
-     * 3. Jika catatan hutang BELUM ADA → buat baru
-     */
-    else {
-
-        $insert = $conn->prepare("
-            INSERT INTO hutang_upah (id_karyawan, jenis_karyawan, total_upah, sisa_hutang, created_at, updated_at)
-            VALUES (?, ?, ?, ?, NOW(), NOW())
-        ");
-        $insert->bind_param("isdd", $id_karyawan, $jenis_karyawan, $jumlah_upah, $jumlah_upah);
-
-        return $insert->execute();
-    }
-}
-
-/**
- * Mendapatkan tarif upah terkini berdasarkan jenis tarif dan tanggal referensi
- * @param string $jenis_tarif Jenis tarif ('pemotongan' atau 'penjahitan')
- * @param string|null $tanggal_referensi Tanggal referensi untuk mencari tarif yang berlaku
- * @return float Tarif per unit
- */
-function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
-{
-    global $conn;
-
-    if ($tanggal_referensi === null) {
-        $tanggal_referensi = date('Y-m-d');
-    }
-
-    $sql = "SELECT tarif_per_unit 
-            FROM tarif_upah 
-            WHERE jenis_tarif = ? 
-            AND berlaku_sejak <= ? 
-            ORDER BY berlaku_sejak DESC 
-            LIMIT 1";
-
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("ss", $jenis_tarif, $tanggal_referensi);
-    $stmt->execute();
-    $result = $stmt->get_result();
-
-    if ($result->num_rows > 0) {
-        $row = $result->fetch_assoc();
-        return $row['tarif_per_unit'];
-    }
-
-    // Default value jika tidak ada tarif
-    return 0.00;
-}
-
-/**
- * Update hutang upah TANPA PERIODE (tambah hutang)
- * @param int $id_karyawan ID karyawan
- * @param string $jenis_karyawan Jenis karyawan ('pemotong' atau 'penjahit')
- * @param float $jumlah_upah Jumlah upah yang ditambahkan
- * @return bool True jika berhasil, false jika gagal
- */
-function updateHutangUpah($id_karyawan, $jenis_karyawan, $jumlah_upah)
-{
-    global $conn;
-
-    $sql = "UPDATE hutang_upah 
-           SET total_upah = total_upah + ?,
-               sisa_hutang = sisa_hutang + ?,
-               updated_at = NOW()
-           WHERE id_karyawan = ? AND jenis_karyawan = ?";
-
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("ddis", $jumlah_upah, $jumlah_upah, $id_karyawan, $jenis_karyawan);
-    return $stmt->execute();
-}
-
-/**
- * Mengurangi hutang upah penjahit dengan validasi
- * @param int $id_penjahit ID penjahit
- * @param float $jumlah_kurang Jumlah yang akan dikurangi
- * @return bool True jika berhasil, Exception jika gagal
- * @throws Exception Jika terjadi kesalahan
- */
-function kurangiHutangUpahPenjahit($id_penjahit, $jumlah_kurang)
-{
-    global $conn;
-
-    try {
-        // 1. Cek apakah ada hutang
-        $sql_check = "SELECT id_hutang, total_upah, sisa_hutang, total_dibayar 
-                     FROM hutang_upah 
-                     WHERE id_karyawan = ? AND jenis_karyawan = 'penjahit'
-                     LIMIT 1";
-        $stmt = $conn->prepare($sql_check);
-        $stmt->bind_param("i", $id_penjahit);
-        $stmt->execute();
-        $result = $stmt->get_result();
-
-        if ($result->num_rows === 0) {
-            // Jika tidak ada hutang, tidak perlu melakukan apa-apa
-            // (mungkin data sudah dihapus sebelumnya)
-            return true;
-        }
-
-        $hutang = $result->fetch_assoc();
-
-        // 2. Validasi: tidak boleh mengurangi lebih dari sisa hutang
-        if ($jumlah_kurang > $hutang['sisa_hutang']) {
-            throw new Exception("Tidak dapat mengurangi hutang karena jumlah yang akan dikurangi (" .
-                formatRupiah($jumlah_kurang) . ") lebih besar dari sisa hutang (" .
-                formatRupiah($hutang['sisa_hutang']) . "). Total yang sudah dibayar: " .
-                formatRupiah($hutang['total_dibayar']));
-        }
-
-        // 3. Hitung nilai baru
-        $total_upah_baru = $hutang['total_upah'] - $jumlah_kurang;
-        $sisa_hutang_baru = $hutang['sisa_hutang'] - $jumlah_kurang;
-
-        // Pastikan tidak minus
-        $total_upah_baru = max(0, $total_upah_baru);
-        $sisa_hutang_baru = max(0, $sisa_hutang_baru);
-
-        // 4. Update atau hapus
-        if ($total_upah_baru <= 0) {
-            // Hapus record hutang jika total upah menjadi 0
-            $sql_delete = "DELETE FROM hutang_upah WHERE id_hutang = ?";
-            $stmt = $conn->prepare($sql_delete);
-            $stmt->bind_param("i", $hutang['id_hutang']);
-            if (!$stmt->execute()) {
-                throw new Exception("Gagal menghapus record hutang: " . $conn->error);
-            }
-            return true;
-        } else {
-            // Update hutang yang sudah ada
-            $sql_update = "UPDATE hutang_upah 
-                          SET total_upah = ?, 
-                              sisa_hutang = ?,
-                              updated_at = NOW()
-                          WHERE id_hutang = ?";
-            $stmt = $conn->prepare($sql_update);
-            $stmt->bind_param("ddi", $total_upah_baru, $sisa_hutang_baru, $hutang['id_hutang']);
-            if (!$stmt->execute()) {
-                throw new Exception("Gagal update hutang: " . $conn->error);
-            }
-            return true;
-        }
-    } catch (Exception $e) {
-        throw new Exception("Gagal mengurangi hutang upah: " . $e->getMessage());
-    }
-}
-
-/**
- * Mengurangi hutang upah pemotong dengan validasi
- * @param int $id_pemotong ID pemotong
- * @param float $jumlah_kurang Jumlah yang akan dikurangi
- * @return bool True jika berhasil, Exception jika gagal
- * @throws Exception Jika terjadi kesalahan
- */
-function kurangiHutangUpahPemotong($id_pemotong, $jumlah_kurang)
-{
-    global $conn;
-
-    try {
-        // 1. Cek apakah ada hutang
-        $sql_check = "SELECT id_hutang, total_upah, sisa_hutang, total_dibayar 
-                     FROM hutang_upah 
-                     WHERE id_karyawan = ? AND jenis_karyawan = 'pemotong'
-                     LIMIT 1";
-        $stmt = $conn->prepare($sql_check);
-        $stmt->bind_param("i", $id_pemotong);
-        $stmt->execute();
-        $result = $stmt->get_result();
-
-        if ($result->num_rows === 0) {
-            // Jika tidak ada hutang, tidak perlu melakukan apa-apa
-            // (mungkin data sudah dihapus sebelumnya)
-            return true;
-        }
-
-        $hutang = $result->fetch_assoc();
-
-        // 2. Validasi: tidak boleh mengurangi lebih dari sisa hutang
-        if ($jumlah_kurang > $hutang['sisa_hutang']) {
-            throw new Exception("Tidak dapat mengurangi hutang karena jumlah yang akan dikurangi (" .
-                formatRupiah($jumlah_kurang) . ") lebih besar dari sisa hutang (" .
-                formatRupiah($hutang['sisa_hutang']) . "). Total yang sudah dibayar: " .
-                formatRupiah($hutang['total_dibayar']));
-        }
-
-        // 3. Hitung nilai baru
-        $total_upah_baru = $hutang['total_upah'] - $jumlah_kurang;
-        $sisa_hutang_baru = $hutang['sisa_hutang'] - $jumlah_kurang;
-
-        // Pastikan tidak minus
-        $total_upah_baru = max(0, $total_upah_baru);
-        $sisa_hutang_baru = max(0, $sisa_hutang_baru);
-
-        // 4. Update atau hapus
-        if ($total_upah_baru <= 0) {
-            // Hapus record hutang jika total upah menjadi 0
-            $sql_delete = "DELETE FROM hutang_upah WHERE id_hutang = ?";
-            $stmt = $conn->prepare($sql_delete);
-            $stmt->bind_param("i", $hutang['id_hutang']);
-            if (!$stmt->execute()) {
-                throw new Exception("Gagal menghapus record hutang: " . $conn->error);
-            }
-            return true;
-        } else {
-            // Update hutang yang sudah ada
-            $sql_update = "UPDATE hutang_upah 
-                          SET total_upah = ?, 
-                              sisa_hutang = ?,
-                              updated_at = NOW()
-                          WHERE id_hutang = ?";
-            $stmt = $conn->prepare($sql_update);
-            $stmt->bind_param("ddi", $total_upah_baru, $sisa_hutang_baru, $hutang['id_hutang']);
-            if (!$stmt->execute()) {
-                throw new Exception("Gagal update hutang: " . $conn->error);
-            }
-            return true;
-        }
-    } catch (Exception $e) {
-        throw new Exception("Gagal mengurangi hutang upah pemotong: " . $e->getMessage());
-    }
-}
 
 // ============================================================================
 // AMBIL DATA DARI DATABASE UNTUK DROPDOWN DAN FILTER
@@ -502,630 +235,6 @@ usort($all_data, function ($a, $b) {
     return (int)$b['seri'] <=> (int)$a['seri'];
 });
 
-// ============================================================================
-// PROSES INPUT PENJAHITAN DARI FORM POST
-// ============================================================================
-
-/**
- * 1. SIMPAN TANGGAL KIRIM (Modal Pertama)
- * Menyimpan tanggal kirim jahit dan mengubah status menjadi 'penjahitan'
- */
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    if (isset($_POST['simpan_tanggal_kirim'])) {
-        $id_hasil_potong_fix = intval($_POST['id_hasil_potong_fix']);
-        $id_penjahit = isset($_POST['id_penjahit']) && !empty($_POST['id_penjahit']) ? intval($_POST['id_penjahit']) : null;
-        $tanggal_kirim_jahit = isset($_POST['tanggal_kirim_jahit']) && !empty($_POST['tanggal_kirim_jahit'])
-            ? $conn->real_escape_string($_POST['tanggal_kirim_jahit'])
-            : null;
-
-        // Validasi
-        $error_modal = null;
-
-        if (empty($id_penjahit)) {
-            $error_modal = "Penjahit harus dipilih";
-        } elseif (empty($tanggal_kirim_jahit)) {
-            $error_modal = "Tanggal kirim jahit harus diisi";
-        }
-
-        if (!$error_modal) {
-            try {
-                // Update hanya tanggal kirim dan penjahit
-                $id_penjahit_sql = $id_penjahit ? $id_penjahit : "NULL";
-                $tanggal_kirim_sql = $tanggal_kirim_jahit ? "'$tanggal_kirim_jahit'" : "NULL";
-
-                $sql_update = "UPDATE hasil_potong_fix 
-                          SET id_penjahit = $id_penjahit_sql, 
-                              tanggal_kirim_jahit = $tanggal_kirim_sql,
-                              status_potong = 'penjahitan'
-                          WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
-
-                if ($conn->query($sql_update)) {
-                    $_SESSION['success'] = "Data tanggal kirim jahit berhasil disimpan. Status berubah menjadi 'Penjahitan'.";
-                    header("Location: list.php");
-                    exit();
-                } else {
-                    throw new Exception("Gagal menyimpan data tanggal kirim: " . $conn->error);
-                }
-            } catch (Exception $e) {
-                $error_modal = $e->getMessage();
-            }
-        }
-    }
-
-    /**
-     * 2. SIMPAN HASIL JAHIT (Modal Kedua)
-     * Menyimpan hasil jahit, menghitung upah, update stok, dan catat hutang
-     */
-    if (isset($_POST['simpan_hasil_jahit'])) {
-        $id_hasil_potong_fix = intval($_POST['id_hasil_potong_fix']);
-        $tanggal_hasil_jahit = isset($_POST['tanggal_hasil_jahit']) && !empty($_POST['tanggal_hasil_jahit'])
-            ? $conn->real_escape_string($_POST['tanggal_hasil_jahit'])
-            : null;
-        $total_hasil_jahit = isset($_POST['total_hasil_jahit']) ? intval($_POST['total_hasil_jahit']) : 0;
-
-        // Ambil input upah manual
-        $upah_per_potongan = floatval($_POST['upah_per_potongan_penjahit']);
-        $total_upah = floatval($_POST['total_upah_penjahit']);
-
-        // Validasi input upah
-        if ($total_upah <= 0) {
-            $error_modal = "Total upah harus lebih dari 0!";
-        }
-
-        // Validasi perhitungan
-        if ($upah_per_potongan > 0 && $total_hasil_jahit > 0) {
-            $calculated_upah = $upah_per_potongan * $total_hasil_jahit;
-            if (abs($calculated_upah - $total_upah) > 1) { // Toleransi 1 rupiah
-                $error_modal = "Perhitungan upah tidak sesuai! Total seharusnya: Rp " . number_format($calculated_upah);
-            }
-        }
-
-        // Ambil data produksi
-        $produksi_data = query("SELECT 
-        hp.id_produk, 
-        hp.total_hasil, 
-        hp.id_penjahit, 
-        hp.tanggal_kirim_jahit,
-        hp.seri,
-        p.tipe_produk,
-        hp.tanggal_hasil_jahit as existing_tanggal,
-        hp.total_hasil_jahit as existing_jumlah
-    FROM hasil_potong_fix hp
-    JOIN produk p ON hp.id_produk = p.id_produk
-    WHERE hp.id_hasil_potong_fix = $id_hasil_potong_fix")[0];
-
-        $id_produk = $produksi_data['id_produk'];
-        $total_hasil_potong = $produksi_data['total_hasil'];
-        $id_penjahit = $produksi_data['id_penjahit'];
-        $tanggal_kirim_jahit = $produksi_data['tanggal_kirim_jahit'];
-        $seri = $produksi_data['seri'];
-        $tipe_produk = $produksi_data['tipe_produk'];
-        $existing_tanggal = $produksi_data['existing_tanggal'];
-        $existing_jumlah = $produksi_data['existing_jumlah'];
-
-        // Cek apakah data sudah ada (existing)
-        $existing = !empty($existing_tanggal) && !empty($existing_jumlah);
-
-        // Inisialisasi variabel change_log
-        $change_log = '';
-        if ($existing) {
-            // Log perubahan
-            $changes = [];
-            if ($existing_tanggal != $tanggal_hasil_jahit) {
-                $changes[] = "Tanggal: " . $existing_tanggal . " → " . $tanggal_hasil_jahit;
-            }
-            if ($existing_jumlah != $total_hasil_jahit) {
-                $changes[] = "Jumlah: " . $existing_jumlah . " → " . $total_hasil_jahit . " Pcs";
-            }
-
-            if (!empty($changes)) {
-                $change_log = "Update hasil jahit: " . implode(", ", $changes);
-            }
-        }
-
-        // Validasi
-        $error_modal = null;
-
-        if (empty($tanggal_hasil_jahit)) {
-            $error_modal = "Tanggal hasil jahit harus diisi";
-        } elseif ($total_hasil_jahit <= 0) {
-            $error_modal = "Total hasil jahit harus lebih dari 0";
-        } elseif ($total_hasil_jahit > $total_hasil_potong) {
-            $error_modal = "Total hasil jahit tidak boleh melebihi total hasil potong ($total_hasil_potong Pcs)";
-        } elseif (empty($id_penjahit) || empty($tanggal_kirim_jahit)) {
-            $error_modal = "Data penjahit atau tanggal kirim belum diinput. Silakan input tanggal kirim terlebih dahulu.";
-        }
-
-        if (!$error_modal) {
-            $conn->autocommit(FALSE);
-            try {
-                // HITUNG UPAH PENJAHIT - PERBAIKAN DI SINI
-                // Gunakan input manual user untuk perhitungan
-                $upah_per_potongan_manual = floatval($_POST['upah_per_potongan_penjahit']);
-                $upah_penjahit = $total_hasil_jahit * $upah_per_potongan_manual;
-
-                // 1. Update data hasil jahit
-                $sql_update = "UPDATE hasil_potong_fix 
-                  SET tanggal_hasil_jahit = '$tanggal_hasil_jahit', 
-                      total_hasil_jahit = $total_hasil_jahit,
-                      status_potong = 'selesai'";
-
-                // Jika ada perubahan, tambahkan log
-                if ($existing && !empty($change_log)) {
-                    $sql_update .= ", keterangan = CONCAT(COALESCE(keterangan, ''), ' | $change_log')";
-                }
-
-                $sql_update .= " WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
-
-                if (!$conn->query($sql_update)) {
-                    throw new Exception("Gagal update data hasil jahit: " . $conn->error);
-                }
-
-                // 2. LOGIKA BERBEDA BERDASARKAN TIPE PRODUK
-                if ($tipe_produk == 'mukena') {
-                    // MUKENA: Update stok
-                    if ($existing) {
-                        // Hitung selisih
-                        $selisih = $total_hasil_jahit - $existing_jumlah;
-                        if ($selisih != 0) {
-                            $sql_update_stok = "UPDATE produk 
-                               SET stok = stok + $selisih 
-                               WHERE id_produk = $id_produk";
-
-                            if (!$conn->query($sql_update_stok)) {
-                                throw new Exception("Gagal update stok produk: " . $conn->error);
-                            }
-                            $pesan_stok = $selisih > 0 ?
-                                "Stok produk bertambah +$selisih" :
-                                "Stok produk berkurang $selisih";
-                        } else {
-                            $pesan_stok = "Stok produk tidak berubah";
-                        }
-                    } else {
-                        // Data baru
-                        $sql_update_stok = "UPDATE produk 
-                           SET stok = stok + $total_hasil_jahit 
-                           WHERE id_produk = $id_produk";
-
-                        if (!$conn->query($sql_update_stok)) {
-                            throw new Exception("Gagal update stok produk: " . $conn->error);
-                        }
-                        $pesan_stok = "Stok produk bertambah +$total_hasil_jahit";
-                    }
-                } else {
-                    // PRODUK TIPE KOKO: masuk ke tabel koko (belum selesai produksi)
-
-                    // Cek apakah data koko sudah ada untuk produk ini
-                    $koko_exist = isKokoExist($id_produk);
-
-                    if ($koko_exist) {
-                        // UPDATE stok koko
-                        $sql_update_koko = "UPDATE koko 
-                       SET stok = stok + $total_hasil_jahit,
-                           updated_at = NOW()
-                       WHERE id_produk = $id_produk";
-
-                        if (!$conn->query($sql_update_koko)) {
-                            throw new Exception("Gagal update stok koko: " . $conn->error);
-                        }
-
-                        $pesan_stok = "Stok koko berhasil ditambah +" . $total_hasil_jahit;
-                    } else {
-                        // INSERT data koko baru
-                        // Ambil informasi produk dari tabel produk
-                        $sql_produk = "SELECT nama_produk, harga_jual FROM produk WHERE id_produk = $id_produk";
-                        $result_produk = $conn->query($sql_produk);
-
-                        if ($result_produk && $result_produk->num_rows > 0) {
-                            $row_produk = $result_produk->fetch_assoc();
-                            $nama_koko = $row_produk['nama_produk'];
-                            $harga_jual = $row_produk['harga_jual'] ?: 0;
-                        } else {
-                            $nama_koko = "Produk Koko";
-                            $harga_jual = 0;
-                        }
-
-                        // INSERT dengan semua kolom yang diperlukan
-                        $sql_insert_koko = "INSERT INTO koko (id_produk, nama_koko, harga_jual, stok, created_at, updated_at)
-                       VALUES ($id_produk, '$nama_koko', $harga_jual, $total_hasil_jahit, NOW(), NOW())";
-
-                        if (!$conn->query($sql_insert_koko)) {
-                            throw new Exception("Gagal menambah data koko baru: " . $conn->error);
-                        }
-
-                        $pesan_stok = "Data koko baru berhasil dibuat (stok +" . $total_hasil_jahit . ")";
-                    }
-                }
-
-                // 3. Catat/Update hutang upah penjahit TANPA PERIODE
-                if ($existing) {
-                    // Update hutang yang sudah ada
-                    $upah_sebelumnya = $existing_jumlah * getTarifUpah('penjahitan', $existing_tanggal);
-                    $selisih_upah = $upah_penjahit - $upah_sebelumnya;
-
-                    if ($selisih_upah != 0) {
-                        updateHutangUpah($id_penjahit, 'penjahit', $selisih_upah);
-                    }
-                } else {
-                    // Data baru
-                    if (!catatHutangUpah($id_penjahit, 'penjahit', $tanggal_hasil_jahit, $upah_penjahit)) {
-                        throw new Exception("Gagal mencatat hutang upah penjahit");
-                    }
-                }
-
-                $conn->commit();
-                $conn->autocommit(TRUE);
-
-                $success_msg = $existing ?
-                    "Data hasil jahit berhasil diupdate. $pesan_stok. Upah penjahit: " . formatRupiah($upah_penjahit) :
-                    "Data hasil jahit berhasil disimpan. $pesan_stok. Upah penjahit: " . formatRupiah($upah_penjahit);
-
-                $_SESSION['success'] = $success_msg;
-                header("Location: list.php");
-                exit();
-            } catch (Exception $e) {
-                $conn->rollback();
-                $conn->autocommit(TRUE);
-                $error_modal = $e->getMessage();
-            }
-        }
-    }
-
-    /**
-     * 3. BATAL HASIL JAHIT (Batal Penjahitan)
-     * Membatalkan hasil jahit tanpa menghapus data penjahit
-     */
-    if (isset($_POST['batal_penjahitan'])) {
-        $id_hasil_potong_fix = intval($_POST['id_hasil_potong_fix']);
-
-        // Ambil data sebelum dibatalkan
-        $produksi_data = query("SELECT 
-        hp.id_produk, 
-        hp.total_hasil_jahit, 
-        hp.id_penjahit, 
-        hp.tanggal_hasil_jahit, 
-        hp.tanggal_kirim_jahit, 
-        hp.total_hasil,
-        hp.seri,
-        p.tipe_produk
-    FROM hasil_potong_fix hp
-    JOIN produk p ON hp.id_produk = p.id_produk
-    WHERE hp.id_hasil_potong_fix = $id_hasil_potong_fix")[0];
-
-        $id_produk = $produksi_data['id_produk'];
-        $total_hasil_jahit = $produksi_data['total_hasil_jahit'];
-        $id_penjahit = $produksi_data['id_penjahit'];
-        $tanggal_hasil_jahit = $produksi_data['tanggal_hasil_jahit'];
-        $tanggal_kirim_jahit = $produksi_data['tanggal_kirim_jahit'];
-        $total_hasil_potong = $produksi_data['total_hasil'];
-        $seri = $produksi_data['seri'];
-        $tipe_produk = $produksi_data['tipe_produk'];
-
-        // Validasi: pastikan ada total_hasil_jahit untuk dibatalkan
-        if (empty($total_hasil_jahit) || $total_hasil_jahit <= 0) {
-            $error_modal = "Tidak ada data hasil jahit yang bisa dibatalkan.";
-        } else {
-            // Hitung upah yang akan dihapus
-            $upah_dihapus = 0;
-            if ($total_hasil_jahit > 0 && $id_penjahit > 0 && !empty($tanggal_hasil_jahit)) {
-                $tarif_penjahit = getTarifUpah('penjahitan', $tanggal_hasil_jahit);
-                $upah_dihapus = $total_hasil_jahit * $tarif_penjahit;
-            }
-
-            $conn->autocommit(FALSE);
-            try {
-                // 1. Reset HANYA data hasil jahit
-                $sql_batal = "UPDATE hasil_potong_fix 
-             SET tanggal_hasil_jahit = NULL, 
-                 total_hasil_jahit = NULL,
-                 status_potong = 'penjahitan'
-             WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
-
-                if (!$conn->query($sql_batal)) {
-                    throw new Exception("Gagal membatalkan data hasil jahit, stok pada finishing koko kurang dari hasil jahit ini.");
-                }
-
-                // 2. LOGIKA BERBEDA BERDASARKAN TIPE PRODUK
-                $pesan_stok = "";
-                if ($tipe_produk == 'mukena' && $total_hasil_jahit > 0) {
-                    // MUKENA: Kurangi stok dari tabel produk
-
-                    // Cek stok produk saat ini
-                    $produk_data = query("SELECT stok, nama_produk FROM produk WHERE id_produk = $id_produk")[0];
-                    $stok_sekarang = $produk_data['stok'];
-                    $nama_produk = htmlspecialchars($produk_data['nama_produk']);
-
-                    if ($stok_sekarang >= $total_hasil_jahit) {
-                        // Stok cukup, kurangi normal
-                        $sql_kurangi_stok = "UPDATE produk 
-                            SET stok = stok - $total_hasil_jahit 
-                            WHERE id_produk = $id_produk";
-
-                        if (!$conn->query($sql_kurangi_stok)) {
-                            throw new Exception("Gagal mengurangi stok produk.");
-                        }
-                        $pesan_stok = "Stok produk dikurangi $total_hasil_jahit pcs";
-                    } else {
-                        // Stok tidak cukup, set ke 0
-                        $selisih = $total_hasil_jahit - $stok_sekarang;
-
-                        $sql_kurangi_stok = "UPDATE produk 
-                            SET stok = 0 
-                            WHERE id_produk = $id_produk";
-
-                        if (!$conn->query($sql_kurangi_stok)) {
-                            throw new Exception("Gagal mengurangi stok produk.");
-                        }
-
-                        // Simpan pesan warning di session
-                        $warning_msg = "Stok produk '$nama_produk' kurang. ";
-                        $warning_msg .= "Hanya berhasil mengurangi $stok_sekarang dari $total_hasil_jahit pcs. ";
-                        $warning_msg .= "Selisih $selisih pcs tidak dapat dikurangi.";
-
-                        $_SESSION['warning'] = $warning_msg;
-
-                        $pesan_stok = "Stok produk direset ke 0 (stok tidak mencukupi).";
-                    }
-                } elseif ($tipe_produk == 'koko' && $total_hasil_jahit > 0) {
-                    // KOKO: Kurangi stok dari tabel koko
-
-                    // Cek stok koko saat ini
-                    $koko_data = query("SELECT stok, nama_koko FROM koko WHERE id_produk = $id_produk LIMIT 1");
-
-                    if (!empty($koko_data)) {
-                        $stok_sekarang = $koko_data[0]['stok'];
-                        $nama_koko = htmlspecialchars($koko_data[0]['nama_koko']);
-
-                        if ($stok_sekarang >= $total_hasil_jahit) {
-                            // Stok cukup, kurangi normal
-                            $sql_kurangi_stok = "UPDATE koko 
-                                SET stok = stok - $total_hasil_jahit,
-                                    updated_at = NOW()
-                                WHERE id_produk = $id_produk";
-
-                            if (!$conn->query($sql_kurangi_stok)) {
-                                throw new Exception("Gagal mengurangi stok koko.");
-                            }
-                            $pesan_stok = "Stok koko dikurangi $total_hasil_jahit roll";
-                        } else {
-                            // Stok tidak cukup, set ke 0
-                            $selisih = $total_hasil_jahit - $stok_sekarang;
-
-                            $sql_kurangi_stok = "UPDATE koko 
-                                SET stok = 0,
-                                    updated_at = NOW()
-                                WHERE id_produk = $id_produk";
-
-                            if (!$conn->query($sql_kurangi_stok)) {
-                                throw new Exception("Gagal update stok koko.");
-                            }
-
-                            // Simpan pesan warning di session
-                            $warning_msg = "Stok koko '$nama_koko' kurang. ";
-                            $warning_msg .= "Hanya berhasil mengurangi $stok_sekarang dari $total_hasil_jahit roll. ";
-                            $warning_msg .= "Selisih $selisih roll tidak dapat dikurangi.";
-
-                            $_SESSION['warning'] = $warning_msg;
-
-                            $pesan_stok = "Stok koko direset ke 0 (stok tidak mencukupi).";
-                        }
-                    } else {
-                        // Data koko tidak ditemukan
-                        $pesan_stok = "Data koko tidak ditemukan. Tidak ada stok yang dapat dikurangi.";
-                    }
-                }
-
-                // 3. Hapus/Update hutang upah penjahit (hanya jika ada upah)
-                if ($upah_dihapus > 0 && $id_penjahit > 0) {
-                    if (!kurangiHutangUpahPenjahit($id_penjahit, $upah_dihapus)) {
-                        throw new Exception("Gagal mengurangi hutang upah penjahit.");
-                    }
-                }
-
-                $conn->commit();
-                $conn->autocommit(TRUE);
-
-                $pesan_success = "Data hasil jahit berhasil dibatalkan";
-                if ($total_hasil_jahit > 0 && !empty($pesan_stok)) {
-                    $pesan_success .= " dan " . strtolower($pesan_stok);
-                }
-                if ($upah_dihapus > 0) {
-                    $pesan_success .= ". Upah penjahit dikurangi: " . formatRupiah($upah_dihapus);
-                }
-                $pesan_success .= ". Data penjahit dan tanggal kirim tetap tersimpan.";
-
-                $_SESSION['success'] = $pesan_success;
-                header("Location: list.php");
-                exit();
-            } catch (Exception $e) {
-                $conn->rollback();
-                $conn->autocommit(TRUE);
-                // Pesan error sederhana
-                $error_modal = "Gagal membatalkan data hasil jahit, stok koko kurang dari hasil jahit ini.";
-            }
-        }
-    }
-
-    /**
-     * 4. HAPUS PENJAHIT DAN TANGGAL KIRIM
-     * Menghapus semua data penjahitan termasuk hasil jahit
-     */
-    if (isset($_POST['hapus_penjahit'])) {
-        $id_hasil_potong_fix = intval($_POST['id_hasil_potong_fix']);
-
-        // Ambil data sebelum dihapus
-        $produksi_data = query("SELECT 
-        hp.id_produk, 
-        hp.total_hasil_jahit, 
-        hp.id_penjahit, 
-        hp.tanggal_hasil_jahit, 
-        hp.tanggal_kirim_jahit, 
-        hp.total_hasil,
-        hp.seri,
-        p.tipe_produk
-    FROM hasil_potong_fix hp
-    JOIN produk p ON hp.id_produk = p.id_produk
-    WHERE hp.id_hasil_potong_fix = $id_hasil_potong_fix")[0];
-
-        $id_produk = $produksi_data['id_produk'];
-        $total_hasil_jahit = $produksi_data['total_hasil_jahit'];
-        $id_penjahit = $produksi_data['id_penjahit'];
-        $tanggal_hasil_jahit = $produksi_data['tanggal_hasil_jahit'];
-        $seri = $produksi_data['seri'];
-        $tipe_produk = $produksi_data['tipe_produk'];
-
-        // Validasi: pastikan ada total_hasil_jahit untuk dibatalkan
-        // if (empty($total_hasil_jahit) || $total_hasil_jahit !=== 0) {
-        //     $error_modal = "Tidak ada data hasil jahit yang bisa wleee.";
-        // } else {
-        // Hitung upah yang akan dihapus
-        $upah_dihapus = 0;
-        if ($total_hasil_jahit > 0 && $id_penjahit > 0 && !empty($tanggal_hasil_jahit)) {
-            $tarif_penjahit = getTarifUpah('penjahitan', $tanggal_hasil_jahit);
-            $upah_dihapus = $total_hasil_jahit * $tarif_penjahit;
-        }
-
-        $conn->autocommit(FALSE);
-        try {
-            // 1. Reset SEMUA data penjahitan
-            $sql_hapus = "UPDATE hasil_potong_fix 
-             SET id_penjahit = NULL, 
-                 tanggal_kirim_jahit = NULL, 
-                 tanggal_hasil_jahit = NULL, 
-                 total_hasil_jahit = NULL,
-                 status_potong = 'diproses'
-             WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
-
-            if (!$conn->query($sql_hapus)) {
-                throw new Exception("Gagal menghapus data penjahit.");
-            }
-
-            // 2. LOGIKA BERBEDA BERDASARKAN TIPE PRODUK
-            $pesan_stok = "";
-            if ($tipe_produk == 'mukena' && $total_hasil_jahit > 0) {
-                // MUKENA: Kurangi stok produk
-
-                // Cek stok produk saat ini
-                $produk_data = query("SELECT stok, nama_produk FROM produk WHERE id_produk = $id_produk")[0];
-                $stok_sekarang = $produk_data['stok'];
-                $nama_produk = htmlspecialchars($produk_data['nama_produk']);
-
-                if ($stok_sekarang >= $total_hasil_jahit) {
-                    // Stok cukup, kurangi normal
-                    $sql_kurangi_stok = "UPDATE produk 
-                            SET stok = stok - $total_hasil_jahit 
-                            WHERE id_produk = $id_produk";
-
-                    if (!$conn->query($sql_kurangi_stok)) {
-                        throw new Exception("Gagal mengurangi stok produk.");
-                    }
-                    $pesan_stok = "stok produk dikurangi $total_hasil_jahit pcs";
-                } else {
-                    // Stok tidak cukup, set ke 0
-                    $selisih = $total_hasil_jahit - $stok_sekarang;
-
-                    $sql_kurangi_stok = "UPDATE produk 
-                            SET stok = 0 
-                            WHERE id_produk = $id_produk";
-
-                    if (!$conn->query($sql_kurangi_stok)) {
-                        throw new Exception("Gagal mengurangi stok produk.");
-                    }
-
-                    // Simpan pesan warning di session
-                    $warning_msg = "Stok produk '$nama_produk' kurang saat penghapusan penjahit. ";
-                    $warning_msg .= "Hanya berhasil mengurangi $stok_sekarang dari $total_hasil_jahit pcs.";
-
-                    $_SESSION['warning'] = $warning_msg;
-
-                    $pesan_stok = "stok produk direset ke 0 (stok tidak mencukupi)";
-                }
-            } elseif ($tipe_produk == 'koko' && $total_hasil_jahit > 0) {
-                // KOKO: Kurangi stok koko
-
-                // Cek apakah data koko ada
-                $koko_data = query("SELECT stok, nama_koko FROM koko WHERE id_produk = $id_produk LIMIT 1");
-
-                if (!empty($koko_data)) {
-                    $stok_sekarang = $koko_data[0]['stok'];
-                    $nama_koko = htmlspecialchars($koko_data[0]['nama_koko']);
-
-                    if ($stok_sekarang >= $total_hasil_jahit) {
-                        // Stok cukup, kurangi normal
-                        $sql_kurangi_stok = "UPDATE koko 
-                                SET stok = stok - $total_hasil_jahit,
-                                    updated_at = NOW()
-                                WHERE id_produk = $id_produk";
-
-                        if (!$conn->query($sql_kurangi_stok)) {
-                            throw new Exception("Gagal mengurangi stok koko.");
-                        }
-                        $pesan_stok = "stok koko dikurangi $total_hasil_jahit roll";
-
-                        // Cek jika stok menjadi 0 atau kurang, hapus record
-                        $stok_baru = $stok_sekarang - $total_hasil_jahit;
-                        if ($stok_baru <= 0) {
-                            $sql_hapus_koko = "DELETE FROM koko WHERE id_produk = $id_produk";
-                            if ($conn->query($sql_hapus_koko)) {
-                                $pesan_stok = "data koko dihapus karena stok habis";
-                            }
-                        }
-                    } else {
-                        // Stok tidak cukup, hapus record koko
-                        $selisih = $total_hasil_jahit - $stok_sekarang;
-
-                        $sql_hapus_koko = "DELETE FROM koko WHERE id_produk = $id_produk";
-                        if (!$conn->query($sql_hapus_koko)) {
-                            throw new Exception("Gagal menghapus data koko.");
-                        }
-
-                        // Simpan pesan warning di session
-                        $warning_msg = "Stok koko '$nama_koko' kurang saat penghapusan penjahit. ";
-                        $warning_msg .= "Hanya berhasil mengurangi $stok_sekarang dari $total_hasil_jahit roll. ";
-                        $warning_msg .= "Data koko dihapus karena stok tidak mencukupi.";
-
-                        $_SESSION['warning'] = $warning_msg;
-
-                        $pesan_stok = "data koko dihapus (stok tidak mencukupi)";
-                    }
-                } else {
-                    // Data koko tidak ditemukan
-                    $pesan_stok = "data koko tidak ditemukan";
-                }
-            }
-
-            // 3. Hapus/Update hutang upah penjahit (hanya jika ada upah)
-            if ($upah_dihapus > 0 && $id_penjahit > 0) {
-                if (!kurangiHutangUpahPenjahit($id_penjahit, $upah_dihapus)) {
-                    throw new Exception("Gagal mengurangi hutang upah penjahit.");
-                }
-            }
-
-            $conn->commit();
-            $conn->autocommit(TRUE);
-
-            // Pesan sukses berdasarkan kondisi
-            $pesan_success = "Data penjahit berhasil dihapus";
-            if ($total_hasil_jahit > 0 && !empty($pesan_stok)) {
-                $pesan_success .= " dan " . $pesan_stok;
-            }
-            if ($upah_dihapus > 0) {
-                $pesan_success .= ". Upah penjahit dikurangi: " . formatRupiah($upah_dihapus);
-            }
-            $pesan_success .= ". Status kembali ke 'Potong'.";
-
-            $_SESSION['success'] = $pesan_success;
-            header("Location: list.php");
-            exit();
-        } catch (Exception $e) {
-            $conn->rollback();
-            $conn->autocommit(TRUE);
-            // Pesan error sederhana
-            $error_modal = "Gagal menghapus data penjahit. Silakan coba lagi.";
-        }
-        // }
-    }
-}
 ?>
 
 <!DOCTYPE html>
@@ -1258,290 +367,286 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <div class="pc-container">
         <div class="pc-content">
             <div class="row">
-                <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex justify-content-between align-items-center mb-3">
                     <h2>Master Data Produksi</h2>
-
-                    <button type="button" class="btn btn-outline-primary" onclick="toggleFilter()">
-                        <i class="ti ti-filter"></i> Filter
-                    </button>
-
-
-                </div>
-
-                <div id="filterSection" style="display: none;">
-                    <div class="card shadow-sm mb-3 mt-2">
-                        <div class="card-header bg-light fw-semibold">
-                            <i class="ti ti-filter"></i> Filter Data
-                        </div>
-
-                        <div class="card-body">
-                            <form method="GET" class="row g-3 align-items-end">
-
-                                <div class="col-md-2">
-                                    <label class="form-label">Produk</label>
-                                    <select name="id_produk" class="form-select">
-                                        <option value="0">Semua Produk</option>
-                                        <?php foreach ($produk as $p): ?>
-                                            <option value="<?= $p['id_produk'] ?>" <?= ($id_produk == $p['id_produk']) ? 'selected' : '' ?>>
-                                                <?= htmlspecialchars($p['nama_produk']) ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-
-                                <div class="col-md-2">
-                                    <label class="form-label">Pemotong</label>
-                                    <select name="id_pemotong" class="form-select">
-                                        <option value="0">Semua Pemotong</option>
-                                        <?php foreach ($pemotong as $pm): ?>
-                                            <option value="<?= $pm['id_pemotong'] ?>" <?= (isset($_GET['id_pemotong']) && $_GET['id_pemotong'] == $pm['id_pemotong']) ? 'selected' : '' ?>>
-                                                <?= htmlspecialchars($pm['nama_pemotong']) ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-
-                                <div class="col-md-2">
-                                    <label class="form-label">Penjahit</label>
-                                    <select name="id_penjahit" class="form-select">
-                                        <option value="0">Semua Penjahit</option>
-                                        <option value="-1" <?= (isset($_GET['id_penjahit']) && $_GET['id_penjahit'] == '-1') ? 'selected' : '' ?>>
-                                            Belum Ada Penjahit
-                                        </option>
-                                        <?php foreach ($penjahit as $pj): ?>
-                                            <option value="<?= $pj['id_penjahit'] ?>" <?= (isset($_GET['id_penjahit']) && $_GET['id_penjahit'] == $pj['id_penjahit']) ? 'selected' : '' ?>>
-                                                <?= htmlspecialchars($pj['nama_penjahit']) ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-
-                                <div class="col-md-2">
-                                    <label class="form-label">Status</label>
-                                    <select name="status" class="form-select">
-                                        <option value="all" <?= ($status == 'all') ? 'selected' : '' ?>>Semua Status</option>
-                                        <option value="diproses" <?= ($status == 'diproses') ? 'selected' : '' ?>>Potong</option>
-                                        <option value="penjahitan" <?= ($status == 'penjahitan') ? 'selected' : '' ?>>Penjahitan</option>
-                                        <option value="selesai" <?= ($status == 'selesai') ? 'selected' : '' ?>>Selesai</option>
-                                    </select>
-                                </div>
-
-                                <div class="col-md-2">
-                                    <label class="form-label">Tanggal Mulai</label>
-                                    <input type="date" name="start_date" class="form-control"
-                                        value="<?= htmlspecialchars($start_date ?: $start_date_default) ?>">
-                                </div>
-
-                                <div class="col-md-2">
-                                    <label class="form-label">Tanggal Akhir</label>
-                                    <input type="date" name="end_date" class="form-control"
-                                        value="<?= htmlspecialchars($end_date ?: $end_date_default) ?>">
-                                </div>
-
-                                <!-- Tombol -->
-                                <div class="col-12 d-flex justify-content-end gap-2 pt-2">
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="ti ti-filter"></i> Filter
-                                    </button>
-
-                                    <?php
-                                    $is_filtered = $id_produk > 0 || $id_pemotong > 0 || $id_penjahit != 0 ||
-                                        $status != 'all' || !empty($start_date) || !empty($end_date);
-                                    ?>
-
-                                    <?php if ($is_filtered): ?>
-                                        <a href="produksi.php" class="btn btn-outline-secondary">
-                                            <i class="ti ti-rotate"></i> Reset
-                                        </a>
-                                    <?php endif; ?>
-
-                                    <button type="button" class="btn btn-danger" id="btnPrintPDF">
-                                        <i class="ti ti-file-text"></i> PDF
-                                    </button>
-                                </div>
-
-                            </form>
+                    <div class="btn-group">
+                        <div>
+                            <a href="new.php" class="btn btn-success">
+                                <i class="ti ti-circle-plus"></i> Tambah Produksi
+                            </a>
                         </div>
                     </div>
                 </div>
 
+                <div class="row">
+                    <!-- Filter Form -->
+                    <div class="col-md-8">
 
-                <!-- ============================================
-                KARTU INFORMASI FILTER YANG DIGUNAKAN
-                ============================================ -->
-                <?php if ($is_filtered): ?>
 
-                    <div class="col-12">
-                        <div class="card border-primary mt-2">
-                            <div class="card-header bg-primary text-white py-2">
-                                <h6 class="mb-0 text-white">
-                                    <i class="ti ti-filter-check"></i> Filter Aktif
-                                </h6>
+
+                        <form method="GET" class="row g-3 mb-3">
+                            <div class="col-md-2">
+                                <label class="form-label">Filter Produk</label>
+                                <select name="id_produk" class="form-select">
+                                    <option value="0">Semua Produk</option>
+                                    <?php foreach ($produk as $p): ?>
+                                        <option value="<?= $p['id_produk'] ?>" <?= ($id_produk == $p['id_produk']) ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($p['nama_produk']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
                             </div>
-                            <div class="card-body py-2">
-                                <div class="row g-2">
-                                    <?php
-                                    // Fungsi untuk menampilkan nilai filter dengan label yang sesuai
-                                    function getFilterLabel($key, $value)
-                                    {
-                                        global $produk, $pemotong, $penjahit;
 
-                                        switch ($key) {
-                                            case 'id_produk':
-                                                if ($value == 0) return null;
-                                                foreach ($produk as $p) {
-                                                    if ($p['id_produk'] == $value) {
-                                                        return '<span class="badge bg-primary">Produk: ' . htmlspecialchars($p['nama_produk']) . '</span>';
+                            <!-- Tambah filter pemotong -->
+                            <div class="col-md-2">
+                                <label class="form-label">Filter Pemotong</label>
+                                <select name="id_pemotong" class="form-select">
+                                    <option value="0">Semua Pemotong</option>
+                                    <?php foreach ($pemotong as $pm): ?>
+                                        <option value="<?= $pm['id_pemotong'] ?>" <?= (isset($_GET['id_pemotong']) && $_GET['id_pemotong'] == $pm['id_pemotong']) ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($pm['nama_pemotong']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+
+                            <!-- Tambah filter penjahit -->
+                            <div class="col-md-2">
+                                <label class="form-label">Filter Penjahit</label>
+                                <select name="id_penjahit" class="form-select">
+                                    <option value="0">Semua Penjahit</option>
+                                    <option value="-1" <?= (isset($_GET['id_penjahit']) && $_GET['id_penjahit'] == '-1') ? 'selected' : '' ?>>Belum Ada Penjahit</option>
+                                    <?php foreach ($penjahit as $pj): ?>
+                                        <option value="<?= $pj['id_penjahit'] ?>" <?= (isset($_GET['id_penjahit']) && $_GET['id_penjahit'] == $pj['id_penjahit']) ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($pj['nama_penjahit']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+
+                            <div class="col-md-2">
+                                <label class="form-label">Filter Status</label>
+                                <select name="status" class="form-select">
+                                    <option value="all" <?= ($status == 'all') ? 'selected' : '' ?>>Semua Status</option>
+                                    <option value="diproses" <?= ($status == 'diproses') ? 'selected' : '' ?>>Potong</option>
+                                    <option value="penjahitan" <?= ($status == 'penjahitan') ? 'selected' : '' ?>>Penjahitan</option>
+                                    <option value="selesai" <?= ($status == 'selesai') ? 'selected' : '' ?>>Selesai</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-2">
+                                <label class="form-label">Tanggal Mulai</label>
+                                <input type="date" name="start_date" class="form-control"
+                                    value="<?= htmlspecialchars($start_date ?: $start_date_default) ?>">
+                                <small class="text-muted">Bulan/Tanggal/Tahun</small>
+                            </div>
+
+                            <div class="col-md-2">
+                                <label class="form-label">Tanggal Akhir</label>
+                                <input type="date" name="end_date" class="form-control"
+                                    value="<?= htmlspecialchars($end_date ?: $end_date_default) ?>">
+                                <small class="text-muted">Bulan/Tanggal/Tahun</small>
+                            </div>
+
+                            <div class="col-md-4 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary me-2">
+                                    <i class="ti ti-filter"></i> Filter
+                                </button>
+                                <?php
+                                // Cek apakah ada filter yang aktif
+                                $is_filtered = $id_produk > 0 || $id_pemotong > 0 || $id_penjahit != 0 ||
+                                    $status != 'all' || !empty($start_date) || !empty($end_date);
+                                ?>
+
+                                <?php if ($is_filtered): ?>
+                                    <a href="list.php" class="btn btn-secondary me-2">
+                                        <i class="ti ti-rotate"></i> Reset
+                                    </a>
+                                <?php endif; ?>
+
+                                <button type="button" class="btn btn-danger" id="btnPrintPDF">
+                                    <i class="ti ti-file-text"></i> Print PDF
+                                </button>
+                            </div>
+                        </form>
+
+                        <!-- ============================================
+                        KARTU INFORMASI FILTER YANG DIGUNAKAN
+                        ============================================ -->
+                        <?php if ($is_filtered): ?>
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <div class="card border-primary">
+                                        <div class="card-header bg-primary text-white py-2">
+                                            <h6 class="mb-0 text-white">
+                                                <i class="ti ti-filter-check"></i> Filter Aktif
+                                            </h6>
+                                        </div>
+                                        <div class="card-body py-2">
+                                            <div class="row g-2">
+                                                <?php
+                                                // Fungsi untuk menampilkan nilai filter dengan label yang sesuai
+                                                function getFilterLabel($key, $value)
+                                                {
+                                                    global $produk, $pemotong, $penjahit;
+
+                                                    switch ($key) {
+                                                        case 'id_produk':
+                                                            if ($value == 0) return null;
+                                                            foreach ($produk as $p) {
+                                                                if ($p['id_produk'] == $value) {
+                                                                    return '<span class="badge bg-primary">Produk: ' . htmlspecialchars($p['nama_produk']) . '</span>';
+                                                                }
+                                                            }
+                                                            break;
+
+                                                        case 'id_pemotong':
+                                                            if ($value == 0) return null;
+                                                            foreach ($pemotong as $pm) {
+                                                                if ($pm['id_pemotong'] == $value) {
+                                                                    return '<span class="badge bg-warning text-dark">Pemotong: ' . htmlspecialchars($pm['nama_pemotong']) . '</span>';
+                                                                }
+                                                            }
+                                                            break;
+
+                                                        case 'id_penjahit':
+                                                            if ($value == 0) return null;
+                                                            if ($value == '-1') {
+                                                                return '<span class="badge bg-secondary">Penjahit: Belum Ada</span>';
+                                                            }
+                                                            foreach ($penjahit as $pj) {
+                                                                if ($pj['id_penjahit'] == $value) {
+                                                                    return '<span class="badge bg-info text-dark">Penjahit: ' . htmlspecialchars($pj['nama_penjahit']) . '</span>';
+                                                                }
+                                                            }
+                                                            break;
+
+                                                        case 'status':
+                                                            if ($value == 'all') return null;
+                                                            $status_labels = [
+                                                                'diproses' => 'Potong',
+                                                                'penjahitan' => 'Penjahitan',
+                                                                'selesai' => 'Selesai'
+                                                            ];
+                                                            return '<span class="badge bg-' .
+                                                                ($value == 'selesai' ? 'success' : ($value == 'penjahitan' ? 'info' : 'warning')) .
+                                                                '">Status: ' . $status_labels[$value] . '</span>';
+
+                                                        case 'start_date':
+                                                            if (empty($value)) return null;
+                                                            return '<span class="badge bg-secondary">Mulai: ' . dateIndo($value) . '</span>';
+
+                                                        case 'end_date':
+                                                            if (empty($value)) return null;
+                                                            return '<span class="badge bg-secondary">Akhir: ' . dateIndo($value) . '</span>';
                                                     }
+                                                    return null;
                                                 }
-                                                break;
+                                                ?>
 
-                                            case 'id_pemotong':
-                                                if ($value == 0) return null;
-                                                foreach ($pemotong as $pm) {
-                                                    if ($pm['id_pemotong'] == $value) {
-                                                        return '<span class="badge bg-warning text-dark">Pemotong: ' . htmlspecialchars($pm['nama_pemotong']) . '</span>';
-                                                    }
-                                                }
-                                                break;
-
-                                            case 'id_penjahit':
-                                                if ($value == 0) return null;
-                                                if ($value == '-1') {
-                                                    return '<span class="badge bg-secondary">Penjahit: Belum Ada</span>';
-                                                }
-                                                foreach ($penjahit as $pj) {
-                                                    if ($pj['id_penjahit'] == $value) {
-                                                        return '<span class="badge bg-info text-dark">Penjahit: ' . htmlspecialchars($pj['nama_penjahit']) . '</span>';
-                                                    }
-                                                }
-                                                break;
-
-                                            case 'status':
-                                                if ($value == 'all') return null;
-                                                $status_labels = [
-                                                    'diproses' => 'Potong',
-                                                    'penjahitan' => 'Penjahitan',
-                                                    'selesai' => 'Selesai'
+                                                <?php
+                                                // Array filter yang akan ditampilkan
+                                                $filters_to_display = [
+                                                    'id_produk' => $id_produk,
+                                                    'id_pemotong' => $id_pemotong,
+                                                    'id_penjahit' => $id_penjahit,
+                                                    'status' => $status,
+                                                    'start_date' => $start_date,
+                                                    'end_date' => $end_date
                                                 ];
-                                                return '<span class="badge bg-' .
-                                                    ($value == 'selesai' ? 'success' : ($value == 'penjahitan' ? 'info' : 'warning')) .
-                                                    '">Status: ' . $status_labels[$value] . '</span>';
 
-                                            case 'start_date':
-                                                if (empty($value)) return null;
-                                                return '<span class="badge bg-secondary">Mulai: ' . dateIndo($value) . '</span>';
+                                                $active_filters = [];
 
-                                            case 'end_date':
-                                                if (empty($value)) return null;
-                                                return '<span class="badge bg-secondary">Akhir: ' . dateIndo($value) . '</span>';
-                                        }
-                                        return null;
-                                    }
-                                    ?>
+                                                // Loop melalui semua filter
+                                                foreach ($filters_to_display as $key => $value) {
+                                                    $label = getFilterLabel($key, $value);
+                                                    if ($label) {
+                                                        $active_filters[] = $label;
+                                                    }
+                                                }
+                                                ?>
 
-                                    <?php
-                                    // Array filter yang akan ditampilkan
-                                    $filters_to_display = [
-                                        'id_produk' => $id_produk,
-                                        'id_pemotong' => $id_pemotong,
-                                        'id_penjahit' => $id_penjahit,
-                                        'status' => $status,
-                                        'start_date' => $start_date,
-                                        'end_date' => $end_date
-                                    ];
+                                                <?php if (!empty($active_filters)): ?>
+                                                    <div class="col-12">
+                                                        <p class="mb-2 small text-muted">
+                                                            <i class="ti ti-info-circle"></i> Menampilkan data dengan filter:
+                                                        </p>
+                                                        <div class="d-flex flex-wrap gap-2">
+                                                            <?php foreach ($active_filters as $filter): ?>
+                                                                <?= $filter ?>
+                                                            <?php endforeach; ?>
+                                                        </div>
+                                                    </div>
 
-                                    $active_filters = [];
-
-                                    // Loop melalui semua filter
-                                    foreach ($filters_to_display as $key => $value) {
-                                        $label = getFilterLabel($key, $value);
-                                        if ($label) {
-                                            $active_filters[] = $label;
-                                        }
-                                    }
-                                    ?>
-
-                                    <?php if (!empty($active_filters)): ?>
-                                        <div class="col-12">
-                                            <p class="mb-2 small text-muted">
-                                                <i class="ti ti-info-circle"></i> Menampilkan data dengan filter:
-                                            </p>
-                                            <div class="d-flex flex-wrap gap-2">
-                                                <?php foreach ($active_filters as $filter): ?>
-                                                    <?= $filter ?>
-                                                <?php endforeach; ?>
+                                                    <!-- Informasi Jumlah Data yang Difilter -->
+                                                    <div class="col-12 mt-2">
+                                                        <p class="mb-0 small">
+                                                            <i class="ti ti-database"></i>
+                                                            <strong><?= count($all_data) ?> data</strong> ditemukan dengan filter ini
+                                                            (dari total <?= $total_hasil_all ?> Pcs hasil potong)
+                                                        </p>
+                                                    </div>
+                                                <?php else: ?>
+                                                    <div class="col-12">
+                                                        <p class="mb-0 text-muted">
+                                                            <i class="ti ti-info-circle"></i> Tidak ada filter yang aktif
+                                                        </p>
+                                                    </div>
+                                                <?php endif; ?>
                                             </div>
                                         </div>
-
-                                        <!-- Informasi Jumlah Data yang Difilter -->
-                                        <div class="col-12 mt-2">
-                                            <p class="mb-0 small">
-                                                <i class="ti ti-database"></i>
-                                                <strong><?= count($all_data) ?> data</strong> ditemukan dengan filter ini
-                                                (dari total <?= $total_hasil_all ?> Pcs hasil potong)
-                                            </p>
-                                        </div>
-                                    <?php else: ?>
-                                        <div class="col-12">
-                                            <p class="mb-0 text-muted">
-                                                <i class="ti ti-info-circle"></i> Tidak ada filter yang aktif
-                                            </p>
-                                        </div>
-                                    <?php endif; ?>
+                                    </div>
                                 </div>
-
                             </div>
-                        </div>
-                    </div>
-                <?php endif; ?>
-
-
-
-
-
-                <!-- ============================================
-                BAGIAN TOTAL INFORMASI
-                ============================================ -->
-
-                <div class="total-info mb-2 mt-1">
-                    <h5><i class="ti ti-chart-bar"></i> Ringkasan Produksi</h5>
-
-                    <!-- Total Semua Data (Tanpa Filter) -->
-                    <div class="total-row">
-                        <span class="total-label">Total Semua Hasil Potong:</span>
-                        <span class="total-value">
-                            <?= number_format($total_hasil_all) ?> Pcs
-                        </span>
+                        <?php endif; ?>
                     </div>
 
-                    <div class="total-row">
-                        <span class="total-label">Total Semua Hasil Jahit:</span>
-                        <span class="total-value">
-                            <?= number_format($total_hasil_jahit_all) ?> Pcs
-                        </span>
-                    </div>
+                    <!-- ============================================
+                    BAGIAN TOTAL INFORMASI
+                    ============================================ -->
+                    <div class="col-md-4 mb-4">
+                        <div class="total-info">
+                            <h5><i class="ti ti-chart-bar"></i> Ringkasan Produksi</h5>
 
-                    <!-- Total Dengan Filter (Jika Ada Filter) -->
-                    <?php if ($is_filtered): ?>
-                        <div class="total-filtered">
-                            <h6><i class="ti ti-filter"></i> Hasil Setelah Filter:</h6>
+                            <!-- Total Semua Data (Tanpa Filter) -->
                             <div class="total-row">
-                                <span class="total-label">Total Hasil Potong (Filter):</span>
-                                <span class="total-value text-primary">
-                                    <?= number_format($total_hasil_filtered) ?> Pcs
+                                <span class="total-label">Total Semua Hasil Potong:</span>
+                                <span class="total-value">
+                                    <?= number_format($total_hasil_all) ?> Pcs
                                 </span>
                             </div>
 
                             <div class="total-row">
-                                <span class="total-label">Total Hasil Jahit (Filter):</span>
-                                <span class="total-value text-primary">
-                                    <?= number_format($total_hasil_jahit_filtered) ?> Pcs
+                                <span class="total-label">Total Semua Hasil Jahit:</span>
+                                <span class="total-value">
+                                    <?= number_format($total_hasil_jahit_all) ?> Pcs
                                 </span>
                             </div>
+
+                            <!-- Total Dengan Filter (Jika Ada Filter) -->
+                            <?php if ($is_filtered): ?>
+                                <div class="total-filtered">
+                                    <h6><i class="ti ti-filter"></i> Hasil Setelah Filter:</h6>
+                                    <div class="total-row">
+                                        <span class="total-label">Total Hasil Potong (Filter):</span>
+                                        <span class="total-value text-primary">
+                                            <?= number_format($total_hasil_filtered) ?> Pcs
+                                        </span>
+                                    </div>
+
+                                    <div class="total-row">
+                                        <span class="total-label">Total Hasil Jahit (Filter):</span>
+                                        <span class="total-value text-primary">
+                                            <?= number_format($total_hasil_jahit_filtered) ?> Pcs
+                                        </span>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
                         </div>
-                    <?php endif; ?>
+                    </div>
                 </div>
+
+
 
                 <div class="card p-3">
                     <!-- Tampilkan pesan error atau success -->
@@ -2026,13 +1131,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-
-    <script>
-        function toggleFilter() {
-            const filter = document.getElementById('filterSection');
-            filter.style.display = filter.style.display === 'none' ? 'block' : 'none';
-        }
-    </script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {

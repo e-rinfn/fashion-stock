@@ -416,6 +416,16 @@ $sql = "SELECT h.*, p.nama_produk, p.tipe_produk, pem.nama_pemotong,
         LEFT JOIN penjahit pen ON h.id_penjahit = pen.id_penjahit 
         WHERE 1=1";
 
+$sql = "SELECT h.*, p.nama_produk, p.tipe_produk, pem.nama_pemotong, 
+               pen.nama_penjahit,
+               COALESCE(h.tarif_upah, 0) as tarif_upah,
+               (SELECT SUM(jumlah) FROM detail_hasil_potong_fix WHERE id_hasil_potong_fix = h.id_hasil_potong_fix) as total_hasil_potong
+        FROM hasil_potong_fix h 
+        JOIN produk p ON h.id_produk = p.id_produk 
+        JOIN pemotong pem ON h.id_pemotong = pem.id_pemotong 
+        LEFT JOIN penjahit pen ON h.id_penjahit = pen.id_penjahit 
+        WHERE 1=1";
+
 // Filter produk
 if ($id_produk > 0) {
     $sql .= " AND h.id_produk = $id_produk";
@@ -646,9 +656,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                 // 1. Update data hasil jahit
                 $sql_update = "UPDATE hasil_potong_fix 
-                  SET tanggal_hasil_jahit = '$tanggal_hasil_jahit', 
-                      total_hasil_jahit = $total_hasil_jahit,
-                      status_potong = 'selesai'";
+                    SET tanggal_hasil_jahit = '$tanggal_hasil_jahit', 
+                        tarif_upah = $upah_per_potongan_manual,
+                        total_hasil_jahit = $total_hasil_jahit,
+                        status_potong = 'selesai'";
+
+                // Di bagian simpan_hasil_jahit (jika existing)
+                if ($existing && !empty($change_log)) {
+                    $sql_update .= ", keterangan = CONCAT(COALESCE(keterangan, ''), ' | $change_log'), 
+                     tarif_upah = $upah_per_potongan_manual";
+                } else {
+                    $sql_update .= ", tarif_upah = $upah_per_potongan_manual";
+                }
 
                 // Jika ada perubahan, tambahkan log
                 if ($existing && !empty($change_log)) {
@@ -808,7 +827,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             // Hitung upah yang akan dihapus
             $upah_dihapus = 0;
             if ($total_hasil_jahit > 0 && $id_penjahit > 0 && !empty($tanggal_hasil_jahit)) {
-                $tarif_penjahit = getTarifUpah('penjahitan', $tanggal_hasil_jahit);
+                // Ambil tarif yang sebenarnya digunakan dari database
+                $produksi_data = query("SELECT tarif_upah FROM hasil_potong_fix WHERE id_hasil_potong_fix = $id_hasil_potong_fix")[0];
+
+                // Gunakan tarif yang disimpan, jika tidak ada gunakan tarif standar
+                $tarif_penjahit = !empty($produksi_data['tarif_upah'])
+                    ? floatval($produksi_data['tarif_upah'])
+                    : getTarifUpah('penjahitan', $tanggal_hasil_jahit);
+
                 $upah_dihapus = $total_hasil_jahit * $tarif_penjahit;
             }
 

@@ -72,11 +72,14 @@ $tanggal_referensi_penjahit = !empty($produksi['tanggal_hasil_jahit']) ?
         $produksi['tanggal_kirim_jahit'] :
         $produksi['tanggal_hasil_potong']);
 
-$tarif_penjahit = getTarifUpah('penjahitan', $tanggal_referensi_penjahit);
+// $tarif_penjahit = getTarifUpah('penjahitan', $tanggal_referensi_penjahit);
+
+
+$tarif_penjahit = getTarifUpah('penjahitan', $produksi['tanggal_hasil_jahit']);
 $upah_penjahit = !empty($produksi['total_hasil_jahit']) ?
     $produksi['total_hasil_jahit'] * $tarif_penjahit : 0;
 
-$total_upah = $upah_pemotong + $upah_penjahit;
+$total_upah = $upah_pemotong + ($produksi['tarif_upah'] * $produksi['total_hasil_jahit']);
 
 // Tentukan warna badge berdasarkan status
 $badge_class = '';
@@ -285,7 +288,7 @@ switch ($produksi['status_potong']) {
                                     <td>
                                         <?= htmlspecialchars($produksi['nama_pemotong']) ?>
                                         <br>
-                                        <!-- <small class="text-muted">Rate: <?= formatRupiah($total_upah) ?>/pcs</small> -->
+                                        <small class="text-muted">Rate: <?= formatRupiah($upah_pemotong / $produksi['total_hasil'])  ?>/pcs</small>
                                     </td>
                                 </tr>
                                 <tr>
@@ -313,7 +316,7 @@ switch ($produksi['status_potong']) {
                                             <?php if (!empty($produksi['nama_penjahit'])): ?>
                                                 <?= htmlspecialchars($produksi['nama_penjahit']) ?>
                                                 <br>
-                                                <small class="text-muted">Rate: <?= formatRupiah($tarif_penjahit) ?>/pcs</small>
+                                                <small class="text-muted">Rate: <?= formatRupiah($produksi['tarif_upah']) ?>/pcs</small>
                                             <?php else: ?>
                                                 <span class="text-muted">Belum ditentukan</span>
                                             <?php endif; ?>
@@ -344,7 +347,7 @@ switch ($produksi['status_potong']) {
                                             <th>Upah Penjahit</th>
                                             <td class="fw-bold">
                                                 <?php if ($upah_penjahit > 0): ?>
-                                                    <?= formatRupiah($upah_penjahit) ?>
+                                                    <?= formatRupiah($produksi['tarif_upah'] * $produksi['total_hasil_jahit']) ?>
                                                 <?php else: ?>
                                                     <span class="text-muted">Belum dihitung</span>
                                                 <?php endif; ?>
@@ -588,8 +591,8 @@ switch ($produksi['status_potong']) {
                                         <tr>
                                             <th style="width: 50px;">No</th>
                                             <th>Nama Bahan</th>
-                                            <th style="width: 120px;">Roll/Yard</th>
-                                            <th style="width: 120px;">-</th>
+                                            <th colspan="2" style="width: 120px;">Roll/Yard</th>
+                                            <!-- <th style="width: 120px;">-</th> -->
                                             <th style="width: 120px;">Total Meter</th>
                                             <!-- <th style="width: 150px;">Harga Satuan</th>
                                             <th style="width: 150px;">Subtotal</th> -->
@@ -618,9 +621,11 @@ switch ($produksi['status_potong']) {
                                                 <tr>
                                                     <td class="text-center"><?= $i + 1 ?></td>
                                                     <td><?= htmlspecialchars($d['nama_bahan']) ?></td>
-                                                    <td class="text-center"><?= $d['jumlah'] ?> Roll</td>
-                                                    <td class="text-center">-</td>
-                                                    <td class="text-center">-</td>
+                                                    <td class="text-center"><?= $d['jumlah'] ?> Roll/Yard</td>
+                                                    <td colspan="3" class="text-end">
+                                                        <?= rtrim(rtrim($d['total_meter'], '0'), '.') ?>
+                                                    </td>
+                                                    <!-- <td class="text-center">-</td> -->
                                                     <!-- <td class="text-end"><?= formatRupiah($d['harga_per_satuan']) ?></td>
                                                     <td class="text-end fw-bold"><?= formatRupiah($subtotal) ?></td> -->
                                                 </tr>

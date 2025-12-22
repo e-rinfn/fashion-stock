@@ -407,7 +407,7 @@ while ($row = $result_detail->fetch_assoc()) {
 
 
                     <!-- Tombol Cetak PDF -->
-                    <div class="d-flex justify-content-start mt-3">
+                    <div class="d-flex justify-content-end mt-3">
                         <form method="POST" action="cetak_laporan.php" target="_blank" class="d-inline">
                             <input type="hidden" name="search" value="<?= htmlspecialchars($search) ?>">
                             <input type="hidden" name="tipe" value="<?= htmlspecialchars($filter_tipe) ?>">
@@ -811,10 +811,11 @@ while ($row = $result_detail->fetch_assoc()) {
 
     <?php include '../includes/footer.php'; ?>
 
+
     <!-- Bootstrap 5 JS Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script> -->
     <!-- jQuery -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> -->
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 

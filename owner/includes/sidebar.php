@@ -49,7 +49,7 @@ function isActive($path)
                     </a>
                 </li> -->
 
-                <li class="pc-item <?= isActive('/produksi') ?>">
+                <!-- <li class="pc-item <?= isActive('/produksi') ?>">
                     <a href="<?= $base_url ?>/owner/laporan/produksi.php" class="pc-link">
                         <span class="pc-micon"><i class="ti ti-settings"></i></span>
                         <span class="pc-mtext">Produksi</span>
@@ -61,25 +61,54 @@ function isActive($path)
                         <span class="pc-micon"><i class="ti ti-settings"></i></span>
                         <span class="pc-mtext">Produksi Koko</span>
                     </a>
+                </li> -->
+
+                <li class="pc-item pc-hasmenu">
+                    <a href="#!" class="pc-link"><span class="pc-micon"><i class="ti ti-settings"></i></span><span class="pc-mtext">Produksi</span><span class="pc-arrow"><i data-feather="chevron-right"></i></span></a>
+                    <ul class="pc-submenu">
+                        <li class="pc-item <?= isActive('/owner/produksi') ?>">
+                            <a class="pc-link" href="<?= $base_url ?>/owner/laporan/produksi.php">Produksi</a>
+                        </li>
+                        <li class="pc-item <?= isActive('/owner/finishing_koko') ?>">
+                            <a class="pc-link" href="<?= $base_url ?>/owner/laporan/finishing_koko.php">Finishing Koko</a>
+                        </li>
+                    </ul>
+                </li>
+
+                <li class="pc-item pc-hasmenu">
+                    <a href="#!" class="pc-link"><span class="pc-micon"><i class="ti ti-shopping-cart"></i></span><span class="pc-mtext">Transaksi</span><span class="pc-arrow"><i data-feather="chevron-right"></i></span></a>
+                    <ul class="pc-submenu">
+                        <li class="pc-item <?= isActive('/owner/pembelian_bahan') ?>">
+                            <a class="pc-link" href="<?= $base_url ?>/owner/pembelian_bahan/list.php">Pembelian Bahan</a>
+                        </li>
+                        <li class="pc-item <?= isActive('/owner/pembelian_produk') ?>">
+                            <a class="pc-link" href="<?= $base_url ?>/owner/pembelian_produk/list.php">Pembelian Produk</a>
+                        </li>
+                        <li class="pc-item <?= isActive('/owner/penjualan_bahan') ?>">
+                            <a class="pc-link" href="<?= $base_url ?>/owner/penjualan_bahan/list.php">Penjualan Bahan</a>
+                        </li>
+                        <li class="pc-item <?= isActive('/owner/penjualan_produk') ?>">
+                            <a class="pc-link" href="<?= $base_url ?>/owner/penjualan_produk/list.php">Penjualan Produk</a>
+                        </li>
+                    </ul>
                 </li>
 
                 <li class="pc-item pc-caption">
-                    <label>KEUANGAN</label>
+                    <label>LAPORAN</label>
                     <i class="ti ti-dashboard"></i>
                 </li>
 
+                <li class="pc-item <?= isActive('/upah') ?>">
+                    <a href="<?= $base_url ?>/owner/laporan/upah.php" class="pc-link">
+                        <span class="pc-micon"><i class="ti ti-receipt"></i></span>
+                        <span class="pc-mtext">Upah</span>
+                    </a>
+                </li>
 
                 <li class="pc-item <?= isActive('/keuangan') ?>">
                     <a href="<?= $base_url ?>/owner/laporan/keuangan.php" class="pc-link">
                         <span class="pc-micon"><i class="ti ti-report-money"></i></span>
                         <span class="pc-mtext">Keuangan</span>
-                    </a>
-                </li>
-
-                <li class="pc-item <?= isActive('/upah') ?>">
-                    <a href="<?= $base_url ?>/owner/laporan/upah.php" class="pc-link">
-                        <span class="pc-micon"><i class="ti ti-report-money"></i></span>
-                        <span class="pc-mtext">Upah</span>
                     </a>
                 </li>
 

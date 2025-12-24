@@ -842,7 +842,7 @@ $total_upah_filtered = $total_hasil_finishing_filtered * $tarif_standar;
                                     <?php endforeach; ?>
                                 </select>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-3">
                                 <label class="form-label">Filter Status</label>
                                 <select name="status" class="form-select">
                                     <option value="all" <?= ($status == 'all') ? 'selected' : '' ?>>Semua Status</option>

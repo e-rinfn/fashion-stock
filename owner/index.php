@@ -221,9 +221,9 @@ if ($isAjax) {
         <div class="pc-content">
             <div class="row">
                 <div class="col-12">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
+                    <!-- <div class="d-flex justify-content-between align-items-center mb-3">
                         <h1 class="h4 mb-0">Dashboard Stok</h1>
-                    </div>
+                    </div> -->
 
                     <!-- Notifikasi -->
                     <?php if (isset($_SESSION['error'])): ?>

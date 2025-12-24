@@ -1301,89 +1301,98 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 
 
-                        <form method="GET" class="row g-3 mb-3">
-                            <div class="col-md-2">
-                                <label class="form-label">Filter Produk</label>
-                                <select name="id_produk" class="form-select">
-                                    <option value="0">Semua Produk</option>
-                                    <?php foreach ($produk as $p): ?>
-                                        <option value="<?= $p['id_produk'] ?>" <?= ($id_produk == $p['id_produk']) ? 'selected' : '' ?>>
-                                            <?= htmlspecialchars($p['nama_produk']) ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
+                        <form method="GET" class="mb-3">
+                            <!-- Baris 1: Filter Dropdown -->
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-3">
+                                    <label class="form-label">Filter Produk</label>
+                                    <select name="id_produk" class="form-select">
+                                        <option value="0">Semua Produk</option>
+                                        <?php foreach ($produk as $p): ?>
+                                            <option value="<?= $p['id_produk'] ?>" <?= ($id_produk == $p['id_produk']) ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($p['nama_produk']) ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <label class="form-label">Filter Pemotong</label>
+                                    <select name="id_pemotong" class="form-select">
+                                        <option value="0">Semua Pemotong</option>
+                                        <?php foreach ($pemotong as $pm): ?>
+                                            <option value="<?= $pm['id_pemotong'] ?>" <?= (isset($_GET['id_pemotong']) && $_GET['id_pemotong'] == $pm['id_pemotong']) ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($pm['nama_pemotong']) ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <label class="form-label">Filter Penjahit</label>
+                                    <select name="id_penjahit" class="form-select">
+                                        <option value="0">Semua Penjahit</option>
+                                        <option value="-1" <?= (isset($_GET['id_penjahit']) && $_GET['id_penjahit'] == '-1') ? 'selected' : '' ?>>Belum Ada Penjahit</option>
+                                        <?php foreach ($penjahit as $pj): ?>
+                                            <option value="<?= $pj['id_penjahit'] ?>" <?= (isset($_GET['id_penjahit']) && $_GET['id_penjahit'] == $pj['id_penjahit']) ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($pj['nama_penjahit']) ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <label class="form-label">Filter Status</label>
+                                    <select name="status" class="form-select">
+                                        <option value="all" <?= ($status == 'all') ? 'selected' : '' ?>>Semua Status</option>
+                                        <option value="diproses" <?= ($status == 'diproses') ? 'selected' : '' ?>>Potong</option>
+                                        <option value="penjahitan" <?= ($status == 'penjahitan') ? 'selected' : '' ?>>Penjahitan</option>
+                                        <option value="selesai" <?= ($status == 'selesai') ? 'selected' : '' ?>>Selesai</option>
+                                    </select>
+                                </div>
                             </div>
 
-                            <!-- Tambah filter pemotong -->
-                            <div class="col-md-2">
-                                <label class="form-label">Filter Pemotong</label>
-                                <select name="id_pemotong" class="form-select">
-                                    <option value="0">Semua Pemotong</option>
-                                    <?php foreach ($pemotong as $pm): ?>
-                                        <option value="<?= $pm['id_pemotong'] ?>" <?= (isset($_GET['id_pemotong']) && $_GET['id_pemotong'] == $pm['id_pemotong']) ? 'selected' : '' ?>>
-                                            <?= htmlspecialchars($pm['nama_pemotong']) ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
+                            <!-- Baris 2: Tanggal dan Tombol -->
+                            <div class="row g-3 align-items-end">
+                                <div class="col-md-3">
+                                    <label class="form-label">Tanggal Mulai</label>
+                                    <input type="date" name="start_date" class="form-control"
+                                        value="<?= htmlspecialchars($start_date ?: $start_date_default) ?>">
+                                    <small class="text-muted">Bulan/Tanggal/Tahun</small>
+                                </div>
 
-                            <!-- Tambah filter penjahit -->
-                            <div class="col-md-2">
-                                <label class="form-label">Filter Penjahit</label>
-                                <select name="id_penjahit" class="form-select">
-                                    <option value="0">Semua Penjahit</option>
-                                    <option value="-1" <?= (isset($_GET['id_penjahit']) && $_GET['id_penjahit'] == '-1') ? 'selected' : '' ?>>Belum Ada Penjahit</option>
-                                    <?php foreach ($penjahit as $pj): ?>
-                                        <option value="<?= $pj['id_penjahit'] ?>" <?= (isset($_GET['id_penjahit']) && $_GET['id_penjahit'] == $pj['id_penjahit']) ? 'selected' : '' ?>>
-                                            <?= htmlspecialchars($pj['nama_penjahit']) ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Tanggal Akhir</label>
+                                    <input type="date" name="end_date" class="form-control"
+                                        value="<?= htmlspecialchars($end_date ?: $end_date_default) ?>">
+                                    <small class="text-muted">Bulan/Tanggal/Tahun</small>
+                                </div>
 
-                            <div class="col-md-2">
-                                <label class="form-label">Filter Status</label>
-                                <select name="status" class="form-select">
-                                    <option value="all" <?= ($status == 'all') ? 'selected' : '' ?>>Semua Status</option>
-                                    <option value="diproses" <?= ($status == 'diproses') ? 'selected' : '' ?>>Potong</option>
-                                    <option value="penjahitan" <?= ($status == 'penjahitan') ? 'selected' : '' ?>>Penjahitan</option>
-                                    <option value="selesai" <?= ($status == 'selesai') ? 'selected' : '' ?>>Selesai</option>
-                                </select>
-                            </div>
+                                <div class="col-md-6">
+                                    <div class="d-flex gap-2">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="ti ti-filter"></i> Filter
+                                        </button>
 
-                            <div class="col-md-2">
-                                <label class="form-label">Tanggal Mulai</label>
-                                <input type="date" name="start_date" class="form-control"
-                                    value="<?= htmlspecialchars($start_date ?: $start_date_default) ?>">
-                                <small class="text-muted">Bulan/Tanggal/Tahun</small>
-                            </div>
+                                        <?php
+                                        // Cek apakah ada filter yang aktif
+                                        $is_filtered = $id_produk > 0 || $id_pemotong > 0 || $id_penjahit != 0 ||
+                                            $status != 'all' || !empty($start_date) || !empty($end_date);
+                                        ?>
 
-                            <div class="col-md-2">
-                                <label class="form-label">Tanggal Akhir</label>
-                                <input type="date" name="end_date" class="form-control"
-                                    value="<?= htmlspecialchars($end_date ?: $end_date_default) ?>">
-                                <small class="text-muted">Bulan/Tanggal/Tahun</small>
-                            </div>
+                                        <?php if ($is_filtered): ?>
+                                            <a href="list.php" class="btn btn-secondary">
+                                                <i class="ti ti-rotate"></i> Reset
+                                            </a>
 
-                            <div class="col-md-4 d-flex align-items-end">
-                                <button type="submit" class="btn btn-primary me-2">
-                                    <i class="ti ti-filter"></i> Filter
-                                </button>
-                                <?php
-                                // Cek apakah ada filter yang aktif
-                                $is_filtered = $id_produk > 0 || $id_pemotong > 0 || $id_penjahit != 0 ||
-                                    $status != 'all' || !empty($start_date) || !empty($end_date);
-                                ?>
+                                        <?php endif; ?>
 
-                                <?php if ($is_filtered): ?>
-                                    <a href="list.php" class="btn btn-secondary me-2">
-                                        <i class="ti ti-rotate"></i> Reset
-                                    </a>
-                                <?php endif; ?>
+                                        <button type="button" class="btn btn-danger" id="btnPrintPDF">
+                                            <i class="ti ti-file-text"></i> Print PDF
+                                        </button>
 
-                                <button type="button" class="btn btn-danger" id="btnPrintPDF">
-                                    <i class="ti ti-file-text"></i> Print PDF
-                                </button>
+                                    </div>
+                                </div>
                             </div>
                         </form>
 

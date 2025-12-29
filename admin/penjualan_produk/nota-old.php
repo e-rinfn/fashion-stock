@@ -35,28 +35,12 @@ $pdf->AddPage();
 // Font
 $pdf->SetFont('helvetica', '', 10);
 
-// Logo (kiri)
-$logoPath = __DIR__ . '/Logo-Ipenk.png';
-$pdf->Image($logoPath, 10, 10, 22); // x=10 (kiri), y=10, width=22
-
-// Posisi teks header (kanan logo)
-$pdf->SetXY(10, 15);
-
-$pdf->SetFont('helvetica', 'B', 12);
-$pdf->Cell(0, 6, 'IPENK LEGEND', 0, 1, 'C');
-
+// Header
+$pdf->Cell(0, 6, 'NAMA PERUSAHAAN', 0, 1, 'C');
 $pdf->SetFont('helvetica', '', 9);
 $pdf->Cell(0, 5, 'Jl. Contoh No. 123, Kota Tasikmalaya', 0, 1, 'C');
 $pdf->Cell(0, 5, 'Telp: 0812-3456-7890', 0, 1, 'C');
-
-// Spasi ke bawah
-$pdf->Ln(10);
-
-// Garis pemisah
-$y = $pdf->GetY();
-$pdf->Line(0, $y, 200, $y);
-$pdf->Ln(2);
-
+$pdf->Ln(5);
 
 // Judul
 $pdf->SetFont('helvetica', 'B', 11);
@@ -68,7 +52,7 @@ $pdf->Ln(5);
 $pdf->SetFont('helvetica', '', 9);
 $pdf->Cell(40, 5, 'No. Nota', 0, 0);
 $pdf->Cell(3, 5, ':', 0, 0);
-$pdf->Cell(60, 5, '#' . $penjualan['id_penjualan'], 0, 1);
+$pdf->Cell(60, 5, '# ' . $penjualan['id_penjualan'], 0, 1);
 
 $pdf->Cell(40, 5, 'Tanggal Penjualan', 0, 0);
 $pdf->Cell(3, 5, ':', 0, 0);
@@ -101,7 +85,7 @@ $pdf->SetFont('helvetica', 'B', 10);
 $pdf->Cell(10, 7, 'No', 1, 0, 'C');
 $pdf->Cell(50, 7, 'Produk', 1);
 $pdf->Cell(25, 7, 'Harga', 1, 0, 'R');
-$pdf->Cell(15, 7, 'Pcs', 1, 0, 'C');
+$pdf->Cell(15, 7, 'Qty', 1, 0, 'C');
 $pdf->Cell(30, 7, 'Subtotal', 1, 1, 'R');
 
 $pdf->SetFont('helvetica', '', 10);

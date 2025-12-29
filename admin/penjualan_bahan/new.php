@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_penjualan_bahan
             }
 
             // Hitung total meter yang akan dijual
-            $total_meter = $meter * $qty;
+            $total_meter = $meter;
             if ($total_meter > $bahan_stok['jumlah_meter']) {
                 $error = "Total meter melebihi stok meter tersedia untuk bahan ID $id_bahan";
                 break;
@@ -66,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_penjualan_bahan
                     break;
                 }
 
-                $total_harga += $harga * ($meter * $qty);
+                $total_harga += $harga * $meter;
             }
 
             if (!isset($error)) {
@@ -90,8 +90,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_penjualan_bahan
                         // Ambil data bahan saat ini
                         $bahan_current = query("SELECT jumlah_stok, jumlah_meter FROM bahan_baku WHERE id_bahan = $id_bahan")[0];
 
-                        $subtotal = $harga * $qty;
-                        $total_meter = $meter * $qty;
+                        $subtotal = $harga * $meter;
+                        $total_meter = $meter;
 
                         // Simpan detail penjualan dengan meter
                         $sql_detail = "INSERT INTO detail_penjualan_bahan (id_penjualan_bahan, id_bahan, jumlah, harga_satuan, meter, subtotal) 

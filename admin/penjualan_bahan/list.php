@@ -1,44 +1,284 @@
 <?php
+// Aktifkan error reporting
+error_reporting(error_level: E_ALL);
+ini_set('display_errors', 1);
+
 require_once '../includes/header.php';
+require_once '../../config/database.php';
 require_once '../../config/functions.php';
 
-// Ambil semua reseller untuk dropdown
-$resellers = query("SELECT * FROM reseller");
+// Ambil data dengan filter dan pencarian
+$search = isset($_GET['search']) ? $conn->real_escape_string($_GET['search']) : '';
+$filter_reseller = isset($_GET['reseller']) ? intval($_GET['reseller']) : 0;
+$filter_bahan = isset($_GET['bahan']) ? $_GET['bahan'] : [];
+$filter_tanggal_awal = isset($_GET['tanggal_awal']) ? $_GET['tanggal_awal'] : '';
+$filter_tanggal_akhir = isset($_GET['tanggal_akhir']) ? $_GET['tanggal_akhir'] : '';
+$filter_status = isset($_GET['status']) ? $_GET['status'] : '';
 
-// Cek filter yang diterapkan
-$id_reseller = isset($_GET['id_reseller']) ? (int)$_GET['id_reseller'] : 0;
-$status = isset($_GET['status']) ? $_GET['status'] : 'all';
+// Konversi filter_bahan ke array jika string
+if (!is_array($filter_bahan) && !empty($filter_bahan)) {
+    $filter_bahan = explode(',', $filter_bahan);
+} elseif (!is_array($filter_bahan)) {
+    $filter_bahan = [];
+}
 
-// Bangun query berdasarkan filter
-$sql = "SELECT p.*, r.nama_reseller 
-        FROM penjualan_bahan p 
-        JOIN reseller r ON p.id_reseller = r.id_reseller 
-        WHERE 1=1";
+// Konversi ke integer dan hapus nilai kosong
+$filter_bahan = array_map('intval', $filter_bahan);
+$filter_bahan = array_filter($filter_bahan, function ($value) {
+    return $value > 0;
+});
+
+// Query utama untuk mendapatkan detail penjualan bahan
+$query = "SELECT 
+            pb.id_penjualan_bahan,
+            pb.no_transaksi,
+            pb.tanggal_penjualan_bahan,
+            pb.status_pembayaran,
+            pb.metode_pembayaran,
+            pb.total_harga,
+            r.id_reseller,
+            r.nama_reseller,
+            b.id_bahan,
+            b.nama_bahan,
+            b.satuan,
+            dpb.jumlah,
+            dpb.meter,
+            dpb.harga_satuan,
+            dpb.subtotal,
+            (dpb.jumlah * dpb.meter) as total_meter
+          FROM detail_penjualan_bahan dpb
+          JOIN penjualan_bahan pb ON dpb.id_penjualan_bahan = pb.id_penjualan_bahan
+          JOIN reseller r ON pb.id_reseller = r.id_reseller
+          JOIN bahan_baku b ON dpb.id_bahan = b.id_bahan
+          WHERE 1=1";
+
+// Tambahkan kondisi pencarian
+if (!empty($search)) {
+    $query .= " AND (pb.no_transaksi LIKE '%$search%' 
+                OR r.nama_reseller LIKE '%$search%'
+                OR b.nama_bahan LIKE '%$search%')";
+}
 
 // Filter reseller
-if ($id_reseller > 0) {
-    $sql .= " AND p.id_reseller = $id_reseller";
+if ($filter_reseller > 0) {
+    $query .= " AND pb.id_reseller = $filter_reseller";
 }
 
-// Filter status
-if ($status != 'all') {
-    $sql .= " AND p.status_pembayaran = '$status'";
+// Filter bahan (multiple)
+if (!empty($filter_bahan)) {
+    $bahan_ids = implode(',', $filter_bahan);
+    $query .= " AND dpb.id_bahan IN ($bahan_ids)";
 }
 
-$sql .= " ORDER BY p.tanggal_penjualan_bahan DESC";
+// Filter tanggal
+if (!empty($filter_tanggal_awal) && !empty($filter_tanggal_akhir)) {
+    $query .= " AND DATE(pb.tanggal_penjualan_bahan) BETWEEN '$filter_tanggal_awal' AND '$filter_tanggal_akhir'";
+} elseif (!empty($filter_tanggal_awal)) {
+    $query .= " AND DATE(pb.tanggal_penjualan_bahan) >= '$filter_tanggal_awal'";
+} elseif (!empty($filter_tanggal_akhir)) {
+    $query .= " AND DATE(pb.tanggal_penjualan_bahan) <= '$filter_tanggal_akhir'";
+}
 
-$penjualan_bahan = query($sql);
+// Filter status pembayaran
+if (!empty($filter_status) && $filter_status != 'all') {
+    $query .= " AND pb.status_pembayaran = '$filter_status'";
+}
 
+// Order by
+$query .= " ORDER BY pb.tanggal_penjualan_bahan DESC, pb.id_penjualan_bahan DESC, b.nama_bahan";
+
+$detail_penjualan = query($query);
+
+// Ambil data reseller untuk filter
+$resellers = query("SELECT * FROM reseller ORDER BY nama_reseller");
+
+// Ambil data bahan untuk filter
+$bahan_list = query("SELECT * FROM bahan_baku ORDER BY nama_bahan");
+
+// Hitung summary total secara manual dari $detail_penjualan
+$summary_manual = [
+    'total_transaksi' => 0,
+    'total_item' => 0,
+    'total_jumlah' => 0,
+    'total_meter' => 0,
+    'total_meter_all' => 0,
+    'total_nilai' => 0
+];
+
+$transaksi_ids = [];
+if (!empty($detail_penjualan)) {
+    foreach ($detail_penjualan as $item) {
+        // Hitung total transaksi unik
+        if (!in_array($item['id_penjualan_bahan'], $transaksi_ids)) {
+            $transaksi_ids[] = $item['id_penjualan_bahan'];
+            $summary_manual['total_transaksi']++;
+        }
+
+        // Hitung total item
+        $summary_manual['total_item']++;
+
+        // Hitung total jumlah
+        $summary_manual['total_jumlah'] += $item['jumlah'];
+
+        // Hitung total meter
+        $summary_manual['total_meter'] += $item['meter'];
+
+        // Hitung total meter all (jumlah × meter)
+        $summary_manual['total_meter_all'] += ($item['jumlah'] * $item['meter']);
+
+        // Hitung total nilai (harga_satuan × meter)
+        $summary_manual['total_nilai'] += ($item['harga_satuan'] * $item['meter']);
+    }
+}
+
+// Hitung summary per bahan DARI DATA DETAIL YANG SUDAH DIFILTER
+$summary_per_bahan = [];
+$bahan_data = [];
+
+if (!empty($detail_penjualan)) {
+    foreach ($detail_penjualan as $item) {
+        $bahan_id = $item['id_bahan'];
+
+        if (!isset($bahan_data[$bahan_id])) {
+            $bahan_data[$bahan_id] = [
+                'id_bahan' => $bahan_id,
+                'nama_bahan' => $item['nama_bahan'],
+                'satuan' => $item['satuan'],
+                'total_jumlah' => 0,
+                'total_meter' => 0,
+                'total_harga_satuan' => 0, // untuk menghitung rata-rata
+                'total_subtotal' => 0 // total dari harga_satuan × meter
+            ];
+        }
+
+        $bahan_data[$bahan_id]['total_jumlah'] += $item['jumlah'];
+        $bahan_data[$bahan_id]['total_meter'] += $item['meter'];
+        $bahan_data[$bahan_id]['total_harga_satuan'] += $item['harga_satuan'];
+        $bahan_data[$bahan_id]['total_subtotal'] += ($item['harga_satuan'] * $item['meter']);
+    }
+
+    // Ubah ke array indexed
+    $summary_per_bahan = array_values($bahan_data);
+}
 ?>
 
-<style>
-    /* Paksa SweetAlert berada di atas segalanya */
-    .swal2-container {
-        z-index: 99999 !important;
-    }
-</style>
+<!DOCTYPE html>
+<html lang="id">
 
-<!-- [Body] Start -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Penjualan Bahan Baku</title>
+    <!-- Tambahkan CSS DataTables -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        .filter-card {
+            margin-bottom: 20px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .bahan-row {
+            border-left: 4px solid #0d6efd;
+        }
+
+        .reseller-row {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+
+        .table-hover tbody tr:hover {
+            background-color: rgba(0, 123, 255, 0.05);
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .status-cicilan {
+            background-color: #fff3e0;
+            color: #ef6c00;
+        }
+
+        .status-lunas {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .summary-bahan-table {
+            font-size: 13px;
+        }
+
+        .summary-bahan-table th {
+            background-color: #e9ecef;
+        }
+
+        .multiselect-dropdown {
+            position: relative;
+            width: 100%;
+        }
+
+        .multiselect-dropdown .dropdown-toggle {
+            width: 100%;
+            text-align: left;
+            background-color: white;
+            border: 1px solid #ced4da;
+            padding: 0.375rem 0.75rem;
+            border-radius: 0.375rem;
+            height: 38px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .multiselect-dropdown .dropdown-toggle::after {
+            float: right;
+            margin-top: 8px;
+        }
+
+        .multiselect-dropdown .dropdown-menu {
+            width: 100%;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 0.5rem;
+        }
+
+        .multiselect-dropdown .dropdown-item {
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+        }
+
+        .multiselect-dropdown .dropdown-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .multiselect-dropdown .dropdown-item input[type="checkbox"] {
+            margin-right: 10px;
+        }
+
+        .selected-bahan-badge {
+            display: inline-block;
+            background-color: #e9ecef;
+            border: 1px solid #ced4da;
+            border-radius: 15px;
+            padding: 2px 8px;
+            margin: 2px;
+            font-size: 12px;
+        }
+
+        .selected-bahan-container {
+            margin-top: 5px;
+            min-height: 30px;
+        }
+
+        .filter-actions {
+            margin-top: 15px;
+        }
+    </style>
+</head>
 
 <body data-pc-preset="preset-1" data-pc-direction="ltr" data-pc-theme="light">
     <!-- [ Pre-loader ] start -->
@@ -58,187 +298,763 @@ $penjualan_bahan = query($sql);
     <!-- [ Main Content ] start -->
     <div class="pc-container">
         <div class="pc-content">
-
             <!-- [ Main Content ] start -->
             <div class="row">
-
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2>DATA PENJUALAN BAHAN</h2>
-                    <div>
-                        <a href="new.php" class="btn btn-success">
-                            <i class="ti ti-file-plus"></i> Tambah Pesanan
-                        </a>
+                <div class="col-12">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2>DATA PENJUALAN BAHAN BAKU</h2>
+                        <div>
+                            <a href="new.php" class="btn btn-success">
+                                <i class="ti ti-file-plus"></i> Tambah Pesanan
+                            </a>
+                        </div>
                     </div>
-                </div>
 
+                    <!-- Card Summary -->
+                    <div class="row mb-4 g-3">
 
-                <div class="card p-3">
-                    <?php if (isset($_SESSION['error'])): ?>
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            <?= htmlspecialchars($_SESSION['error']) ?>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        <!-- Total Transaksi -->
+                        <div class="col-md-3 col-sm-6">
+                            <div class="card text-center shadow-sm border-0">
+                                <div class="card-body py-3">
+                                    <h4 class="fw-bold mb-1">
+                                        <?= number_format($summary_manual['total_transaksi'], 0, ',', '.') ?>
+                                    </h4>
+                                    <small class="text-muted">Total Transaksi</small>
+                                </div>
+                            </div>
                         </div>
-                        <?php unset($_SESSION['error']); ?>
-                    <?php endif; ?>
 
-                    <?php if (isset($_SESSION['success'])): ?>
-                        <div class="alert alert-success alert-dismissible fade show" role="alert">
-                            <?= htmlspecialchars($_SESSION['success']) ?>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        <!-- Total Item -->
+                        <div class="col-md-3 col-sm-6">
+                            <div class="card text-center shadow-sm border-0">
+                                <div class="card-body py-3">
+                                    <h4 class="fw-bold mb-1">
+                                        <?= number_format($summary_manual['total_item'], 0, ',', '.') ?>
+                                    </h4>
+                                    <small class="text-muted">Total Item Terjual</small>
+                                </div>
+                            </div>
                         </div>
-                        <?php unset($_SESSION['success']); ?>
-                    <?php endif; ?>
 
-                    <!-- Filter Form -->
-                    <form method="GET" class="row g-3 mb-3">
-                        <div class="col-md-6">
-                            <select name="id_reseller" class="form-select">
-                                <option value="0">Semua Reseller</option>
-                                <?php foreach ($resellers as $res): ?>
-                                    <option value="<?= $res['id_reseller'] ?>" <?= ($id_reseller == $res['id_reseller']) ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($res['nama_reseller']) ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
+                        <!-- Total Meter -->
+                        <div class="col-md-3 col-sm-6">
+                            <div class="card text-center shadow-sm border-0">
+                                <div class="card-body py-3">
+                                    <h4 class="fw-bold mb-1">
+                                        <?= number_format($summary_manual['total_meter_all'], 0, ',', '.') ?> m
+                                    </h4>
+                                    <small class="text-muted">Total Meter Penjualan</small>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-3">
-                            <select name="status" class="form-select">
-                                <option value="all" <?= ($status == 'all') ? 'selected' : '' ?>>Semua Status</option>
-                                <option value="lunas" <?= ($status == 'lunas') ? 'selected' : '' ?>>Lunas</option>
-                                <option value="cicilan" <?= ($status == 'cicilan') ? 'selected' : '' ?>>Cicilan</option>
-                            </select>
+
+                        <!-- Total Nilai -->
+                        <div class="col-md-3 col-sm-6">
+                            <div class="card text-center shadow-sm border-0">
+                                <div class="card-body py-3">
+                                    <h4 class="fw-bold mb-1 text-primary">
+                                        <?= formatRupiah($summary_manual['total_nilai']) ?>
+                                    </h4>
+                                    <small class="text-muted">Total Nilai Penjualan</small>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-3">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bx bx-filter"></i> Filter
-                            </button>
-                            <?php if ($id_reseller > 0 || $status != 'all'): ?>
-                                <a href="list.php" class="btn btn-secondary ms-2">
-                                    <i class="bx bx-reset"></i> Reset
-                                </a>
+
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-5">
+                            <!-- Card Filter Utama (untuk semua data) -->
+                            <div class="card filter-card mb-4">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="mb-0"><i class="ti ti-filter me-2"></i>Filter Data Penjualan</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form method="GET" id="mainFilterForm" class="row g-3">
+
+                                        <div class="col-md-6">
+                                            <label class="form-label">Reseller</label>
+                                            <select class="form-control" name="reseller">
+                                                <option value="">Semua Reseller</option>
+                                                <?php foreach ($resellers as $r): ?>
+                                                    <option value="<?= $r['id_reseller'] ?>"
+                                                        <?= $filter_reseller == $r['id_reseller'] ? 'selected' : '' ?>>
+                                                        <?= htmlspecialchars($r['nama_reseller']) ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <label class="form-label">Status Pembayaran</label>
+                                            <select class="form-control" name="status">
+                                                <option value="all" <?= ($filter_status == 'all' || $filter_status == '') ? 'selected' : '' ?>>Semua Status</option>
+                                                <option value="lunas" <?= $filter_status == 'lunas' ? 'selected' : '' ?>>Lunas</option>
+                                                <option value="cicilan" <?= $filter_status == 'cicilan' ? 'selected' : '' ?>>Cicilan</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="col-md-12">
+                                            <label class="form-label">Bahan Baku</label>
+                                            <div class="multiselect-dropdown">
+                                                <button class="btn btn-outline-secondary dropdown-toggle" type="button"
+                                                    id="bahanDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                                    <?php if (empty($filter_bahan)): ?>
+                                                        Pilih Bahan...
+                                                    <?php else: ?>
+                                                        <?= count($filter_bahan) ?> bahan dipilih
+                                                    <?php endif; ?>
+                                                </button>
+                                                <ul class="dropdown-menu" aria-labelledby="bahanDropdown">
+                                                    <li>
+                                                        <div class="dropdown-item">
+                                                            <input type="checkbox" id="selectAllBahan"
+                                                                <?= count($filter_bahan) == count($bahan_list) ? 'checked' : '' ?>>
+                                                            <label for="selectAllBahan" style="cursor: pointer; margin-bottom: 0;">
+                                                                <strong>Pilih Semua</strong>
+                                                            </label>
+                                                        </div>
+                                                    </li>
+                                                    <li>
+                                                        <hr class="dropdown-divider">
+                                                    </li>
+                                                    <?php foreach ($bahan_list as $b): ?>
+                                                        <li>
+                                                            <div class="dropdown-item">
+                                                                <input type="checkbox" name="bahan[]"
+                                                                    value="<?= $b['id_bahan'] ?>"
+                                                                    id="bahan_<?= $b['id_bahan'] ?>"
+                                                                    <?= in_array($b['id_bahan'], $filter_bahan) ? 'checked' : '' ?>>
+                                                                <label for="bahan_<?= $b['id_bahan'] ?>"
+                                                                    style="cursor: pointer; margin-bottom: 0;">
+                                                                    <?= htmlspecialchars($b['nama_bahan']) ?>
+                                                                </label>
+                                                            </div>
+                                                        </li>
+                                                    <?php endforeach; ?>
+                                                </ul>
+                                            </div>
+                                            <!-- Container untuk menampilkan bahan yang dipilih -->
+                                            <div class="selected-bahan-container mt-2">
+                                                <?php foreach ($filter_bahan as $bahan_id):
+                                                    $bahan_nama = '';
+                                                    foreach ($bahan_list as $b) {
+                                                        if ($b['id_bahan'] == $bahan_id) {
+                                                            $bahan_nama = $b['nama_bahan'];
+                                                            break;
+                                                        }
+                                                    }
+                                                    if (!empty($bahan_nama)): ?>
+                                                        <span class="selected-bahan-badge" data-id="<?= $bahan_id ?>">
+                                                            <?= htmlspecialchars($bahan_nama) ?>
+                                                        </span>
+                                                    <?php endif; ?>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-12">
+                                            <label class="form-label">Tanggal Penjualan</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text"><i class="ti ti-calendar"></i></span>
+                                                <?php
+                                                // Hitung tanggal awal bulan ini (tanggal 1)
+                                                $tanggal_awal_bulan_ini = date('Y-m-01');
+                                                // Hitung tanggal akhir bulan ini
+                                                $tanggal_akhir_bulan_ini = date('Y-m-t');
+
+                                                // Gunakan nilai dari filter jika sudah ada, jika tidak gunakan tanggal default
+                                                $default_tanggal_awal = !empty($filter_tanggal_awal) ? $filter_tanggal_awal : $tanggal_awal_bulan_ini;
+                                                $default_tanggal_akhir = !empty($filter_tanggal_akhir) ? $filter_tanggal_akhir : $tanggal_akhir_bulan_ini;
+                                                ?>
+                                                <input type="date" class="form-control" name="tanggal_awal"
+                                                    value="<?= htmlspecialchars($default_tanggal_awal) ?>">
+                                                <span class="input-group-text">s/d</span>
+                                                <input type="date" class="form-control" name="tanggal_akhir"
+                                                    value="<?= htmlspecialchars($default_tanggal_akhir) ?>">
+                                            </div>
+                                        </div>
+
+                                        <div class="col-12 filter-actions">
+                                            <div class="d-flex justify-content-between">
+                                                <div>
+                                                    <?php if (!empty($filter_bahan)): ?>
+                                                        <span class="text-muted">
+                                                            <i class="ti ti-info-circle"></i>
+                                                            Menampilkan <?= count($filter_bahan) ?> bahan terpilih
+                                                        </span>
+                                                    <?php endif; ?>
+                                                </div>
+                                                <div class="d-flex gap-2">
+                                                    <a href="list.php" class="btn btn-sm btn-secondary">
+                                                        <i class="ti ti-rotate me-1"></i> Reset
+                                                    </a>
+                                                    <button type="submit" class="btn btn-sm btn-primary">
+                                                        <i class="ti ti-filter me-1"></i> Filter
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-7">
+                            <!-- Summary per Bahan (selalu tampil jika ada data) -->
+                            <?php if (!empty($summary_per_bahan)): ?>
+                                <div class="card mb-4">
+                                    <div class="card-header bg-info text-white">
+                                        <h5 class="mb-0"><i class="ti ti-chart-bar me-2"></i>
+                                            <?php if (!empty($filter_bahan)): ?>
+                                                Ringkasan <?= count($filter_bahan) ?> Bahan Terpilih
+                                            <?php else: ?>
+                                                Ringkasan Semua Bahan Baku Terjual
+                                            <?php endif; ?>
+                                        </h5>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <div class="table-responsive">
+                                            <table class="table table-bordered mb-0 summary-bahan-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>No</th>
+                                                        <th>Nama Bahan</th>
+                                                        <th>Satuan</th>
+                                                        <th class="text-end">Jumlah (Roll/Yard)</th>
+                                                        <th class="text-end">Total Meter</th>
+                                                        <th class="text-end">Total Nilai</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php
+                                                    $total_jumlah_summary = 0;
+                                                    $total_meter_summary = 0;
+                                                    $total_nilai_summary = 0;
+                                                    ?>
+
+                                                    <?php foreach ($summary_per_bahan as $index => $bahan): ?>
+                                                        <?php
+                                                        // Hitung harga rata-rata per meter
+                                                        $harga_rata_rata = ($bahan['total_harga_satuan'] > 0 && $bahan['total_jumlah'] > 0)
+                                                            ? $bahan['total_harga_satuan'] / $bahan['total_jumlah']
+                                                            : 0;
+
+                                                        // Hitung total nilai
+                                                        $total_nilai_bahan = $bahan['total_subtotal'];
+
+                                                        // Akumulasi untuk total
+                                                        $total_jumlah_summary += $bahan['total_jumlah'];
+                                                        $total_meter_summary += $bahan['total_meter'];
+                                                        $total_nilai_summary += $total_nilai_bahan;
+                                                        ?>
+                                                        <tr>
+                                                            <td class="text-center"><?= $index + 1 ?></td>
+                                                            <td>
+                                                                <?= htmlspecialchars($bahan['nama_bahan']) ?>
+                                                                <?php if (!empty($filter_bahan) && in_array($bahan['id_bahan'], $filter_bahan)): ?>
+                                                                    <span class="badge bg-success ms-1">Terpilih</span>
+                                                                <?php endif; ?>
+                                                            </td>
+                                                            <td class="text-center"><?= htmlspecialchars($bahan['satuan']) ?></td>
+                                                            <td class="text-end"><?= number_format($bahan['total_jumlah'], 0, ',', '.') ?></td>
+                                                            <td class="text-end"><?= number_format($bahan['total_meter'], 0, ',', '.') ?> m</td>
+                                                            <td class="text-end text-money"><?= formatRupiah($total_nilai_bahan) ?></td>
+                                                        </tr>
+                                                    <?php endforeach; ?>
+                                                </tbody>
+                                                <tfoot>
+                                                    <tr class="table-light">
+                                                        <th colspan="3" class="text-end">TOTAL</th>
+                                                        <th class="text-end"><?= number_format($total_jumlah_summary, 0, ',', '.') ?></th>
+                                                        <th class="text-end"><?= number_format($total_meter_summary, 0, ',', '.') ?> m</th>
+                                                        <th class="text-end text-primary"><?= formatRupiah($total_nilai_summary) ?></th>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
                             <?php endif; ?>
                         </div>
-                    </form>
+                    </div>
 
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-hover align-middle">
-                            <thead class="table-light">
-                                <tr class="text-center">
-                                    <th style="width: 50px;">No</th>
-                                    <th>Tanggal</th>
-                                    <th>Pelanggan</th>
-                                    <th>Total</th>
-                                    <th>Status</th>
-                                    <th style="width: 200px;">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php if (empty($penjualan_bahan)): ?>
-                                    <tr>
-                                        <td colspan="6" class="text-center">Tidak ada data penjualan bahan</td>
-                                    </tr>
-                                <?php else: ?>
-                                    <?php $no = 1; ?>
-                                    <?php foreach ($penjualan_bahan as $jual): ?>
-                                        <tr>
-                                            <td class="text-center"><?= $no++ ?></td>
-                                            <td><?= dateIndo($jual['tanggal_penjualan_bahan']) ?></td>
-                                            <td><?= htmlspecialchars($jual['nama_reseller']) ?></td>
-                                            <td><?= formatRupiah($jual['total_harga']) ?></td>
-                                            <td class="text-center">
-                                                <?php if ($jual['status_pembayaran'] == 'lunas'): ?>
-                                                    <span class="badge bg-success">LUNAS</span>
-                                                <?php else: ?>
-                                                    <span class="badge bg-warning text-dark">CICILAN</span>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td class="text-center">
-                                                <div class="btn-group" role="group" aria-label="Aksi Penjualan Bahan">
-
-                                                    <button class="btn btn-sm btn-danger btn-batal" data-id="<?= $jual['id_penjualan_bahan'] ?>" title="Batalkan Penjualan">
-                                                        <i class="ti ti-circle-x"></i>
-                                                    </button>
-                                                    <a href="cicilan.php?id=<?= $jual['id_penjualan_bahan'] ?>" class="btn btn-sm btn-warning" title="Pembayaran">
-                                                        <i class="ti ti-report-money"></i>
-                                                    </a>
-                                                    <!-- <a href="detail.php?id=<?= $jual['id_penjualan_bahan'] ?>" class="btn btn-sm btn-primary" title="Detail">
-                                                                <i class="bx bx-detail"></i>
-                                                            </a> -->
-
-
-                                                    <a href="nota.php?id=<?= $jual['id_penjualan_bahan'] ?>" target="_blank" class="btn btn-sm btn-info" title="Nota">
-                                                        <i class="ti ti-printer"></i>
-                                                    </a>
-
-
-                                                </div>
-                                            </td>
-
-                                        </tr>
-                                    <?php endforeach; ?>
+                    <!-- Card Data Detail -->
+                    <div class="card">
+                        <div class="card-header bg-light border-bottom">
+                            <h5 class="mb-0 d-flex align-items-center gap-2">
+                                <i class="ti ti-table"></i>
+                                Detail Penjualan Bahan Baku
+                                <?php if (!empty($filter_bahan)): ?>
+                                    <span class="badge bg-info ms-2">
+                                        Filter: <?= count($filter_bahan) ?> bahan baku terpilih
+                                    </span>
                                 <?php endif; ?>
-                            </tbody>
-                        </table>
+                            </h5>
+                        </div>
+
+                        <div class="card-body">
+                           <?php if (isset($_SESSION['success'])): ?>
+                                <div class="alert alert-success alert-dismissible fade show d-flex align-items-center" role="alert">
+                                    <i class="ti ti-check me-2"></i>
+                                    <div><?= htmlspecialchars($_SESSION['success']) ?></div>
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                                <?php unset($_SESSION['success']); ?>
+                            <?php endif; ?>
+
+                            <?php 
+                            $showErrorPopup = false;
+                            $errorMessage = '';
+                            if (isset($_SESSION['error'])): 
+                                $showErrorPopup = true;
+                                $errorMessage = $_SESSION['error'];
+                            ?>
+                                <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center" role="alert">
+                                    <i class="ti ti-alert-circle me-2"></i>
+                                    <div><?= htmlspecialchars($_SESSION['error']) ?></div>
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                                <?php unset($_SESSION['error']); ?>
+                            <?php endif; ?>
+
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover mb-0" id="dataTable">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Tanggal</th>
+                                            <th>Reseller</th>
+                                            <th>Bahan Baku</th>
+                                            <th class="text-center">Jumlah</th>
+                                            <th class="text-center">Meter</th>
+                                            <th class="text-end">Harga Per Meter</th>
+                                            <th class="text-end">Subtotal</th>
+                                            <th class="text-center">Status</th>
+                                            <th class="text-center">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php if (empty($detail_penjualan)): ?>
+                                            <tr>
+                                                <td colspan="9" class="text-center py-4">
+                                                    <div class="text-muted">
+                                                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                                        Tidak ada data penjualan bahan
+                                                        <?php if (!empty($search) || $filter_reseller > 0 || !empty($filter_bahan) || !empty($filter_status)): ?>
+                                                            <br><small>Coba gunakan filter yang berbeda</small>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        <?php else: ?>
+                                            <?php
+                                            $current_penjualan_id = null;
+                                            $row_number = 0;
+                                            $current_transaksi_total = 0;
+                                            $grand_total = 0;
+                                            ?>
+
+                                            <?php foreach ($detail_penjualan as $item): ?>
+                                                <?php
+                                                $row_number++;
+                                                $hitung_subtotal = $item['harga_satuan'] * $item['meter'];
+                                                $grand_total += $hitung_subtotal;
+                                                ?>
+
+                                                <!-- Baris Transaksi Baru (Reseller) -->
+                                                <?php if ($current_penjualan_id != $item['id_penjualan_bahan']): ?>
+                                                    <?php if ($current_penjualan_id !== null): ?>
+                                                        <!-- Total Transaksi Sebelumnya -->
+                                                        <tr class="table-light">
+                                                            <td colspan="6" class="text-end fw-bold">Total Transaksi:</td>
+                                                            <td class="text-end fw-bold text-primary">
+                                                                <?= formatRupiah($current_transaksi_total) ?>
+                                                            </td>
+                                                            <td colspan="2"></td>
+                                                        </tr>
+                                                    <?php endif; ?>
+
+                                                    <?php
+                                                    $current_penjualan_id = $item['id_penjualan_bahan'];
+                                                    $current_transaksi_total = 0;
+                                                    ?>
+
+                                                    <!-- Baris Header Transaksi -->
+                                                    <tr class="table-active">
+                                                        <td>
+                                                            <div class="fw-bold"><?= dateIndo($item['tanggal_penjualan_bahan']) ?></div>
+                                                            <small class="text-muted"><?= $item['no_transaksi'] ?></small>
+                                                        </td>
+                                                        <td colspan="2">
+                                                            <div class="fw-bold"><?= htmlspecialchars($item['nama_reseller']) ?></div>
+                                                        </td>
+                                                        <td colspan="2"></td>
+                                                        <td></td>
+                                                        <td></td>
+                                                        <td class="text-center">
+                                                            <span class="badge <?= $item['status_pembayaran'] == 'lunas' ? 'bg-success' : 'bg-warning text-dark' ?>">
+                                                                <?= ucfirst($item['status_pembayaran']) ?>
+                                                            </span>
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <div class="btn-group btn-group-sm">
+                                                                <button class="btn btn-sm btn-danger btn-batal"
+                                                                    data-id="<?= $item['id_penjualan_bahan'] ?>"
+                                                                    data-no="<?= $item['no_transaksi'] ?>"
+                                                                    title="Batalkan">
+                                                                    <i class="ti ti-x"></i>
+                                                                </button>
+                                                                <?php if ($item['status_pembayaran'] == 'cicilan'): ?>
+                                                                    <a href="cicilan.php?id=<?= $item['id_penjualan_bahan'] ?>"
+                                                                        class="btn btn-sm btn-warning"
+                                                                        title="Cicilan">
+                                                                        <i class="ti ti-cash"></i>
+                                                                    </a>
+                                                                <?php endif; ?>
+                                                                <a href="nota.php?id=<?= $item['id_penjualan_bahan'] ?>" target="_blank"
+                                                                    class="btn btn-sm btn-info"
+                                                                    title="Nota">
+                                                                    <i class="ti ti-printer"></i>
+                                                                </a>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                <?php endif; ?>
+
+                                                <!-- Baris Detail Bahan -->
+                                                <?php $current_transaksi_total += $hitung_subtotal; ?>
+                                                <tr>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td>
+                                                        <div><?= htmlspecialchars($item['nama_bahan']) ?></div>
+                                                        <?php if (!empty($filter_bahan) && in_array($item['id_bahan'], $filter_bahan)): ?>
+                                                            <small class="text-success">
+                                                                <i class="bi bi-check-circle"></i> Terpilih
+                                                            </small>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <?= number_format($item['jumlah'], 0, ',', '.') ?> Pcs
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <?= number_format($item['meter'], 0, ',', '.') ?> Meter
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <div><?= formatRupiah($item['harga_satuan']) ?></div>
+                                                    </td>
+                                                    <td class="text-end fw-bold">
+                                                        <?= formatRupiah($hitung_subtotal) ?>
+                                                    </td>
+                                                    <td></td>
+                                                    <td></td>
+                                                </tr>
+                                            <?php endforeach; ?>
+
+                                            <!-- Total Transaksi Terakhir -->
+                                            <?php if ($current_penjualan_id !== null): ?>
+                                                <tr class="table-light">
+                                                    <td colspan="6" class="text-end fw-bold">Total Transaksi:</td>
+                                                    <td class="text-end fw-bold text-primary">
+                                                        <?= formatRupiah($current_transaksi_total) ?>
+                                                    </td>
+                                                    <td colspan="2"></td>
+                                                </tr>
+                                            <?php endif; ?>
+                                        <?php endif; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
+        <!-- [ Main Content ] end -->
     </div>
-    <!-- [ Main Content ] end -->
+    </div>
 
     <?php include_once '../includes/footer.php'; ?>
 
-</body>
-<!-- [Body] end -->
+    <!-- DataTables Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Tampilkan SweetAlert jika ada pesan error (misalnya gagal batalkan penjualan karena cicilan)
+            <?php if ($showErrorPopup && !empty($errorMessage)): ?>
+            Swal.fire({
+                title: 'Pembatalan Gagal!',
+                html: '<?= addslashes($errorMessage) ?>',
+                icon: 'error',
+                confirmButtonText: 'Mengerti',
+                confirmButtonColor: '#d33'
+            });
+            <?php endif; ?>
 
-<!-- SweetAlert2 -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const deleteButtons = document.querySelectorAll('.btn-hapus');
-        deleteButtons.forEach(btn => {
-            btn.addEventListener('click', function(e) {
+            // Cek apakah ada data penjualan
+            const hasDetailPenjualan = <?= !empty($detail_penjualan) ? 'true' : 'false' ?>;
+
+            if (hasDetailPenjualan) {
+                // Inisialisasi DataTables hanya jika ada data
+                $('#dataTable').DataTable({
+                    "language": {
+                        "search": "Cari:",
+                        "lengthMenu": "Tampilkan _MENU_ data per halaman",
+                        "zeroRecords": "Tidak ada data yang ditemukan",
+                        "info": "Menampilkan halaman _PAGE_ dari _PAGES_",
+                        "infoEmpty": "Tidak ada data",
+                        "infoFiltered": "(disaring dari _MAX_ total data)",
+                        "paginate": {
+                            "first": "Pertama",
+                            "last": "Terakhir",
+                            "next": "Selanjutnya",
+                            "previous": "Sebelumnya"
+                        }
+                    },
+                    "order": [
+                        [0, "desc"]
+                    ],
+                    "pageLength": 50,
+                    "responsive": true,
+                    "dom": '<"row"<"col-md-6"l><"col-md-6"f>>rt<"row"<"col-md-6"i><"col-md-6"p>>',
+                    "columnDefs": [{
+                        "orderable": false,
+                        "targets": [1, 2, 3, 4, 5, 6, 7, 8]
+                    }]
+                });
+            }
+
+            // Handle dropdown tidak menutup saat klik checkbox
+            $(document).on('click', '.multiselect-dropdown .dropdown-item', function(e) {
+                e.stopPropagation();
+            });
+
+            // Handle select all checkbox
+            $('#selectAllBahan').change(function() {
+                const isChecked = $(this).is(':checked');
+                $('.multiselect-dropdown input[name="bahan[]"]').prop('checked', isChecked);
+                updateSelectedBahan();
+            });
+
+            // Update selected bahan ketika checkbox berubah
+            $('.multiselect-dropdown input[name="bahan[]"]').change(function() {
+                updateSelectedBahan();
+                updateSelectAllCheckbox();
+            });
+
+            // Update tampilan bahan yang dipilih saat pertama kali load
+            updateSelectedBahan();
+
+            // Update tanggal default
+            setDefaultDates();
+        });
+
+        // Fungsi untuk update tampilan bahan yang dipilih
+        function updateSelectedBahan() {
+            const selectedBahan = [];
+            const selectedNames = [];
+
+            $('.multiselect-dropdown input[name="bahan[]"]:checked').each(function() {
+                const id = $(this).val();
+                const name = $(this).next('label').text().trim();
+                selectedBahan.push({
+                    id: id,
+                    name: name
+                });
+                selectedNames.push(name);
+            });
+
+            // Update tombol dropdown
+            const dropdownBtn = $('#bahanDropdown');
+            if (selectedBahan.length === 0) {
+                dropdownBtn.text('Pilih Bahan...');
+            } else {
+                dropdownBtn.text(selectedBahan.length + ' bahan dipilih');
+            }
+
+            // Update tampilan badge
+            const badgeContainer = $('.selected-bahan-container');
+            badgeContainer.empty();
+
+            selectedBahan.forEach(function(bahan) {
+                const badge = $(`
+                <span class="selected-bahan-badge" data-id="${bahan.id}">
+                    ${bahan.name}
+                    <span class="close" onclick="removeBahan(${bahan.id})">&times;</span>
+                </span>
+            `);
+                badgeContainer.append(badge);
+            });
+        }
+
+        // Fungsi untuk update select all checkbox
+        function updateSelectAllCheckbox() {
+            const totalCheckboxes = $('.multiselect-dropdown input[name="bahan[]"]').length;
+            const checkedCheckboxes = $('.multiselect-dropdown input[name="bahan[]"]:checked').length;
+
+            $('#selectAllBahan').prop('checked', totalCheckboxes === checkedCheckboxes);
+            $('#selectAllBahan').prop('indeterminate', checkedCheckboxes > 0 && checkedCheckboxes < totalCheckboxes);
+        }
+
+        // Fungsi untuk menghapus bahan dari pilihan
+        function removeBahan(bahanId) {
+            $(`#bahan_${bahanId}`).prop('checked', false);
+            updateSelectedBahan();
+            updateSelectAllCheckbox();
+
+            // Submit form secara otomatis saat menghapus bahan
+            $('#mainFilterForm').submit();
+        }
+
+        // Fungsi untuk set tanggal default
+        function setDefaultDates() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const tanggalAwalInput = $('input[name="tanggal_awal"]');
+            const tanggalAkhirInput = $('input[name="tanggal_akhir"]');
+
+            if (!urlParams.has('tanggal_awal') && !tanggalAwalInput.val()) {
+                const now = new Date();
+                const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+                const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+                tanggalAwalInput.val(firstDay.toISOString().split('T')[0]);
+                tanggalAkhirInput.val(lastDay.toISOString().split('T')[0]);
+            }
+        }
+
+        // Cetak laporan
+        function printReport() {
+            window.print();
+        }
+
+        // Export data ke Excel dengan validasi
+        function exportToExcel() {
+            const table = $('#dataTable');
+            const hasData = table.find('tbody tr').length > 1 ||
+                (table.find('tbody tr').length === 1 &&
+                    !table.find('tbody tr td[colspan]').length);
+
+            if (!hasData) {
+                Swal.fire({
+                    title: 'Tidak Ada Data',
+                    text: 'Tidak ada data untuk di-export.',
+                    icon: 'warning',
+                    confirmButtonText: 'OK'
+                });
+                return;
+            }
+
+            Swal.fire({
+                title: 'Export ke Excel',
+                text: 'Sedang menyiapkan data...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+
+                    setTimeout(() => {
+                        try {
+                            let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+
+                            // Header
+                            const headers = [
+                                'No',
+                                'Tanggal',
+                                'Reseller',
+                                'Bahan Baku',
+                                'Jumlah (pcs)',
+                                'Meter (m)',
+                                'Harga per Meter',
+                                'Subtotal',
+                                'Status'
+                            ];
+                            csvContent += headers.join(",") + "\r\n";
+
+                            // Data - hanya ambil dari baris yang memiliki data (bukan baris kosong)
+                            <?php if (!empty($detail_penjualan)): ?>
+                                <?php
+                                $export_number = 0;
+                                foreach ($detail_penjualan as $item):
+                                    $export_number++;
+                                    $hitung_subtotal = $item['harga_satuan'] * $item['meter'];
+                                ?>
+                                    const rowData = [
+                                        "<?= $export_number ?>",
+                                        "<?= date('d/m/Y H:i', strtotime($item['tanggal_penjualan_bahan'])) ?>",
+                                        "<?= addslashes($item['nama_reseller']) ?>",
+                                        "<?= addslashes($item['nama_bahan']) ?>",
+                                        "<?= $item['jumlah'] ?>",
+                                        "<?= number_format($item['meter'], 2, ',', '.') ?>",
+                                        "<?= $item['harga_satuan'] ?>",
+                                        "<?= $hitung_subtotal ?>",
+                                        "<?= ucfirst($item['status_pembayaran']) ?>"
+                                    ];
+                                    csvContent += rowData.map(cell => `"${cell}"`).join(",") + "\r\n";
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+
+                            // Download
+                            const encodedUri = encodeURI(csvContent);
+                            const link = document.createElement("a");
+                            link.setAttribute("href", encodedUri);
+                            link.setAttribute("download", `laporan_penjualan_bahan_${new Date().toISOString().split('T')[0]}.csv`);
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+
+                            Swal.close();
+                        } catch (error) {
+                            Swal.fire({
+                                title: 'Error',
+                                text: 'Terjadi kesalahan saat export data: ' + error.message,
+                                icon: 'error',
+                                confirmButtonText: 'OK'
+                            });
+                        }
+                    }, 1000);
+                }
+            });
+        }
+    </script>
+
+    <script>
+        document.querySelectorAll('.btn-batal').forEach(button => {
+            button.addEventListener('click', function(e) {
                 e.preventDefault();
                 const id = this.getAttribute('data-id');
+                const noTransaksi = this.getAttribute('data-no') || id;
+                const statusPembayaran = this.closest('tr').querySelector('.badge')?.textContent.trim().toLowerCase() || '';
+
+                let warningMessage = 'Tindakan ini akan mengembalikan stok bahan dan menghapus data penjualan!';
+                
+                // Tambahkan peringatan khusus untuk status cicilan
+                if (statusPembayaran === 'cicilan') {
+                    warningMessage = '<strong>⚠️ Perhatian:</strong> Jika sudah ada pembayaran cicilan, penjualan tidak dapat dibatalkan. Silakan batalkan cicilan terlebih dahulu!<br><br>' + warningMessage;
+                }
+
                 Swal.fire({
-                    title: 'Yakin hapus data produk?',
-                    text: "Data yang dihapus tidak bisa dikembalikan!",
+                    title: 'Yakin ingin membatalkan penjualan bahan ini?',
+                    html: `Nomor Transaksi: <strong>${noTransaksi}</strong><br><br>${warningMessage}`,
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#d33',
                     cancelButtonColor: '#6c757d',
-                    confirmButtonText: 'Ya, hapus!',
+                    confirmButtonText: 'Ya, batalkan!',
                     cancelButtonText: 'Batal'
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        window.location.href = 'delete.php?id=' + id;
+                        window.location.href = 'batal.php?id=' + id;
                     }
                 });
             });
         });
-    });
+    </script>
 
-    document.querySelectorAll('.btn-batal').forEach(button => {
-        button.addEventListener('click', function() {
-            const id = this.getAttribute('data-id');
-            Swal.fire({
-                title: 'Yakin ingin membatalkan penjualan bahan ini?',
-                text: "Tindakan ini akan menghapus data penjualan bahan!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#6c757d',
-                confirmButtonText: 'Ya, batalkan!',
-                cancelButtonText: 'Batal'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    window.location.href = 'batal.php?id=' + id;
-                }
-            });
-        });
-    });
-</script>
+</body>
 
 </html>

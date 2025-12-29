@@ -206,6 +206,7 @@ $count_masuk = count($koko_masuk);
                                         <span class="badge bg-<?= $kk['status'] == 'selesai' ? 'success' : 'warning' ?>">
                                             <?= strtoupper($kk['status']) ?>
                                         </span>
+
                                     </td>
                                     <td>
                                         <a href="detail_koko_keluar.php?id=<?= $kk['id_koko_keluar'] ?>"

@@ -60,16 +60,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <div class="row">
 
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2>Tambah User Baru</h2>
+                    <h2>Profile</h2>
                 </div>
 
                 <div class="card p-3">
                     <!-- Tampilkan pesan error atau success -->
-                    <?php if (isset($error)): ?>
+                    <?php if (isset($_SESSION['error'])): ?>
                         <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            <?= htmlspecialchars($error) ?>
+                            <?= htmlspecialchars($_SESSION['error']) ?>
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
+                        <?php unset($_SESSION['error']); ?>
                     <?php endif; ?>
 
                     <?php if (isset($_SESSION['success'])): ?>
@@ -83,60 +84,37 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                     <form method="post">
                         <div class="mb-3">
-                            <label class="form-label">Username <span class="text-danger">*</span></label>
-                            <input type="text" name="username" class="form-control" required
-                                placeholder="Masukkan username" autocomplete="off">
-                            <small class="form-text text-muted">Username harus unik dan tidak boleh ada spasi</small>
+                            <label class="form-label">Username</label>
+                            <input type="text" name="username" class="form-control" required>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Password <span class="text-danger">*</span></label>
-                            <input type="password" name="password" class="form-control" required
-                                placeholder="Masukkan password" autocomplete="new-password">
-                            <small class="form-text text-muted">Minimal 6 karakter</small>
+                            <label class="form-label">Password</label>
+                            <input type="password" name="password" class="form-control" required>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Nama Lengkap <span class="text-danger">*</span></label>
-                            <input type="text" name="nama" class="form-control" required
-                                placeholder="Masukkan nama lengkap">
+                            <label class="form-label">Nama Lengkap</label>
+                            <input type="text" name="nama" class="form-control" required>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Role <span class="text-danger">*</span></label>
+                            <label class="form-label">Role</label>
                             <select name="role" class="form-select" required>
-                                <option value="">Pilih Role</option>
                                 <option value="admin">Admin</option>
-                                <option value="manager">Manager</option>
                                 <option value="owner">Owner</option>
                             </select>
-                            <small class="form-text text-muted">
-                                <strong>Admin:</strong> Akses penuh semua fitur<br>
-                                <strong>Manager:</strong> Akses manajemen operasional<br>
-                                <strong>Owner:</strong> Akses laporan dan monitoring
-                            </small>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label">Kontak</label>
-                            <input type="text" name="kontak" class="form-control"
-                                placeholder="No. HP atau WhatsApp">
-                            <small class="form-text text-muted">Contoh: 081234567890</small>
+                            <input type="text" name="kontak" class="form-control">
                         </div>
 
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="ti ti-file-plus"></i> Simpan
-                                </button>
-                                <a href="index.php" class="btn btn-secondary">
-                                    <i class="ti ti-arrow-back"></i> Kembali
-                                </a>
-                            </div>
-                            <small class="text-muted align-self-center">
-                                <span class="text-danger">*</span> Wajib diisi
-                            </small>
-                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="ti ti-file-plus"></i> Simpan</button>
+                        <a href="index.php" class="btn btn-secondary">
+                            <i class="ti ti-arrow-back"></i> Batal</a>
                     </form>
                 </div>
             </div>
@@ -155,41 +133,28 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Validasi form sebelum submit
-        const form = document.querySelector('form');
-        form.addEventListener('submit', function(e) {
-            const username = document.querySelector('input[name="username"]').value.trim();
-            const password = document.querySelector('input[name="password"]').value;
-            const nama = document.querySelector('input[name="nama"]').value.trim();
-            const role = document.querySelector('select[name="role"]').value;
+        const deleteButtons = document.querySelectorAll('.btn-hapus');
 
-            let errors = [];
-
-            if (!username) {
-                errors.push('Username harus diisi');
-            }
-
-            if (password.length < 6) {
-                errors.push('Password minimal 6 karakter');
-            }
-
-            if (!nama) {
-                errors.push('Nama lengkap harus diisi');
-            }
-
-            if (!role) {
-                errors.push('Role harus dipilih');
-            }
-
-            if (errors.length > 0) {
+        deleteButtons.forEach(btn => {
+            btn.addEventListener('click', function(e) {
                 e.preventDefault();
+                const id = this.getAttribute('data-id');
+
                 Swal.fire({
-                    title: 'Validasi Gagal',
-                    html: errors.join('<br>'),
-                    icon: 'error',
-                    confirmButtonText: 'OK'
+                    title: 'Yakin hapus data produk?',
+                    text: "Data yang dihapus tidak bisa dikembalikan!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Ya, hapus!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = 'delete.php?id=' + id;
+                    }
                 });
-            }
+            });
         });
     });
 
@@ -215,5 +180,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         });
     });
 </script>
+
 
 </html>

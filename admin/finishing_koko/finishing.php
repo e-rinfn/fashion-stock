@@ -812,7 +812,7 @@ $total_upah_filtered = $total_hasil_finishing_filtered * $tarif_standar;
             <!-- [ Main Content ] start -->
             <div class="row">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2>Master Data Finishing Koko</h2>
+                    <h2>Data Finishing Koko</h2>
                     <div hidden>
                         <a href="hasil_finishing.php" class="btn btn-success">
                             <i class="ti ti-circle-plus"></i> Hasil Finishing
@@ -1115,13 +1115,13 @@ $total_upah_filtered = $total_hasil_finishing_filtered * $tarif_standar;
                         <table class="table table-sm table-bordered table-hover align-middle">
                             <thead class="table-light">
                                 <tr class="text-center">
+                                    <th class="align-middle">Status</th>
                                     <th class="bg-warning text-white align-middle">Penjahit</th>
                                     <th class="bg-warning text-white align-middle">Petugas Finishing</th>
                                     <th class="bg-warning text-white align-middle">Tgl Kirim</th>
                                     <th class="bg-warning text-white align-middle">Total Kirim</th>
                                     <th class="bg-warning text-white align-middle">Jenis Bahan</th>
                                     <th class="bg-warning text-white align-middle">Jml Jenis</th>
-                                    <th class="align-middle">Status</th>
                                     <th class="bg-info text-white align-middle">Tgl Selesai Finishing</th>
                                     <th class="bg-info text-white align-middle">Hasil Finishing (Pcs)</th>
                                     <th class="align-middle">Aksi</th>
@@ -1153,6 +1153,11 @@ $total_upah_filtered = $total_hasil_finishing_filtered * $tarif_standar;
                                         $can_delete = ($data['status_finishing'] != 'selesai' && !$has_results);
                                         ?>
                                         <tr>
+                                            <td class="text-center">
+                                                <span class="badge bg-<?= $status_color ?> status-badge">
+                                                    <?= ucfirst($data['status_finishing']) ?>
+                                                </span>
+                                            </td>
                                             <td><?= htmlspecialchars($data['nama_penjahit']) ?></td>
 
                                             <td><?= htmlspecialchars($data['nama_petugas']) ?></td>
@@ -1169,11 +1174,7 @@ $total_upah_filtered = $total_hasil_finishing_filtered * $tarif_standar;
                                                 <?= $data['jumlah_jenis_bahan'] ?? 0 ?>
                                             </td>
 
-                                            <td class="text-center">
-                                                <span class="badge bg-<?= $status_color ?> status-badge">
-                                                    <?= ucfirst($data['status_finishing']) ?>
-                                                </span>
-                                            </td>
+
                                             <td class="text-start">
                                                 <?php if (!empty($data['tanggal_hasil_finishing'])): ?>
                                                     <?= formatDateIndo($data['tanggal_hasil_finishing']) ?><br>
@@ -1193,7 +1194,7 @@ $total_upah_filtered = $total_hasil_finishing_filtered * $tarif_standar;
                                                     </a> -->
 
                                                     <a href="hasil_finishing_koko.php?id=<?= $data['id_hasil_kirim_finishing'] ?>"
-                                                        class="btn btn-sm btn-warning" title="Finishing Koko">
+                                                        class="btn btn-sm btn-info" title="Finishing Koko">
                                                         <i class="ti ti-settings"></i>
                                                     </a>
 

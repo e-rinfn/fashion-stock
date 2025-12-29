@@ -1,4 +1,9 @@
 <?php
+
+// Aktifkan error reporting
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 require_once '../includes/header.php';
 require_once '../../config/functions.php';
 
@@ -117,9 +122,22 @@ if (isset($_GET['hapus'])) {
                                     <tr>
                                         <td class="text-center"><?= $no++ ?></td>
                                         <td>
-                                            <span class="badge bg-<?=
-                                                                    $tarif['jenis_tarif'] == 'pemotongan' ? 'warning' : ($tarif['jenis_tarif'] == 'finishing' ? 'success' : 'info')
-                                                                    ?>">
+                                            <!-- <span class="badge bg-<?=
+                                                                        $tarif['jenis_tarif'] == 'pemotongan' ? 'warning' : ($tarif['jenis_tarif'] == 'finishing' ? 'success' : 'info')
+                                                                        ?>">
+                                                <?= ucfirst($tarif['jenis_tarif']) ?>
+                                            </span> -->
+
+                                            <?php
+                                            $badgeClass = match ($tarif['jenis_tarif']) {
+                                                'pemotongan' => 'warning',
+                                                'bordir'     => 'primary',
+                                                'penjahitan' => 'info',
+                                                'finishing'  => 'success',
+                                                default      => 'secondary'
+                                            };
+                                            ?>
+                                            <span class="badge bg-<?= $badgeClass ?>">
                                                 <?= ucfirst($tarif['jenis_tarif']) ?>
                                             </span>
                                         </td>
@@ -159,6 +177,7 @@ if (isset($_GET['hapus'])) {
                             <select name="jenis_tarif" class="form-select" required>
                                 <option value="">-- Pilih Jenis Tarif --</option>
                                 <option value="pemotongan">Pemotong</option>
+                                <option value="bordir">Bordir</option>
                                 <option value="penjahitan">Penjahit</option>
                                 <option value="finishing">Finishing</option>
                             </select>

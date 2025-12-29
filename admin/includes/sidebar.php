@@ -19,13 +19,13 @@ function isActive($path)
 
                 <!-- Logo -->
                 <img
-                    src="<?= $base_url ?>/assets/img/Logo.png"
+                    src="<?= $base_url ?>/assets/img/Logo-Ipenk.png"
                     style="max-height: 50px; object-fit: contain;"
                     class="img-fluid logo-lg"
                     alt="logo" />
 
                 <!-- Teks di samping logo -->
-                <span class="fw-bold fs-5 text-dark">IRVEENA <br>FASHION STOCK</span>
+                <span class="fw-bold fs-5 text-dark">IPENK LEGEND <br>INVENTORY STOCK</span>
             </a>
         </div>
         <hr>
@@ -55,11 +55,14 @@ function isActive($path)
                         <li class="pc-item <?= isActive('/admin/pemotong') ?>">
                             <a class="pc-link" href="<?= $base_url ?>/admin/pemotong/list.php">Pemotong</a>
                         </li>
+                        <li class="pc-item <?= isActive('/admin/petugas_bordir') ?>">
+                            <a class="pc-link" href="<?= $base_url ?>/admin/petugas_bordir/list.php">Bordir</a>
+                        </li>
                         <li class="pc-item <?= isActive('/admin/penjahit') ?>">
                             <a class="pc-link" href="<?= $base_url ?>/admin/penjahit/list.php">Penjahit</a>
                         </li>
                         <li class="pc-item <?= isActive('/admin/petugas_finishing') ?>">
-                            <a class="pc-link" href="<?= $base_url ?>/admin/petugas_finishing/list.php">Petugas Finishing</a>
+                            <a class="pc-link" href="<?= $base_url ?>/admin/petugas_finishing/list.php">Finishing</a>
                         </li>
                         <li class="pc-item <?= isActive('/admin/reseller') ?>">
                             <a class="pc-link" href="<?= $base_url ?>/admin/reseller/list.php">Reseller</a>

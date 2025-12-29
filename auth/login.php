@@ -71,7 +71,7 @@ if (isset($_POST['login'])) {
 <!-- [Head] start -->
 
 <head>
-  <title>irveena</title>
+  <title>Ipenk Legend</title>
   <!-- [Meta] -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
@@ -81,7 +81,7 @@ if (isset($_POST['login'])) {
   <meta name="author" content="CodedThemes">
 
   <!-- [Favicon] icon -->
-  <link rel="icon" type="image/x-icon" href="<?= $base_url ?>/assets/img/Logo.png" />
+  <link rel="icon" type="image/x-icon" href="<?= $base_url ?>/assets/img/Logo-Ipenk.png" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&display=swap" id="main-font-link">
   <!-- [Tabler Icons] https://tablericons.com -->
   <link rel="stylesheet" href="../assets/fonts/tabler-icons.min.css">
@@ -106,15 +106,15 @@ if (isset($_POST['login'])) {
       <div class="auth-form">
         <div class="card my-5">
           <div class="card-body">
-            <img src="<?= $base_url ?>/assets/img/Logo.png" width="100px" alt="Bakery Logo" class="mx-auto d-block mb-3">
+            <img src="<?= $base_url ?>/assets/img/Logo-Ipenk.png" width="100px" alt="Ipenk Logo" class="mx-auto d-block mb-3">
             <div class="text-center">
               <div class="app-brand-link d-block">
-                <span class="text-body fw-bolder fs-3">Inventaris Barang <br> FASHION STOCK</span>
+                <span class="text-body fw-bolder fs-3">Ipenk Legend <br> INVENTORY STOCK</span>
               </div>
             </div>
             <hr>
             <!-- /Logo -->
-            <h4 class="mb-2">Login Fashion Stock! 👋</h4>
+            <h4 class="mb-2">Login Ipenk Legend!</h4>
             <p class="mb-4">Masukan username dan password yang valid</p>
             <!-- <?php if (isset($error)): ?>
               <div class="alert"><?= $error ?></div>
@@ -151,7 +151,7 @@ if (isset($_POST['login'])) {
               </div>
 
               <div class="mb-3">
-                <button class="btn btn-primary d-grid w-100" name="login" type="submit">Masuk</button>
+                <button class="btn btn-secondary d-grid w-100" name="login" type="submit">Masuk</button>
               </div>
             </form>
           </div>

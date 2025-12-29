@@ -16,6 +16,18 @@ if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
 
 $id = intval($_GET['id']);
 
+// Cek apakah sudah ada pembayaran cicilan
+$cicilan_exist = query("SELECT COUNT(*) as total, SUM(jumlah_cicilan) as total_bayar FROM cicilan_pembelian_bahan WHERE id_pembelian_bahan = $id");
+$total_cicilan = $cicilan_exist[0]['total'] ?? 0;
+$total_bayar = $cicilan_exist[0]['total_bayar'] ?? 0;
+
+// Jika sudah ada pembayaran cicilan, tidak boleh dihapus
+if ($total_cicilan > 0 && $total_bayar > 0) {
+    $_SESSION['error'] = "Pembelian tidak dapat dibatalkan karena sudah ada pembayaran cicilan sebesar " . formatRupiah($total_bayar) . ". Silakan batalkan cicilan terlebih dahulu.";
+    header("Location: list.php");
+    exit;
+}
+
 // Mulai transaksi database
 $conn->begin_transaction();
 

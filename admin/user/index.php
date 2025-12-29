@@ -96,8 +96,26 @@ $users = query("SELECT * FROM users ORDER BY role, username");
                                             <td><?= htmlspecialchars($user['username']); ?></td>
                                             <td><?= htmlspecialchars($user['nama_lengkap']); ?></td>
                                             <td>
-                                                <span class="badge bg-<?= $user['role'] == 'admin' ? 'primary' : 'success' ?>">
-                                                    <?= ucfirst($user['role']); ?>
+                                                <?php
+                                                $badgeClass = '';
+                                                $roleText = ucfirst($user['role']);
+
+                                                switch ($user['role']) {
+                                                    case 'admin':
+                                                        $badgeClass = 'bg-primary';
+                                                        break;
+                                                    case 'manager':
+                                                        $badgeClass = 'bg-danger'; // Kuning dengan teks gelap
+                                                        break;
+                                                    case 'owner':
+                                                        $badgeClass = 'bg-success'; // Hijau dengan teks gelap
+                                                        break;
+                                                    default:
+                                                        $badgeClass = 'bg-secondary'; // Abu-abu untuk role lainnya
+                                                }
+                                                ?>
+                                                <span class="badge <?= $badgeClass ?>">
+                                                    <?= $roleText ?>
                                                 </span>
                                             </td>
                                             <td><?= htmlspecialchars($user['kontak']); ?></td>

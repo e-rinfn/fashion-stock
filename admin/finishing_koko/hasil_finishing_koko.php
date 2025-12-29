@@ -104,6 +104,15 @@ function batalkanHasilFinishingKoko($id_hasil_kirim_finishing)
             }
         }
 
+        // Hapus data ATK finishing koko
+        $sql_delete_atk = "DELETE FROM atk_finishing_koko WHERE id_hasil_kirim_finishing = ?";
+        $stmt_delete_atk = $conn->prepare($sql_delete_atk);
+        $stmt_delete_atk->bind_param("i", $id_hasil_kirim_finishing);
+
+        if (!$stmt_delete_atk->execute()) {
+            throw new Exception("Gagal menghapus data ATK finishing: " . $conn->error);
+        }
+
         // 3. Kurangi stok produk yang sudah ditambahkan
         foreach ($produk_dikurangi as $id_produk => $data) {
             if ($data['jumlah'] > 0) {
@@ -251,6 +260,21 @@ if (isset($_GET['action']) && $_GET['action'] == 'batal_hasil_koko') {
     exit();
 }
 
+// Ambil data ATK finishing yang sudah ada (jika ada)
+$sql_atk_existing = "SELECT * FROM atk_finishing_koko 
+                     WHERE id_hasil_kirim_finishing = ? 
+                     ORDER BY created_at DESC";
+$stmt_atk_existing = $conn->prepare($sql_atk_existing);
+$stmt_atk_existing->bind_param("i", $id_hasil_kirim_finishing);
+$stmt_atk_existing->execute();
+$atk_existing_result = $stmt_atk_existing->get_result();
+$atk_existing_data = [];
+
+while ($row = $atk_existing_result->fetch_assoc()) {
+    $atk_existing_data[] = $row;
+}
+$has_atk = (count($atk_existing_data) > 0);
+
 // Ambil semua detail koko yang dikirim
 $sql_details = "SELECT 
     dh.*,
@@ -354,6 +378,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_finishing_koko'
     $tanggal_finishing = $_POST['tanggal_finishing'];
     $id_petugas_finishing = $main_data['id_petugas_finishing']; // Petugas dari pengiriman utama
     $id_produk_utama = $main_data['id_produk_utama'];
+
+    // Ambil data ATK finishing
+    $atk_nama = $_POST['atk_nama'] ?? [];
+    $atk_jumlah = $_POST['atk_jumlah'] ?? [];
+    $atk_satuan = $_POST['atk_satuan'] ?? [];
+
+    // Validasi ATK hanya untuk produk "koko" (opsional, sesuaikan dengan kebutuhan)
+    $is_produk_koko = true; // Asumsi ini untuk finishing koko
+    if ($is_produk_koko && empty($atk_nama[0])) {
+        $_SESSION['error'] = "Minimal satu ATK finishing harus diisi untuk finishing koko";
+        header("Location: hasil_finishing_koko.php?id=" . $id_hasil_kirim_finishing);
+        exit();
+    }
 
     // Validasi tanggal
     if (empty($tanggal_finishing)) {
@@ -524,6 +561,31 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_finishing_koko'
             }
         }
 
+        // 5. SIMPAN DATA ATK FINISHING
+        if ($is_produk_koko) {
+            $atk_data = [];
+            foreach ($atk_nama as $index => $nama) {
+                if (!empty($nama) && isset($atk_jumlah[$index]) && isset($atk_satuan[$index])) {
+                    $atk_data[] = [
+                        'nama' => $conn->real_escape_string($nama),
+                        'jumlah' => intval($atk_jumlah[$index]),
+                        'satuan' => $conn->real_escape_string($atk_satuan[$index])
+                    ];
+                }
+            }
+
+            // Simpan ATK finishing ke database
+            foreach ($atk_data as $atk) {
+                $sql_atk = "INSERT INTO atk_finishing_koko (id_hasil_kirim_finishing, nama_atk, jumlah, satuan, created_at) 
+                          VALUES (?, ?, ?, ?, NOW())";
+                $stmt_atk = $conn->prepare($sql_atk);
+                $stmt_atk->bind_param("isis", $id_hasil_kirim_finishing, $atk['nama'], $atk['jumlah'], $atk['satuan']);
+                if (!$stmt_atk->execute()) {
+                    throw new Exception("Gagal menyimpan ATK finishing: " . $stmt_atk->error);
+                }
+            }
+        }
+
         // Juga tambahkan ke produk utama jika berbeda
         if ($id_produk_utama > 0 && $total_selesai > 0) {
             // Cek apakah produk utama sudah dihitung dari koko
@@ -565,10 +627,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_finishing_koko'
             throw new Exception("Gagal update status finishing: " . $conn->error);
         }
 
+
         $conn->commit();
         $conn->autocommit(TRUE);
 
-        $_SESSION['success'] = "✅ Hasil finishing koko berhasil disimpan!";
+        $_SESSION['success'] = "✅ Hasil finishing koko dan ATK berhasil disimpan!";
         header("Location: hasil_finishing_koko.php?id=" . $id_hasil_kirim_finishing);
         exit();
     } catch (Exception $e) {
@@ -949,194 +1012,258 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
                     <?php unset($_SESSION['success']); ?>
                 <?php endif; ?>
 
-                <!-- Header Info -->
-                <div hidden class="header-info">
-                    <div class="row">
-                        <div class="col-md-6">
+                <div class="card py-4">
+                    <!-- Header Info -->
+                    <div hidden class="header-info">
+                        <div class="row">
+                            <div class="col-md-6">
 
-                            <div class="info-item">
-                                <span class="info-label">Produk Utama:</span>
-                                <span class="info-value"><?= htmlspecialchars($main_data['nama_produk']) ?></span>
+                                <div class="info-item">
+                                    <span class="info-label">Produk Utama:</span>
+                                    <span class="info-value"><?= htmlspecialchars($main_data['nama_produk']) ?></span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Petugas Finishing:</span>
+                                    <span class="info-value petugas-fixed"><?= htmlspecialchars($main_data['nama_petugas']) ?></span>
+                                    <small class="petugas-note">(Tetap sesuai pengiriman)</small>
+                                </div>
                             </div>
-                            <div class="info-item">
-                                <span class="info-label">Petugas Finishing:</span>
-                                <span class="info-value petugas-fixed"><?= htmlspecialchars($main_data['nama_petugas']) ?></span>
-                                <small class="petugas-note">(Tetap sesuai pengiriman)</small>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="info-item">
-                                <span class="info-label">Tanggal Kirim:</span>
-                                <span class="info-value"><?= date('d/m/Y', strtotime($main_data['tanggal_kirim_finishing'])) ?></span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">Total Kirim:</span>
-                                <span class="info-value"><?= $main_data['total_kirim'] ?> pcs</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">Status:</span>
-                                <span class="info-value">
-                                    <span class="badge bg-<?= $main_data['status_finishing'] == 'selesai' ? 'success' : ($main_data['status_finishing'] == 'diproses' ? 'warning' : 'secondary') ?> status-badge">
-                                        <?= ucfirst($main_data['status_finishing']) ?>
+                            <div class="col-md-6">
+                                <div class="info-item">
+                                    <span class="info-label">Tanggal Kirim:</span>
+                                    <span class="info-value"><?= date('d/m/Y', strtotime($main_data['tanggal_kirim_finishing'])) ?></span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Total Kirim:</span>
+                                    <span class="info-value"><?= $main_data['total_kirim'] ?> pcs</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Status:</span>
+                                    <span class="info-value">
+                                        <span class="badge bg-<?= $main_data['status_finishing'] == 'selesai' ? 'success' : ($main_data['status_finishing'] == 'diproses' ? 'warning' : 'secondary') ?> status-badge">
+                                            <?= ucfirst($main_data['status_finishing']) ?>
+                                        </span>
                                     </span>
-                                </span>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- TAMPILAN DETAIL FINISHING JIKA SUDAH ADA -->
-                <?php if ($has_finishing): ?>
-                    <div class="detail-box">
-                        <!-- Summary Card -->
-                        <div class="summary-card">
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <div class="summary-item">
-                                        <span class="summary-label">Tanggal Finishing:</span>
-                                        <span class="summary-value">
-                                            <?= dateIndo($finishing_data[0]['tanggal_finishing']) ?>
-                                        </span>
-                                    </div>
-                                    <div class="summary-item">
-                                        <span class="summary-label">Petugas:</span>
-                                        <span class="summary-value"><?= htmlspecialchars($main_data['nama_petugas']) ?></span>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="summary-item">
-                                        <span class="summary-label">Total Selesai:</span>
-                                        <span class="summary-value"><?= $total_selesai_finishing ?> pcs</span>
-                                    </div>
-                                    <div class="summary-item">
-                                        <span class="summary-label">Total Kembali:</span>
-                                        <span class="summary-value"><?= $total_rusak_finishing ?> pcs</span>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="summary-item">
-                                        <span class="summary-label">Total Upah:</span>
-                                        <span class="summary-value"><?= formatRupiah($total_upah_finishing) ?></span>
-                                    </div>
-                                    <div class="summary-item">
-                                        <span class="summary-label">Status:</span>
-                                        <span class="summary-value">
-                                            <span class="badge bg-success status-badge">Selesai</span>
-                                        </span>
-                                    </div>
+                    <!-- TAMPILAN DETAIL FINISHING JIKA SUDAH ADA -->
+
+
+                    <?php if ($has_finishing): ?>
+                        <div class="row">
+                            <!-- Summary Card -->
+                            <div class="col-md-4 border-0 mb-4">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-sm mb-0">
+                                        <thead>
+                                            <tr class="table-light">
+                                                <th colspan="2" class="text-center">
+                                                    <h5 class="mb-0">Ringkasan Finishing Koko</h5>
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <th class="bg-light w-50">Tanggal Finishing</th>
+                                                <td>
+                                                    <?= dateIndo($finishing_data[0]['tanggal_finishing']) ?>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <th class="bg-light">Petugas</th>
+                                                <td><?= htmlspecialchars($main_data['nama_petugas']) ?></td>
+                                            </tr>
+                                            <tr>
+                                                <th class="bg-light">Total Selesai</th>
+                                                <td class="fw-bold text-success">
+                                                    <?= $total_selesai_finishing ?> pcs
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <th class="bg-light">Total Kembali</th>
+                                                <td class="fw-bold text-danger">
+                                                    <?= $total_rusak_finishing ?> pcs
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <th class="bg-light">Total Upah</th>
+                                                <td class="fw-bold text-primary">
+                                                    <?= formatRupiah($total_upah_finishing) ?>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <th class="bg-light">Status</th>
+                                                <td>
+                                                    <span class="badge bg-success px-3 py-2">
+                                                        Selesai
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- Table Detail Finishing -->
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-hover finishing-table">
-                                <thead class="table-light">
-                                    <tr class="text-center">
-                                        <th style="width: 28%">Jenis Koko</th>
-                                        <th style="width: 10%">Dikirim</th>
-                                        <th style="width: 10%">Selesai</th>
-                                        <th style="width: 10%">Kembali</th>
-                                        <th style="width: 14%">Upah / Unit</th>
-                                        <th style="width: 18%">Total Upah</th>
-                                    </tr>
-                                </thead>
 
-                                <tbody>
-                                    <?php foreach ($finishing_data as $finish): ?>
-                                        <tr>
-                                            <td><?= htmlspecialchars($finish['nama_koko']) ?></td>
-                                            <td class="text-center"><?= $finish['jumlah_dikirim'] ?> pcs</td>
-                                            <td class="text-center">
-                                                <span class="badge bg-success"><?= $finish['jumlah_selesai'] ?> pcs</span>
-                                            </td>
-                                            <td class="text-center">
-                                                <span class="badge bg-danger"><?= $finish['jumlah_rusak'] ?> pcs</span>
-                                            </td>
-                                            <td class="text-center"><?= formatRupiah($finish['upah_per_unit']) ?></td>
-                                            <td class="text-center fw-bold text-success"><?= formatRupiah($finish['total_upah']) ?></td>
-                                            <!-- <td class="text-center">
-                                                <?php if (!empty($finish['nama_produk_koko'])): ?>
-                                                    <span class="badge bg-info"><?= htmlspecialchars($finish['nama_produk_koko']) ?></span>
-                                                <?php else: ?>
-                                                    <span class="badge bg-secondary">-</span>
-                                                <?php endif; ?>
-                                            </td> -->
-                                            <!-- <td class="text-center"><?= dateIndo($finish['tanggal_finishing']) ?></td> -->
+                            <!-- Table Detail Finishing -->
+                            <div class="col-md-8 table-responsive">
+                                <table class="table table-bordered table-hover finishing-table">
+                                    <thead class="table-light">
+                                        <tr class="text-center">
+                                            <th style="width: 28%">Nama Koko</th>
+                                            <th style="width: 10%">Dikirim</th>
+                                            <th style="width: 10%">Selesai</th>
+                                            <th style="width: 10%">Kembali</th>
+                                            <th style="width: 14%">Upah / Unit</th>
+                                            <th style="width: 18%">Total Upah</th>
                                         </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                                <tfoot>
-                                    <tr class="totals-row">
-                                        <td class="text-end fw-bold">TOTAL:</td>
-                                        <td class="text-center fw-bold">
-                                            <?php
-                                            $total_dikirim_finishing = 0;
-                                            foreach ($finishing_data as $finish) {
-                                                $total_dikirim_finishing += $finish['jumlah_dikirim'];
-                                            }
-                                            echo $total_dikirim_finishing . ' pcs';
-                                            ?>
-                                        </td>
-                                        <td class="text-center fw-bold text-success"><?= $total_selesai_finishing ?> pcs</td>
-                                        <td class="text-center fw-bold text-danger"><?= $total_rusak_finishing ?> pcs</td>
-                                        <td class="text-center fw-bold">-</td>
-                                        <td class="text-center fw-bold text-success"><?= formatRupiah($total_upah_finishing) ?></td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
+                                    </thead>
 
-                        <!-- Informasi Produk -->
-                        <div class="mt-4">
-                            <h6><i class="ti ti-package"></i> Informasi Stok Produk</h6>
-                            <div class="row">
+                                    <tbody>
+                                        <?php foreach ($finishing_data as $finish): ?>
+                                            <tr>
+                                                <td><?= htmlspecialchars($finish['nama_koko']) ?></td>
+                                                <td class="text-center"><?= $finish['jumlah_dikirim'] ?> pcs</td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-success"><?= $finish['jumlah_selesai'] ?> pcs</span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-danger"><?= $finish['jumlah_rusak'] ?> pcs</span>
+                                                </td>
+                                                <td class="text-center"><?= formatRupiah($finish['upah_per_unit']) ?></td>
+                                                <td class="text-center fw-bold text-success"><?= formatRupiah($finish['total_upah']) ?></td>
+                                                <!-- <td class="text-center">
+                                                    <?php if (!empty($finish['nama_produk_koko'])): ?>
+                                                        <span class="badge bg-info"><?= htmlspecialchars($finish['nama_produk_koko']) ?></span>
+                                                    <?php else: ?>
+                                                        <span class="badge bg-secondary">-</span>
+                                                    <?php endif; ?>
+                                                </td> -->
+                                                <!-- <td class="text-center"><?= dateIndo($finish['tanggal_finishing']) ?></td> -->
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                    <tfoot>
+                                        <tr class="totals-row">
+                                            <td class="text-end fw-bold">TOTAL:</td>
+                                            <td class="text-center fw-bold">
+                                                <?php
+                                                $total_dikirim_finishing = 0;
+                                                foreach ($finishing_data as $finish) {
+                                                    $total_dikirim_finishing += $finish['jumlah_dikirim'];
+                                                }
+                                                echo $total_dikirim_finishing . ' pcs';
+                                                ?>
+                                            </td>
+                                            <td class="text-center fw-bold text-success"><?= $total_selesai_finishing ?> pcs</td>
+                                            <td class="text-center fw-bold text-danger"><?= $total_rusak_finishing ?> pcs</td>
+                                            <td class="text-center fw-bold">-</td>
+                                            <td class="text-center fw-bold text-success"><?= formatRupiah($total_upah_finishing) ?></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+
+                            <!-- Informasi Produk -->
+                            <div class="row mt-4">
                                 <div class="col-md-6">
-                                    <div class="alert alert-info">
-                                        <!-- <p class="mb-1"><strong>Produk Utama:</strong> <?= htmlspecialchars($main_data['nama_produk']) ?></p> -->
-                                        <p class="mb-0"><strong>Ditambahkan ke Stok:</strong> <?= $total_selesai_finishing ?> pcs</p>
+                                    <h6><i class="ti ti-package"></i> Informasi Stok Produk</h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="alert alert-info">
+                                                <!-- <p class="mb-1"><strong>Produk Utama:</strong> <?= htmlspecialchars($main_data['nama_produk']) ?></p> -->
+                                                <p class="mb-0"><strong>Ditambahkan ke Stok:</strong> <?= $total_selesai_finishing ?> pcs</p>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="alert alert-warning">
+                                                <p class="mb-1"><strong>Kembali ke Stok Koko Finishing:</strong></p>
+                                                <p class="mb-0">
+                                                    <?php
+                                                    $koko_rusak_list = [];
+                                                    foreach ($finishing_data as $finish) {
+                                                        if ($finish['jumlah_rusak'] > 0) {
+                                                            $koko_rusak_list[] = $finish['nama_koko'] . ' (' . $finish['jumlah_rusak'] . ' pcs)';
+                                                        }
+                                                    }
+                                                    if (!empty($koko_rusak_list)) {
+                                                        echo implode(", ", $koko_rusak_list);
+                                                    } else {
+                                                        echo 'Tidak ada koko kembali';
+                                                    }
+                                                    ?>
+                                                </p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
-                                    <div class="alert alert-warning">
-                                        <p class="mb-1"><strong>Kembali ke Stok Koko Mentah:</strong></p>
-                                        <p class="mb-0">
-                                            <?php
-                                            $koko_rusak_list = [];
-                                            foreach ($finishing_data as $finish) {
-                                                if ($finish['jumlah_rusak'] > 0) {
-                                                    $koko_rusak_list[] = $finish['nama_koko'] . ' (' . $finish['jumlah_rusak'] . ' pcs)';
-                                                }
-                                            }
-                                            if (!empty($koko_rusak_list)) {
-                                                echo implode(", ", $koko_rusak_list);
-                                            } else {
-                                                echo 'Tidak ada koko kembali';
-                                            }
-                                            ?>
-                                        </p>
-                                    </div>
+                                    <!-- Tampilkan ATK yang sudah digunakan -->
+                                    <?php if ($has_atk): ?>
+                                        <div class="mt-4">
+                                            <div class="card">
+                                                <div class="card-header bg-light">
+                                                    ATK Finishing yang Digunakan</h6>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div class="table-responsive">
+                                                        <table class="table table-bordered table-sm">
+                                                            <thead class="table-light">
+                                                                <tr>
+                                                                    <!-- Tambahkan kolom header No -->
+                                                                    <th width="5%" class="text-center">No</th>
+                                                                    <th>Nama ATK</th>
+                                                                    <th width="15%">Jumlah</th>
+                                                                    <th width="15%">Satuan</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                <?php $no = 1; // Inisialisasi nomor 
+                                                                ?>
+                                                                <?php foreach ($atk_existing_data as $atk): ?>
+                                                                    <tr>
+                                                                        <!-- Tampilkan nomor dan increment otomatis -->
+                                                                        <td class="text-center"><?= $no++ ?></td>
+                                                                        <td><?= htmlspecialchars($atk['nama_atk']) ?></td>
+                                                                        <td class="text-center"><?= $atk['jumlah'] ?></td>
+                                                                        <td class="text-center"><?= ucfirst($atk['satuan']) ?></td>
+                                                                    </tr>
+                                                                <?php endforeach; ?>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- Tombol Batal -->
-                        <div class="d-flex justify-content-end mt-4">
-                            <button class="btn btn-batal-semua btn-batal-semua-koko"
-                                data-id="<?= $id_hasil_kirim_finishing ?>"
-                                title="Batalkan semua hasil finishing koko">
-                                <i class="ti ti-trash"></i> Batalkan Semua Hasil
-                            </button>
+
+
+                            <!-- Tombol Batal -->
+                            <div class="d-flex justify-content-end mt-4">
+                                <button class="btn btn-batal-semua btn-batal-semua-koko"
+                                    data-id="<?= $id_hasil_kirim_finishing ?>"
+                                    title="Batalkan semua hasil finishing koko">
+                                    <i class="ti ti-trash"></i> Batalkan Semua Hasil
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                <?php else: ?>
-                    <!-- Warning jika belum ada finishing -->
-                    <!-- <div class="warning-box">
-                        <h5><i class="ti ti-info-circle"></i> Informasi</h5>
-                        <p class="mb-2">Hasil finishing untuk pengiriman ini belum diinput.</p>
-                        <p class="mb-0"><strong>Perhatian:</strong> Input hasil finishing hanya bisa dilakukan sekali! Pastikan semua data sudah benar sebelum disimpan.</p>
-                    </div> -->
-                <?php endif; ?>
+                    <?php else: ?>
+                        <!-- Warning jika belum ada finishing -->
+                        <!-- <div class="warning-box">
+                            <h5><i class="ti ti-info-circle"></i> Informasi</h5>
+                            <p class="mb-2">Hasil finishing untuk pengiriman ini belum diinput.</p>
+                            <p class="mb-0"><strong>Perhatian:</strong> Input hasil finishing hanya bisa dilakukan sekali! Pastikan semua data sudah benar sebelum disimpan.</p>
+                        </div> -->
+                    <?php endif; ?>
+
+                </div>
 
                 <!-- Form Input Hasil Finishing Koko -->
                 <?php if (!$has_finishing): ?>
@@ -1177,7 +1304,7 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
                                                 <th width="8%">Kembali</th>
                                                 <th width="6%">Total</th>
                                                 <th hidden width="12%">Petugas Finishing</th>
-                                                <th width="18%">Upah per Unit</th>
+                                                <th width="18%">Upah per Pcs</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -1319,6 +1446,56 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
                                             </tr>
                                         </tfoot>
                                     </table>
+                                </div>
+
+                                <!-- Input ATK Finishing -->
+                                <div class="card mb-4" id="atk-card">
+                                    <div class="card-header bg-light">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h6 class="mb-0">ATK Finishing yang Digunakan</h6>
+                                            <button type="button" class="btn btn-sm btn-primary" id="btnTambahAtk">
+                                                <i class="ti ti-plus"></i> Tambah ATK
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="atk-container">
+                                            <div class="atk-item row mb-3">
+                                                <div class="col-md-5">
+                                                    <label class="form-label">Nama ATK Finishing <span class="text-danger">*</span></label>
+                                                    <input type="text" name="atk_nama[]" class="form-control atk-nama"
+                                                        placeholder="Contoh: Kancing, Resleting, Tali, Label, dll." required>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Jumlah <span class="text-danger">*</span></label>
+                                                    <div class="input-group">
+                                                        <input type="number" name="atk_jumlah[]" class="form-control atk-jumlah"
+                                                            min="1" value="1" required>
+                                                        <span class="input-group-text">Pcs</span>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Satuan</label>
+                                                    <select name="atk_satuan[]" class="form-control atk-satuan">
+                                                        <option value="meter">Meter</option>
+                                                        <option value="buah" selected>Buah</option>
+                                                        <option value="set">Set</option>
+                                                        <option value="roll">Roll</option>
+                                                        <option value="lbr">Lembar</option>
+                                                        <option value="lainnya">Lainnya</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-1 d-flex align-items-end">
+                                                    <button type="button" class="btn btn-sm btn-danger btn-hapus-atk" style="display: none;">
+                                                        <i class="ti ti-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">
+                                            <i class="ti ti-info-circle"></i> ATK (Alat Tulis Kantor) Finishing adalah bahan pendukung seperti kancing, resleting, tali, label, dll.
+                                        </small>
+                                    </div>
                                 </div>
 
                                 <div class="mt-4">
@@ -1680,6 +1857,99 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
         rupiah = split[1] !== undefined ? rupiah + ',' + split[1] : rupiah;
         return 'Rp ' + rupiah;
     }
+</script>
+
+<script>
+    // ====================
+    // FUNGSI UNTUK ATK
+    // ====================
+    document.addEventListener('DOMContentLoaded', function() {
+        const atkContainer = document.getElementById('atk-container');
+        const btnTambahAtk = document.getElementById('btnTambahAtk');
+        let atkCounter = 1;
+
+        // Fungsi untuk menambahkan item ATK baru
+        function tambahAtkItem() {
+            atkCounter++;
+
+            const atkItem = document.createElement('div');
+            atkItem.className = 'atk-item row mb-3';
+            atkItem.innerHTML = `
+            <div class="col-md-5">
+                <label class="form-label">Nama ATK Finishing <span class="text-danger">*</span></label>
+                <input type="text" name="atk_nama[]" class="form-control atk-nama"
+                    placeholder="Contoh: Kancing, Resleting, Tali, Label, dll." required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Jumlah <span class="text-danger">*</span></label>
+                <div class="input-group">
+                    <input type="number" name="atk_jumlah[]" class="form-control atk-jumlah"
+                        min="1" value="1" required>
+                    <span class="input-group-text">Pcs</span>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Satuan</label>
+                <select name="atk_satuan[]" class="form-control atk-satuan">
+                    <option value="meter">Meter</option>
+                    <option value="buah" selected>Buah</option>
+                    <option value="set">Set</option>
+                    <option value="roll">Roll</option>
+                    <option value="lbr">Lembar</option>
+                    <option value="lainnya">Lainnya</option>
+                </select>
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <button type="button" class="btn btn-sm btn-danger btn-hapus-atk">
+                    <i class="ti ti-trash"></i>
+                </button>
+            </div>
+        `;
+
+            atkContainer.appendChild(atkItem);
+
+            // Tampilkan tombol hapus pada item pertama jika sudah ada lebih dari 1 item
+            if (atkCounter > 1) {
+                const firstDeleteBtn = document.querySelector('.atk-item:first-child .btn-hapus-atk');
+                if (firstDeleteBtn) {
+                    firstDeleteBtn.style.display = 'block';
+                }
+            }
+        }
+
+        // Event listener untuk tombol tambah ATK
+        btnTambahAtk.addEventListener('click', tambahAtkItem);
+
+        // Event delegation untuk tombol hapus ATK
+        atkContainer.addEventListener('click', function(e) {
+            if (e.target.closest('.btn-hapus-atk')) {
+                const atkItem = e.target.closest('.atk-item');
+                const atkItems = document.querySelectorAll('.atk-item');
+
+                // Hanya hapus jika ada lebih dari 1 item
+                if (atkItems.length > 1) {
+                    atkItem.remove();
+                    atkCounter--;
+
+                    // Sembunyikan tombol hapus pada item pertama jika hanya tersisa 1 item
+                    if (atkCounter === 1) {
+                        const firstDeleteBtn = document.querySelector('.atk-item:first-child .btn-hapus-atk');
+                        if (firstDeleteBtn) {
+                            firstDeleteBtn.style.display = 'none';
+                        }
+                    }
+                }
+            }
+        });
+
+        // Reset ATK saat form ditutup atau page refresh
+        window.addEventListener('beforeunload', function() {
+            atkContainer.querySelectorAll('.atk-item').forEach((item, index) => {
+                if (index > 0) item.remove();
+            });
+            atkCounter = 1;
+        });
+    });
 </script>
 
 </html>

@@ -770,6 +770,68 @@ function updateHutangUpahPenjahit($id_penjahit, $jumlah_kurang)
     }
 }
 
+/**
+ * Mengurangi hutang upah bordir dengan validasi
+ */
+// function kurangiHutangUpahBordir($id_bordir, $jumlah_kurang)
+// {
+//     global $conn;
+
+//     try {
+//         $sql_check = "SELECT id_hutang, total_upah, sisa_hutang, total_dibayar 
+//                      FROM hutang_upah 
+//                      WHERE id_karyawan = ? AND jenis_karyawan = 'bordir'
+//                      LIMIT 1";
+//         $stmt = $conn->prepare($sql_check);
+//         $stmt->bind_param("i", $id_bordir);
+//         $stmt->execute();
+//         $result = $stmt->get_result();
+
+//         if ($result->num_rows === 0) {
+//             return true;
+//         }
+
+//         $hutang = $result->fetch_assoc();
+
+//         if ($jumlah_kurang > $hutang['sisa_hutang']) {
+//             throw new Exception("Tidak dapat mengurangi hutang karena jumlah yang akan dikurangi (" .
+//                 formatRupiah($jumlah_kurang) . ") lebih besar dari sisa hutang (" .
+//                 formatRupiah($hutang['sisa_hutang']) . "). Total yang sudah dibayar: " .
+//                 formatRupiah($hutang['total_dibayar']));
+//         }
+
+//         $total_upah_baru = $hutang['total_upah'] - $jumlah_kurang;
+//         $sisa_hutang_baru = $hutang['sisa_hutang'] - $jumlah_kurang;
+
+//         $total_upah_baru = max(0, $total_upah_baru);
+//         $sisa_hutang_baru = max(0, $sisa_hutang_baru);
+
+//         if ($total_upah_baru <= 0) {
+//             $sql_delete = "DELETE FROM hutang_upah WHERE id_hutang = ?";
+//             $stmt = $conn->prepare($sql_delete);
+//             $stmt->bind_param("i", $hutang['id_hutang']);
+//             if (!$stmt->execute()) {
+//                 throw new Exception("Gagal menghapus record hutang: " . $conn->error);
+//             }
+//             return true;
+//         } else {
+//             $sql_update = "UPDATE hutang_upah 
+//                           SET total_upah = ?, 
+//                               sisa_hutang = ?,
+//                               updated_at = NOW()
+//                           WHERE id_hutang = ?";
+//             $stmt = $conn->prepare($sql_update);
+//             $stmt->bind_param("ddi", $total_upah_baru, $sisa_hutang_baru, $hutang['id_hutang']);
+//             if (!$stmt->execute()) {
+//                 throw new Exception("Gagal update hutang: " . $conn->error);
+//             }
+//             return true;
+//         }
+//     } catch (Exception $e) {
+//         throw new Exception("Gagal mengurangi hutang upah bordir: " . $e->getMessage());
+//     }
+// }
+
 
 
 // Muat variabel lingkungan dari file .env

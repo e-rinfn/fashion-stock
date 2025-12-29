@@ -147,29 +147,6 @@ if (!empty($detail_penjualan)) {
     // Ubah ke array indexed
     $summary_per_produk = array_values($produk_data);
 }
-
-// Query untuk data penjualan per bulan (12 bulan terakhir)
-$bulan_labels = [];
-$penjualan_per_bulan = [];
-
-for ($i = 11; $i >= 0; $i--) {
-    $bulan = date('Y-m', strtotime("-$i months"));
-    $bulan_labels[] = date('M Y', strtotime("-$i months"));
-    
-    // Query penjualan untuk bulan ini
-    $query_bulan = "SELECT COALESCE(SUM(dp.subtotal), 0) as total
-                    FROM detail_penjualan dp
-                    JOIN penjualan pj ON dp.id_penjualan = pj.id_penjualan
-                    WHERE DATE_FORMAT(pj.tanggal_penjualan, '%Y-%m') = '$bulan'
-                    AND pj.status_pembayaran != 'batal'";
-    
-    $result_bulan = query($query_bulan);
-    $penjualan_per_bulan[] = $result_bulan[0]['total'] ?? 0;
-}
-
-// Data untuk chart dalam format JSON
-$chart_labels = json_encode($bulan_labels);
-$chart_data = json_encode($penjualan_per_bulan);
 ?>
 
 <style>
@@ -295,71 +272,52 @@ $chart_data = json_encode($penjualan_per_bulan);
                         </div>
                     </div>
 
-                    <!-- Tab Navigation -->
-                    <ul class="nav nav-tabs mb-4" id="salesTab" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="data-tab" data-bs-toggle="tab" data-bs-target="#data-penjualan" type="button" role="tab" aria-controls="data-penjualan" aria-selected="true">
-                                <i class="ti ti-table me-2"></i>Data Penjualan
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="grafik-tab" data-bs-toggle="tab" data-bs-target="#grafik-penjualan" type="button" role="tab" aria-controls="grafik-penjualan" aria-selected="false">
-                                <i class="ti ti-chart-bar me-2"></i>Grafik Penjualan
-                            </button>
-                        </li>
-                    </ul>
-
-                    <!-- Tab Content -->
-                    <div class="tab-content" id="salesTabContent">
-                        <!-- Tab Data Penjualan -->
-                        <div class="tab-pane fade show active" id="data-penjualan" role="tabpanel" aria-labelledby="data-tab">
-                            
-                            <!-- Card Summary -->
-                            <div class="row g-3 mb-4">
-                                <div class="col-md-3 col-sm-6">
-                                    <div class="card text-center shadow-sm border-0">
-                                        <div class="card-body py-3">
-                                            <h4 class="fw-bold mb-1">
-                                                <?= number_format($summary_manual['total_transaksi'], 0, ',', '.') ?>
-                                            </h4>
-                                            <small class="text-muted">Total Transaksi</small>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="col-md-3 col-sm-6">
-                                    <div class="card text-center shadow-sm border-0">
-                                        <div class="card-body py-3">
-                                            <h4 class="fw-bold mb-1">
-                                                <?= number_format($summary_manual['total_item'], 0, ',', '.') ?>
-                                            </h4>
-                                            <small class="text-muted">Total Item Terjual</small>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="col-md-3 col-sm-6">
-                                    <div class="card text-center shadow-sm border-0">
-                                        <div class="card-body py-3">
-                                            <h4 class="fw-bold mb-1">
-                                                <?= number_format($summary_manual['total_jumlah'], 0, ',', '.') ?>
-                                            </h4>
-                                            <small class="text-muted">Total Jumlah Barang</small>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="col-md-3 col-sm-6">
-                                    <div class="card text-center shadow-sm border-0">
-                                        <div class="card-body py-3">
-                                            <h4 class="fw-bold mb-1 text-primary">
-                                                <?= formatRupiah($summary_manual['total_nilai']) ?>
-                                            </h4>
-                                            <small class="text-muted">Total Nilai Penjualan</small>
-                                        </div>
-                                    </div>
+                    <!-- Card Summary -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3 col-sm-6">
+                            <div class="card text-center shadow-sm border-0">
+                                <div class="card-body py-3">
+                                    <h4 class="fw-bold mb-1">
+                                        <?= number_format($summary_manual['total_transaksi'], 0, ',', '.') ?>
+                                    </h4>
+                                    <small class="text-muted">Total Transaksi</small>
                                 </div>
                             </div>
+                        </div>
+
+                        <div class="col-md-3 col-sm-6">
+                            <div class="card text-center shadow-sm border-0">
+                                <div class="card-body py-3">
+                                    <h4 class="fw-bold mb-1">
+                                        <?= number_format($summary_manual['total_item'], 0, ',', '.') ?>
+                                    </h4>
+                                    <small class="text-muted">Total Item Terjual</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3 col-sm-6">
+                            <div class="card text-center shadow-sm border-0">
+                                <div class="card-body py-3">
+                                    <h4 class="fw-bold mb-1">
+                                        <?= number_format($summary_manual['total_jumlah'], 0, ',', '.') ?>
+                                    </h4>
+                                    <small class="text-muted">Total Jumlah Barang</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3 col-sm-6">
+                            <div class="card text-center shadow-sm border-0">
+                                <div class="card-body py-3">
+                                    <h4 class="fw-bold mb-1 text-primary">
+                                        <?= formatRupiah($summary_manual['total_nilai']) ?>
+                                    </h4>
+                                    <small class="text-muted">Total Nilai Penjualan</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
                     <div class="row">
                         <div class="col-md-5">
@@ -569,13 +527,7 @@ $chart_data = json_encode($penjualan_per_bulan);
                         </div>
 
                         <div class="card-body">
-                            <?php 
-                            $showErrorPopup = false;
-                            $errorMessage = '';
-                            if (isset($_SESSION['error'])): 
-                                $showErrorPopup = true;
-                                $errorMessage = $_SESSION['error'];
-                            ?>
+                            <?php if (isset($_SESSION['error'])): ?>
                                 <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center" role="alert">
                                     <i class="ti ti-alert-circle me-2"></i>
                                     <div><?= htmlspecialchars($_SESSION['error']) ?></div>
@@ -655,7 +607,7 @@ $chart_data = json_encode($penjualan_per_bulan);
                                                     <tr class="table-active">
                                                         <td>
                                                             <div class="fw-bold"><?= dateIndo($item['tanggal_penjualan']) ?></div>
-                                                            <small class="text-muted">ID Transaksi: <?= $item['id_penjualan'] ?></small>
+                                                            <small class="text-muted">ID: <?= $item['id_penjualan'] ?></small>
                                                         </td>
                                                         <td colspan="2">
                                                             <div class="fw-bold"><?= htmlspecialchars($item['nama_reseller']) ?></div>
@@ -744,75 +696,6 @@ $chart_data = json_encode($penjualan_per_bulan);
                         </div>
                     </div>
                 </div>
-                        </div>
-                        <!-- End Tab Data Penjualan -->
-
-                        <!-- Tab Grafik Penjualan -->
-                        <div class="tab-pane fade" id="grafik-penjualan" role="tabpanel" aria-labelledby="grafik-tab">
-                            <!-- Grafik Penjualan Per Bulan -->
-                            <div class="card mb-4">
-                                <div class="card-header bg-warning">
-                                    <h5 class="mb-0 text-dark d-flex align-items-center">
-                                        <i class="ti ti-chart-bar me-2"></i>
-                                        Grafik Penjualan 12 Bulan Terakhir
-                                    </h5>
-                                </div>
-                                <div class="card-body">
-                                    <div style="position: relative; height: 400px;">
-                                        <canvas id="salesChart"></canvas>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Summary Cards di Tab Grafik -->
-                            <div class="row g-3">
-                                <div class="col-md-3 col-sm-6">
-                                    <div class="card text-center shadow-sm border-0 bg-light">
-                                        <div class="card-body py-3">
-                                            <h4 class="fw-bold mb-1">
-                                                <?= number_format($summary_manual['total_transaksi'], 0, ',', '.') ?>
-                                            </h4>
-                                            <small class="text-muted">Total Transaksi</small>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 col-sm-6">
-                                    <div class="card text-center shadow-sm border-0 bg-light">
-                                        <div class="card-body py-3">
-                                            <h4 class="fw-bold mb-1">
-                                                <?= number_format($summary_manual['total_item'], 0, ',', '.') ?>
-                                            </h4>
-                                            <small class="text-muted">Total Item Terjual</small>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 col-sm-6">
-                                    <div class="card text-center shadow-sm border-0 bg-light">
-                                        <div class="card-body py-3">
-                                            <h4 class="fw-bold mb-1">
-                                                <?= number_format($summary_manual['total_jumlah'], 0, ',', '.') ?>
-                                            </h4>
-                                            <small class="text-muted">Total Jumlah Barang</small>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 col-sm-6">
-                                    <div class="card text-center shadow-sm border-0 bg-light">
-                                        <div class="card-body py-3">
-                                            <h4 class="fw-bold mb-1 text-primary">
-                                                <?= formatRupiah($summary_manual['total_nilai']) ?>
-                                            </h4>
-                                            <small class="text-muted">Total Nilai Penjualan</small>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- End Tab Grafik Penjualan -->
-                    </div>
-                    <!-- End Tab Content -->
-
-                </div>
             </div>
             <!-- [ Main Content ] end -->
         </div>
@@ -821,15 +704,11 @@ $chart_data = json_encode($penjualan_per_bulan);
 
     <?php include_once '../includes/footer.php'; ?>
 
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         $(document).ready(function() {
-
             // Handle dropdown tidak menutup saat klik checkbox
             $(document).on('click', '.multiselect-dropdown .dropdown-item', function(e) {
                 e.stopPropagation();
@@ -914,18 +793,11 @@ $chart_data = json_encode($penjualan_per_bulan);
 
             const penjualanId = $(this).data('id');
             const noTransaksi = $(this).data('no');
-            const statusPembayaran = $(this).closest('tr').find('.badge').text().trim().toLowerCase();
-
-            let warningMessage = `<small class="text-danger">Aksi ini akan mengembalikan stok produk!</small>`;
-            
-            // Tambahkan peringatan khusus untuk status cicilan
-            if (statusPembayaran === 'cicilan') {
-                warningMessage = `<small class="text-warning"><strong>⚠️ Perhatian:</strong> Jika sudah ada pembayaran cicilan, penjualan tidak dapat dibatalkan. Silakan batalkan cicilan terlebih dahulu!</small><br><small class="text-danger">Aksi ini akan mengembalikan stok produk!</small>`;
-            }
 
             Swal.fire({
                 title: 'Batalkan Penjualan?',
-                html: `Apakah Anda yakin ingin membatalkan penjualan dengan <strong>nomor transaksi: #${noTransaksi}</strong>?<br>${warningMessage}`,
+                html: `Apakah Anda yakin ingin membatalkan penjualan <strong>#${noTransaksi}</strong>?<br>
+                       <small class="text-danger">Aksi ini akan mengembalikan stok produk!</small>`,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
@@ -938,106 +810,6 @@ $chart_data = json_encode($penjualan_per_bulan);
                     window.location.href = 'batal.php?id=' + penjualanId;
                 }
             });
-        });
-
-        // Inisialisasi Chart Penjualan saat tab diklik
-        let salesChart = null;
-        const chartLabels = <?= $chart_labels ?>;
-        const chartData = <?= $chart_data ?>;
-        
-        function initSalesChart() {
-            if (salesChart) return; // Sudah di-inisialisasi
-            
-            const ctx = document.getElementById('salesChart').getContext('2d');
-            salesChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: chartLabels,
-                    datasets: [{
-                        label: 'Total Penjualan',
-                        data: chartData,
-                        backgroundColor: 'rgba(255, 193, 7, 0.8)',
-                        borderColor: 'rgba(255, 193, 7, 1)',
-                        borderWidth: 2,
-                        borderRadius: 8,
-                        borderSkipped: false,
-                        hoverBackgroundColor: 'rgba(255, 193, 7, 1)',
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            backgroundColor: 'rgba(255, 193, 7, 0.95)',
-                            titleColor: '#000',
-                            bodyColor: '#000',
-                            titleFont: {
-                                size: 14,
-                                weight: 'bold'
-                            },
-                            bodyFont: {
-                                size: 13
-                            },
-                            padding: 12,
-                            cornerRadius: 8,
-                            displayColors: false,
-                            callbacks: {
-                                label: function(context) {
-                                    let value = context.raw;
-                                    return 'Rp ' + new Intl.NumberFormat('id-ID').format(value);
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: {
-                                color: 'rgba(0, 0, 0, 0.05)',
-                                drawBorder: false
-                            },
-                            ticks: {
-                                callback: function(value) {
-                                    if (value >= 1000000) {
-                                        return 'Rp ' + (value / 1000000).toFixed(1) + ' Jt';
-                                    } else if (value >= 1000) {
-                                        return 'Rp ' + (value / 1000).toFixed(0) + ' Rb';
-                                    }
-                                    return 'Rp ' + value;
-                                },
-                                font: {
-                                    size: 11
-                                },
-                                color: '#666'
-                            }
-                        },
-                        x: {
-                            grid: {
-                                display: false
-                            },
-                            ticks: {
-                                font: {
-                                    size: 11
-                                },
-                                color: '#666'
-                            }
-                        }
-                    },
-                    animation: {
-                        duration: 1000,
-                        easing: 'easeOutQuart'
-                    }
-                }
-            });
-        }
-
-        // Inisialisasi chart saat tab grafik dibuka
-        $('#grafik-tab').on('shown.bs.tab', function() {
-            initSalesChart();
         });
     </script>
 </body>

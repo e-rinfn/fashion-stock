@@ -1,7 +1,7 @@
 <?php
 
 // Aktifkan error reporting
-error_reporting(error_level: E_ALL);
+error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 require_once '../includes/header.php';
@@ -333,80 +333,6 @@ function kurangiHutangUpahBordir($id_bordir, $jumlah_kurang)
         }
     } catch (Exception $e) {
         throw new Exception("Gagal mengurangi hutang upah bordir: " . $e->getMessage());
-    }
-}
-
-function kembalikanStokBahanBaku($id_hasil_potong_fix)
-{
-    global $conn;
-
-    try {
-        // Log untuk debugging
-        error_log("Memulai pengembalian stok untuk id_hasil_potong_fix: " . $id_hasil_potong_fix);
-
-        // 1. Ambil semua detail bahan yang digunakan dalam produksi ini
-        $sql_detail = "SELECT dh.*, b.nama_bahan, b.satuan, b.jumlah_stok, b.jumlah_meter
-                      FROM detail_hasil_potong_fix dh
-                      JOIN bahan_baku b ON dh.id_bahan = b.id_bahan
-                      WHERE dh.id_hasil_potong_fix = ?";
-
-        $stmt = $conn->prepare($sql_detail);
-        $stmt->bind_param("i", $id_hasil_potong_fix);
-        $stmt->execute();
-        $result = $stmt->get_result();
-
-        $total_bahan_dikembalikan = 0;
-        $detail_bahan_dikembalikan = [];
-
-        while ($detail = $result->fetch_assoc()) {
-            $id_bahan = $detail['id_bahan'];
-            $jumlah_digunakan = $detail['jumlah'] ?? 0;
-            $total_meter = $detail['total_meter'] ?? 0;
-            $nama_bahan = $detail['nama_bahan'];
-            $satuan = $detail['satuan'];
-
-            error_log("Mengembalikan bahan: $nama_bahan (ID: $id_bahan)");
-            error_log("  - Jumlah digunakan: $jumlah_digunakan");
-            error_log("  - Total meter: $total_meter");
-
-            if (($jumlah_digunakan > 0 || $total_meter > 0) && $id_bahan > 0) {
-                // 2. Update stok bahan baku - TAMBAHKAN kembali jumlah yang digunakan
-                $sql_update_stok = "UPDATE bahan_baku 
-                                   SET jumlah_stok = jumlah_stok + ?,
-                                       jumlah_meter = jumlah_meter + ?,
-                                       updated_at = NOW()
-                                   WHERE id_bahan = ?";
-
-                $stmt_update = $conn->prepare($sql_update_stok);
-                $stmt_update->bind_param("ddi", $jumlah_digunakan, $total_meter, $id_bahan);
-
-                if (!$stmt_update->execute()) {
-                    error_log("Gagal update stok untuk bahan ID $id_bahan: " . $conn->error);
-                    throw new Exception("Gagal mengembalikan stok bahan baku ID $id_bahan: " . $conn->error);
-                }
-
-                $total_bahan_dikembalikan += ($jumlah_digunakan + $total_meter);
-                $detail_bahan_dikembalikan[] = [
-                    'id_bahan' => $id_bahan,
-                    'nama_bahan' => $nama_bahan,
-                    'jumlah_stok' => $jumlah_digunakan,
-                    'jumlah_meter' => $total_meter,
-                    'satuan' => $satuan
-                ];
-
-                error_log("  - Berhasil dikembalikan");
-            }
-        }
-
-        error_log("Total bahan dikembalikan: " . $total_bahan_dikembalikan);
-
-        return [
-            'total' => $total_bahan_dikembalikan,
-            'detail' => $detail_bahan_dikembalikan
-        ];
-    } catch (Exception $e) {
-        error_log("Error dalam kembalikanStokBahanBaku: " . $e->getMessage());
-        throw new Exception("Gagal mengembalikan stok bahan baku: " . $e->getMessage());
     }
 }
 
@@ -977,10 +903,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 case 'hasil_jahit':
                     // Batalkan hasil jahit
                     $sql_update = "UPDATE hasil_potong_fix 
-            SET tanggal_hasil_jahit = NULL,
-                total_hasil_jahit = NULL,
-                status_potong = 'penjahitan'
-            WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
+                    SET tanggal_hasil_jahit = NULL,
+                        total_hasil_jahit = NULL,
+                        status_potong = 'penjahitan'
+                    WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
 
                     if (!$conn->query($sql_update)) {
                         throw new Exception("Gagal membatalkan hasil jahit");
@@ -991,14 +917,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         if ($tipe_produk == 'mukena') {
                             // Kurangi stok produk
                             $sql_stok = "UPDATE produk 
-                    SET stok = stok - $total_hasil_jahit 
-                    WHERE id_produk = $id_produk";
+                            SET stok = stok - $total_hasil_jahit 
+                            WHERE id_produk = $id_produk";
                         } else {
                             // Kurangi stok koko
                             $sql_stok = "UPDATE koko 
-                    SET stok = stok - $total_hasil_jahit,
-                        updated_at = NOW()
-                    WHERE id_produk = $id_produk";
+                            SET stok = stok - $total_hasil_jahit,
+                                updated_at = NOW()
+                            WHERE id_produk = $id_produk";
                         }
 
                         if (!$conn->query($sql_stok)) {
@@ -1008,19 +934,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                     // Kurangi hutang upah penjahit
                     if ($id_penjahit > 0 && $total_hasil_jahit > 0) {
-                        $tarif_upah_manual = $produksi_data['tarif_upah'] ?? 0;
+                        // $tarif_penjahit = getTarifUpah('penjahitan', $produksi_data['tanggal_hasil_jahit']);
+                        // $upah_dikurangi = $total_hasil_jahit * $tarif_penjahit;
+
+                        $tarif_upah_manual = $produksi_data['tarif_upah'] ?? 0; // Kolom tarif_upah di tabel hasil_potong_fix
                         $upah_dikurangi = $total_hasil_jahit * $tarif_upah_manual;
 
+                        // Panggil fungsi kurangi hutang dengan nilai yang benar
                         if (!kurangiHutangUpahPenjahit($id_penjahit, $upah_dikurangi)) {
                             throw new Exception("Gagal mengurangi hutang upah penjahit");
-                        }
-                    }
-
-                    // HAPUS ATK FINISHING (jika ada)
-                    if ($tipe_produk == 'mukena') {
-                        $sql_delete_atk = "DELETE FROM atk_finishing WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
-                        if (!$conn->query($sql_delete_atk)) {
-                            throw new Exception("Gagal menghapus ATK finishing: " . $conn->error);
                         }
                     }
 
@@ -1030,10 +952,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 case 'tanggal_kirim_jahit':
                     // Batalkan tanggal kirim jahit dan penjahit
                     $sql_update = "UPDATE hasil_potong_fix 
-            SET id_penjahit = NULL,
-                tanggal_kirim_jahit = NULL,
-                status_potong = 'bordir'
-            WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
+                    SET id_penjahit = NULL,
+                        tanggal_kirim_jahit = NULL,
+                        status_potong = 'bordir'
+                    WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
 
                     if (!$conn->query($sql_update)) {
                         throw new Exception("Gagal membatalkan tanggal kirim jahit");
@@ -1045,10 +967,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 case 'hasil_bordir':
                     // Batalkan hasil bordir
                     $sql_update = "UPDATE hasil_potong_fix 
-            SET tanggal_hasil_bordir = NULL,
-                total_hasil_bordir = NULL,
-                status_potong = 'bordir'
-            WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
+                    SET tanggal_hasil_bordir = NULL,
+                        total_hasil_bordir = NULL,
+                        status_potong = 'bordir'
+                    WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
 
                     if (!$conn->query($sql_update)) {
                         throw new Exception("Gagal membatalkan hasil bordir");
@@ -1056,9 +978,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                     // Kurangi hutang upah bordir
                     if ($id_bordir > 0 && $total_hasil_bordir > 0) {
-                        $tarif_upah_bordir_manual = $produksi_data['tarif_upah_bordir'] ?? 0;
+                        $tarif_upah_bordir_manual = $produksi_data['tarif_upah_bordir'] ?? 0; // Kolom tarif_upah_bordir di tabel hasil_potong_fix
                         $upah_dikurangi = $total_hasil_bordir * $tarif_upah_bordir_manual;
 
+                        // Panggil fungsi kurangi hutang bordir
                         if (!kurangiHutangUpahBordir($id_bordir, $upah_dikurangi)) {
                             throw new Exception("Gagal mengurangi hutang upah bordir");
                         }
@@ -1070,10 +993,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 case 'tanggal_kirim_bordir':
                     // Batalkan tanggal kirim bordir dan bordir
                     $sql_update = "UPDATE hasil_potong_fix 
-            SET id_bordir = NULL,
-                tanggal_kirim_bordir = NULL,
-                status_potong = 'diproses'
-            WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
+                    SET id_bordir = NULL,
+                        tanggal_kirim_bordir = NULL,
+                        status_potong = 'diproses'
+                    WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
 
                     if (!$conn->query($sql_update)) {
                         throw new Exception("Gagal membatalkan tanggal kirim bordir");
@@ -1083,54 +1006,27 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     break;
 
                 case 'pemotongan':
-                    // PERBAIKAN: KEMBALIKAN STOK BAHAN BAKU SEBELUM MENGHAPUS DATA
-                    try {
-                        // 1. Kembalikan stok bahan baku terlebih dahulu
-                        $hasil_kembali = kembalikanStokBahanBaku($id_hasil_potong_fix);
+                    // Batalkan pemotongan (batal produksi)
+                    // Hapus data dari hasil_potong_fix
+                    $sql_delete = "DELETE FROM hasil_potong_fix WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
 
-                        // 2. Kurangi hutang upah pemotong
-                        if ($id_pemotong > 0) {
-                            // Ambil data upah pemotong dari database
-                            $sql_upah = "SELECT total_upah FROM hasil_potong_fix WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
-                            $result_upah = $conn->query($sql_upah);
-                            if ($result_upah->num_rows > 0) {
-                                $row_upah = $result_upah->fetch_assoc();
-                                $total_upah = $row_upah['total_upah'] ?? 0;
-
-                                if ($total_upah > 0) {
-                                    if (!kurangiHutangUpahPemotong($id_pemotong, $total_upah)) {
-                                        throw new Exception("Gagal mengurangi hutang upah pemotong");
-                                    }
-                                }
-                            }
-                        }
-
-                        // 3. Hapus detail hasil potong (detail bahan baku)
-                        $sql_delete_detail = "DELETE FROM detail_hasil_potong_fix WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
-                        if (!$conn->query($sql_delete_detail)) {
-                            throw new Exception("Gagal menghapus detail bahan baku: " . $conn->error);
-                        }
-
-                        // 4. Hapus data dari hasil_potong_fix
-                        $sql_delete = "DELETE FROM hasil_potong_fix WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
-                        if (!$conn->query($sql_delete)) {
-                            throw new Exception("Gagal menghapus data produksi");
-                        }
-
-                        // 5. Tambahkan pesan sukses dengan informasi stok yang dikembalikan
-                        $detail_bahan = "";
-                        if (isset($hasil_kembali['detail']) && count($hasil_kembali['detail']) > 0) {
-                            $detail_bahan = "Bahan baku yang dikembalikan: ";
-                            foreach ($hasil_kembali['detail'] as $bahan) {
-                                $detail_bahan .= "{$bahan['nama_bahan']} ({$bahan['jumlah_stok']} {$bahan['satuan']}), ";
-                            }
-                            $detail_bahan = rtrim($detail_bahan, ', ');
-                        }
-
-                        $success_msg = "Produksi berhasil dibatalkan. Data telah dihapus." . $detail_bahan;
-                    } catch (Exception $e) {
-                        throw new Exception("Gagal membatalkan pemotongan: " . $e->getMessage());
+                    if (!$conn->query($sql_delete)) {
+                        throw new Exception("Gagal menghapus data produksi");
                     }
+
+                    // Kurangi hutang upah pemotong
+                    if ($id_pemotong > 0) {
+                        $tarif_pemotong = getTarifUpah('pemotongan', $produksi_data['tanggal_hasil_potong']);
+                        $total_hasil = $produksi_data['total_upah'] ?? 0;
+                        $upah_dikurangi = $total_hasil;
+
+                        // Panggil fungsi kurangi hutang pemotong
+                        if (!kurangiHutangUpahPemotong($id_pemotong, $upah_dikurangi)) {
+                            throw new Exception("Gagal mengurangi hutang upah pemotong");
+                        }
+                    }
+
+                    $success_msg = "Produksi berhasil dibatalkan. Data telah dihapus";
                     break;
 
                 default:
@@ -2129,7 +2025,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     <!-- Modal Input Hasil Jahit -->
     <div class="modal fade" id="modalHasilPenjahitan" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-xl">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Input Hasil Penjahitan</h5>
@@ -2178,101 +2074,95 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 id="modal_hasil_tanggal_jahit" required value="<?= date('Y-m-d') ?>">
                         </div>
 
-                        <div class="row">
-                            <div class="col-md-6">
-                                <!-- Input ATK Finishing (Hanya untuk produk mukena) -->
-                                <div class="card mb-3" id="atk-card">
-                                    <div class="card-header bg-light">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <h6 class="mb-0">ATK Finishing yang Digunakan</h6>
-                                            <button type="button" class="btn btn-sm btn-primary" id="btnTambahAtk">
-                                                <i class="ti ti-plus"></i> Tambah ATK
+                        <!-- Input ATK Finishing (Hanya untuk produk mukena) -->
+                        <div class="card mb-3" id="atk-card">
+                            <div class="card-header bg-light">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0">ATK Finishing yang Digunakan</h6>
+                                    <button type="button" class="btn btn-sm btn-primary" id="btnTambahAtk">
+                                        <i class="ti ti-plus"></i> Tambah ATK
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body" id="atk-container-wrapper">
+                                <!-- Container untuk ATK items -->
+                                <div id="atk-container">
+                                    <div class="atk-item row mb-3">
+                                        <div class="col-md-5">
+                                            <label class="form-label">Nama ATK Finishing <span class="text-danger">*</span></label>
+                                            <input type="text" name="atk_nama[]" class="form-control atk-nama"
+                                                placeholder="Contoh: Renda, Kancing, Tali, Label, dll." required>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Jumlah <span class="text-danger">*</span></label>
+                                            <div class="input-group">
+                                                <input type="number" name="atk_jumlah[]" class="form-control atk-jumlah"
+                                                    min="1" value="1" required>
+                                                <span class="input-group-text">Pcs</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Satuan</label>
+                                            <select name="atk_satuan[]" class="form-control atk-satuan">
+                                                <option value="meter">Meter</option>
+                                                <option value="buah" selected>Buah</option>
+                                                <option value="set">Set</option>
+                                                <option value="roll">Roll</option>
+                                                <option value="lbr">Lembar</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-1 d-flex align-items-end">
+                                            <button type="button" class="btn btn-sm btn-danger btn-hapus-atk" style="display: none;">
+                                                <i class="ti ti-trash"></i>
                                             </button>
                                         </div>
                                     </div>
-                                    <div class="card-body" id="atk-container-wrapper">
-                                        <!-- Container untuk ATK items -->
-                                        <div id="atk-container">
-                                            <div class="atk-item row mb-3">
-                                                <div class="col-md-5">
-                                                    <label class="form-label">Nama ATK Finishing <span class="text-danger">*</span></label>
-                                                    <input type="text" name="atk_nama[]" class="form-control atk-nama"
-                                                        placeholder="Contoh: Renda, Kancing, Tali, Label, dll." required>
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <label class="form-label">Jumlah <span class="text-danger">*</span></label>
-                                                    <div class="input-group">
-                                                        <input type="number" name="atk_jumlah[]" class="form-control atk-jumlah"
-                                                            min="1" value="1" required>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <label class="form-label">Satuan</label>
-                                                    <select name="atk_satuan[]" class="form-control atk-satuan">
-                                                        <option value="meter">Meter</option>
-                                                        <option value="buah" selected>Buah</option>
-                                                        <option value="set">Set</option>
-                                                        <option value="roll">Roll</option>
-                                                        <option value="lbr">Lembar</option>
-                                                    </select>
-                                                </div>
-                                                <div class="col-md-1 d-flex align-items-end">
-                                                    <button type="button" class="btn btn-sm btn-danger btn-hapus-atk" style="display: none;">
-                                                        <i class="ti ti-trash"></i>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <small class="text-muted">
-                                            <i class="ti ti-info-circle"></i> ATK Finishing adalah bahan pendukung seperti renda, kancing, tali, label, dll.
-                                        </small>
-                                    </div>
                                 </div>
+                                <small class="text-muted">
+                                    <i class="ti ti-info-circle"></i> ATK (Alat Tulis Kantor) Finishing adalah bahan pendukung seperti renda, kancing, tali, label, dll.
+                                </small>
                             </div>
+                        </div>
 
-                            <div class="col-md-6">
-                                <!-- Input Upah Penjahit -->
-                                <div class="card mb-3">
-                                    <div class="card-header bg-light">
-                                        <h6 class="mb-0">Upah Penjahit</h6>
+                        <!-- Input Upah Penjahit -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">Upah Penjahit</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Upah per Potongan</label>
+                                        <div class="input-group mb-2">
+                                            <span class="input-group-text">Rp</span>
+                                            <input type="number" name="upah_per_potongan_manual"
+                                                class="form-control" id="upah_per_potongan_manual"
+                                                min="0" step="100" value="" required>
+                                        </div>
+                                        <select class="form-control mt-1" id="tarif_penjahit_dropdown">
+                                            <option value="">-- Pilih Tarif Standar --</option>
+                                            <?php
+                                            $tarif_penjahit = query("SELECT * FROM tarif_upah WHERE jenis_tarif = 'penjahitan' ORDER BY berlaku_sejak DESC");
+                                            foreach ($tarif_penjahit as $tarif):
+                                            ?>
+                                                <option value="<?= $tarif['tarif_per_unit'] ?>"
+                                                    data-tanggal="<?= $tarif['berlaku_sejak'] ?>">
+                                                    Rp <?= number_format($tarif['tarif_per_unit']) ?> sejak <?= dateIndo($tarif['berlaku_sejak']) ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
                                     </div>
-                                    <div class="card-body">
-                                        <div class="row">
-                                            <div class="col-md-7">
-                                                <label class="form-label">Upah per Potongan</label>
-                                                <div class="input-group mb-2">
-                                                    <span class="input-group-text">Rp</span>
-                                                    <input type="number" name="upah_per_potongan_manual"
-                                                        class="form-control" id="upah_per_potongan_manual"
-                                                        min="0" step="100" value="" required>
-                                                </div>
-                                                <select class="form-control mt-1" id="tarif_penjahit_dropdown">
-                                                    <option value="">-- Pilih Tarif Standar --</option>
-                                                    <?php
-                                                    $tarif_penjahit = query("SELECT * FROM tarif_upah WHERE jenis_tarif = 'penjahitan' ORDER BY berlaku_sejak DESC");
-                                                    foreach ($tarif_penjahit as $tarif):
-                                                    ?>
-                                                        <option value="<?= $tarif['tarif_per_unit'] ?>"
-                                                            data-tanggal="<?= $tarif['berlaku_sejak'] ?>">
-                                                            Rp <?= number_format($tarif['tarif_per_unit']) ?> sejak <?= dateIndo($tarif['berlaku_sejak']) ?>
-                                                        </option>
-                                                    <?php endforeach; ?>
-                                                </select>
-                                            </div>
 
-                                            <div class="col-md-5">
-                                                <label class="form-label">Total Upah</label>
-                                                <div class="input-group">
-                                                    <span class="input-group-text">Rp</span>
-                                                    <input type="text" class="form-control"
-                                                        id="total_upah_penjahit_display" readonly>
-                                                </div>
-                                            </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Total Upah</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">Rp</span>
+                                            <input type="text" class="form-control"
+                                                id="total_upah_penjahit_display" readonly>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -2283,30 +2173,43 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             </div>
         </div>
     </div>
-    <!-- Modal Konfirmasi Pembatalan Tahap -->
+
+
+    <!-- MODAL BATAL TAHAP -->
     <div class="modal fade" id="modalBatalTahap" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modalBatalTitle">Konfirmasi Pembatalan</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="modalBatalTitle">
+                        <i class="ti ti-alert-triangle me-2"></i>Konfirmasi Pembatalan
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form method="POST" id="formBatalTahap">
+                <form method="POST" id="formBatalTahap" action="proses_batal_tahap.php"> <!-- Tambahkan action jika perlu -->
                     <div class="modal-body">
                         <input type="hidden" name="id_hasil_potong_fix" id="batal_id">
                         <input type="hidden" name="tahap" id="batal_tahap">
 
-                        <p id="batal_detail"></p>
+                        <div id="batal_detail" class="mb-3">
+                            <!-- Detail akan diisi oleh JavaScript -->
+                        </div>
 
                         <div class="alert alert-warning" id="batal_keterangan">
                             <!-- Keterangan akan diisi oleh JavaScript -->
                         </div>
 
-                        <p class="text-danger"><strong>Tindakan ini tidak dapat dikembalikan!</strong></p>
+                        <div class="alert alert-danger mt-3">
+                            <i class="ti ti-alert-circle me-2"></i>
+                            <strong>Perhatian:</strong> Tindakan ini tidak dapat dikembalikan!
+                        </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn btn-danger" name="batal_tahap">Ya, Lanjutkan</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="ti ti-x me-1"></i>Batal
+                        </button>
+                        <button type="submit" class="btn btn-danger" name="batal_tahap">
+                            <i class="ti ti-check me-1"></i>Ya, Lanjutkan
+                        </button>
                     </div>
                 </form>
             </div>
@@ -2321,14 +2224,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM Content Loaded - Modal Batal Tahap Ready');
-
             // Inisialisasi modal
             const modalTanggalBordir = new bootstrap.Modal(document.getElementById('modalTanggalBordir'));
             const modalHasilBordir = new bootstrap.Modal(document.getElementById('modalHasilBordir'));
             const modalTanggalPenjahitan = new bootstrap.Modal(document.getElementById('modalTanggalPenjahitan'));
             const modalHasilPenjahitan = new bootstrap.Modal(document.getElementById('modalHasilPenjahitan'));
-            const modalBatalTahap = new bootstrap.Modal(document.getElementById('modalBatalTahap'));
 
             // Fungsi format rupiah
             function formatRupiah(angka) {
@@ -2343,36 +2243,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
             // PERBAIKAN: Fungsi untuk menghitung total upah bordir
             function hitungTotalUpahBordir() {
-                const upahPerPotongan = parseFloat(document.getElementById('upah_per_potongan_bordir_manual')?.value) || 0;
-                const totalHasil = parseFloat(document.getElementById('modal_hasil_bordir_total')?.value) || 0;
+                const upahPerPotongan = parseFloat(document.getElementById('upah_per_potongan_bordir_manual').value) || 0;
+                const totalHasil = parseFloat(document.getElementById('modal_hasil_bordir_total').value) || 0;
                 const totalUpah = upahPerPotongan * totalHasil;
 
-                if (document.getElementById('total_upah_bordir_display')) {
-                    document.getElementById('total_upah_bordir_display').value = formatRupiah(totalUpah);
-                }
-                if (document.getElementById('total_upah_bordir_hidden')) {
-                    document.getElementById('total_upah_bordir_hidden').value = totalUpah;
-                }
-                if (document.getElementById('upah_per_potongan_bordir_hidden')) {
-                    document.getElementById('upah_per_potongan_bordir_hidden').value = upahPerPotongan;
-                }
+                document.getElementById('total_upah_bordir_display').value = formatRupiah(totalUpah);
+                document.getElementById('total_upah_bordir_hidden').value = totalUpah;
+                document.getElementById('upah_per_potongan_bordir_hidden').value = upahPerPotongan;
             }
 
             // PERBAIKAN: Fungsi untuk menghitung total upah penjahit
             function hitungTotalUpahPenjahit() {
-                const upahPerPotongan = parseFloat(document.getElementById('upah_per_potongan_manual')?.value) || 0;
-                const totalHasil = parseFloat(document.getElementById('modal_hasil_total_jahit')?.value) || 0;
+                const upahPerPotongan = parseFloat(document.getElementById('upah_per_potongan_manual').value) || 0;
+                const totalHasil = parseFloat(document.getElementById('modal_hasil_total_jahit').value) || 0;
                 const totalUpah = upahPerPotongan * totalHasil;
 
-                if (document.getElementById('total_upah_penjahit_display')) {
-                    document.getElementById('total_upah_penjahit_display').value = formatRupiah(totalUpah);
-                }
-                if (document.getElementById('total_upah_penjahit_hidden')) {
-                    document.getElementById('total_upah_penjahit_hidden').value = totalUpah;
-                }
-                if (document.getElementById('upah_per_potongan_penjahit_hidden')) {
-                    document.getElementById('upah_per_potongan_penjahit_hidden').value = upahPerPotongan;
-                }
+                document.getElementById('total_upah_penjahit_display').value = formatRupiah(totalUpah);
+                document.getElementById('total_upah_penjahit_hidden').value = totalUpah;
+                document.getElementById('upah_per_potongan_penjahit_hidden').value = upahPerPotongan;
             }
 
             // PERBAIKAN: Event listener untuk dropdown tarif bordir
@@ -2380,7 +2268,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 const selectedValue = this.value;
                 const upahInput = document.getElementById('upah_per_potongan_bordir_manual');
 
-                if (selectedValue && upahInput) {
+                if (selectedValue) {
                     // Isi input manual dengan nilai dari dropdown
                     upahInput.value = formatAngkaInput(selectedValue);
 
@@ -2389,18 +2277,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                     // PERBAIKAN: Tampilkan pesan sukses
                     showTemporaryMessage('Tarif bordir berhasil dipilih', 'success');
-                } else if (upahInput) {
+                } else {
                     // Jika pilihan "-- Pilih Tarif Standar --" dipilih, kosongkan input
                     upahInput.value = '';
-                    if (document.getElementById('total_upah_bordir_display')) {
-                        document.getElementById('total_upah_bordir_display').value = '';
-                    }
-                    if (document.getElementById('total_upah_bordir_hidden')) {
-                        document.getElementById('total_upah_bordir_hidden').value = '';
-                    }
-                    if (document.getElementById('upah_per_potongan_bordir_hidden')) {
-                        document.getElementById('upah_per_potongan_bordir_hidden').value = '';
-                    }
+                    document.getElementById('total_upah_bordir_display').value = '';
+                    document.getElementById('total_upah_bordir_hidden').value = '';
+                    document.getElementById('upah_per_potongan_bordir_hidden').value = '';
                 }
             });
 
@@ -2409,7 +2291,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 const selectedValue = this.value;
                 const upahInput = document.getElementById('upah_per_potongan_manual');
 
-                if (selectedValue && upahInput) {
+                if (selectedValue) {
                     // Isi input manual dengan nilai dari dropdown
                     upahInput.value = formatAngkaInput(selectedValue);
 
@@ -2418,26 +2300,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                     // PERBAIKAN: Tampilkan pesan sukses
                     showTemporaryMessage('Tarif penjahit berhasil dipilih', 'success');
-                } else if (upahInput) {
+                } else {
                     // Jika pilihan "-- Pilih Tarif Standar --" dipilih, kosongkan input
                     upahInput.value = '';
-                    if (document.getElementById('total_upah_penjahit_display')) {
-                        document.getElementById('total_upah_penjahit_display').value = '';
-                    }
-                    if (document.getElementById('total_upah_penjahit_hidden')) {
-                        document.getElementById('total_upah_penjahit_hidden').value = '';
-                    }
-                    if (document.getElementById('upah_per_potongan_penjahit_hidden')) {
-                        document.getElementById('upah_per_potongan_penjahit_hidden').value = '';
-                    }
+                    document.getElementById('total_upah_penjahit_display').value = '';
+                    document.getElementById('total_upah_penjahit_hidden').value = '';
+                    document.getElementById('upah_per_potongan_penjahit_hidden').value = '';
                 }
             });
 
-            // Event listener untuk tombol-tombol MODAL LAIN
+            // Event listener untuk tombol-tombol
             document.addEventListener('click', function(e) {
                 // Tombol Input Tanggal Kirim Bordir
                 if (e.target.closest('.btn-input-tanggal-bordir')) {
-                    e.preventDefault();
+                    // e.preventDefault();
                     const button = e.target.closest('.btn-input-tanggal-bordir');
                     const id = button.getAttribute('data-id');
                     const produk = button.getAttribute('data-produk');
@@ -2456,7 +2332,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                 // Tombol Input Hasil Bordir
                 if (e.target.closest('.btn-input-hasil-bordir')) {
-                    e.preventDefault();
+                    // e.preventDefault();
                     const button = e.target.closest('.btn-input-hasil-bordir');
                     const id = button.getAttribute('data-id');
                     const produk = button.getAttribute('data-produk');
@@ -2486,7 +2362,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                 // Tombol Input Tanggal Kirim Jahit
                 if (e.target.closest('.btn-input-tanggal-penjahitan')) {
-                    e.preventDefault();
+                    // e.preventDefault();
                     const button = e.target.closest('.btn-input-tanggal-penjahitan');
                     const id = button.getAttribute('data-id');
                     const produk = button.getAttribute('data-produk');
@@ -2502,6 +2378,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     let infoText = '';
                     if (totalBordir > 0) {
                         infoText = `${totalBordir} Pcs (Hasil Bordir)`;
+                        // Bisa juga tambahkan informasi total potong sebagai referensi
                         infoText += ` dari ${totalPotong} Pcs hasil potong`;
                     } else {
                         infoText = `${totalPotong} Pcs (Tanpa proses bordir)`;
@@ -2516,7 +2393,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                 // Tombol Input Hasil Jahit
                 if (e.target.closest('.btn-input-hasil-penjahitan')) {
-                    e.preventDefault();
+                    // e.preventDefault();
                     const button = e.target.closest('.btn-input-hasil-penjahitan');
                     const id = button.getAttribute('data-id');
                     const produk = button.getAttribute('data-produk');
@@ -2614,123 +2491,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 }
             });
 
-            // ========== PERBAIKAN UTAMA: EVENT LISTENER UNTUK TOMBOL BATAL TAHAP ==========
-            document.addEventListener('click', function(e) {
-                if (e.target.closest('.btn-batal-produksi-tahap')) {
-                    console.log('Tombol batal diklik!');
-
-                    // HAPUS e.preventDefault() - ini penyebab masalah!
-                    const button = e.target.closest('.btn-batal-produksi-tahap');
-                    const id = button.getAttribute('data-id');
-                    const produk = button.getAttribute('data-produk');
-                    const seri = button.getAttribute('data-seri');
-                    const totalPotong = button.getAttribute('data-total-potong');
-                    const totalBordir = button.getAttribute('data-total-bordir') || 0;
-                    const totalJahit = button.getAttribute('data-total-jahit') || 0;
-                    const tahap = button.getAttribute('data-tahap');
-                    const status = button.getAttribute('data-status');
-                    const pemotong = button.getAttribute('data-pemotong');
-                    const bordir = button.getAttribute('data-bordir');
-                    const penjahit = button.getAttribute('data-penjahit');
-
-                    console.log('Data yang diterima:', {
-                        id,
-                        produk,
-                        seri,
-                        tahap,
-                        totalJahit,
-                        totalBordir
-                    });
-
-                    // Set data ke modal
-                    document.getElementById('batal_id').value = id;
-                    document.getElementById('batal_tahap').value = tahap;
-
-                    // Buat detail berdasarkan tahap
-                    let detail = '';
-                    let keterangan = '';
-
-                    switch (tahap) {
-                        case 'hasil_jahit':
-                            detail = `Apakah Anda yakin ingin membatalkan <strong>hasil jahit</strong> untuk:`;
-                            detail += `<br><strong>Produk:</strong> ${produk}`;
-                            detail += `<br><strong>Seri:</strong> ${seri}`;
-                            detail += `<br><strong>Penjahit:</strong> ${penjahit || '-'}`;
-                            detail += `<br><strong>Hasil Jahit:</strong> ${totalJahit} Pcs`;
-
-                            keterangan = `<i class="ti ti-info-circle"></i> 
-            <strong>Keterangan:</strong><br>
-            1. Hasil jahit akan dihapus<br>
-            2. Status akan kembali ke "Penjahitan"<br>
-            3. Stok akan disesuaikan<br>
-            4. Hutang upah penjahit akan dikurangi`;
-                            break;
-
-                        case 'tanggal_kirim_jahit':
-                            detail = `Apakah Anda yakin ingin membatalkan <strong>tanggal kirim jahit</strong> untuk:`;
-                            detail += `<br><strong>Produk:</strong> ${produk}`;
-                            detail += `<br><strong>Seri:</strong> ${seri}`;
-                            detail += `<br><strong>Penjahit:</strong> ${penjahit || '-'}`;
-
-                            keterangan = `<i class="ti ti-info-circle"></i> 
-            <strong>Keterangan:</strong><br>
-            1. Tanggal kirim jahit akan dihapus<br>
-            2. Data penjahit akan dihapus<br>
-            3. Status akan kembali ke "Bordir"`;
-                            break;
-
-                        case 'hasil_bordir':
-                            detail = `Apakah Anda yakin ingin membatalkan <strong>hasil bordir</strong> untuk:`;
-                            detail += `<br><strong>Produk:</strong> ${produk}`;
-                            detail += `<br><strong>Seri:</strong> ${seri}`;
-                            detail += `<br><strong>Bordir:</strong> ${bordir || '-'}`;
-                            detail += `<br><strong>Hasil Bordir:</strong> ${totalBordir} Pcs`;
-
-                            keterangan = `<i class="ti ti-info-circle"></i> 
-            <strong>Keterangan:</strong><br>
-            1. Hasil bordir akan dihapus<br>
-            2. Status akan kembali ke "Bordir"<br>
-            3. Hutang upah bordir akan dikurangi`;
-                            break;
-
-                        case 'tanggal_kirim_bordir':
-                            detail = `Apakah Anda yakin ingin membatalkan <strong>tanggal kirim bordir</strong> untuk:`;
-                            detail += `<br><strong>Produk:</strong> ${produk}`;
-                            detail += `<br><strong>Seri:</strong> ${seri}`;
-                            detail += `<br><strong>Bordir:</strong> ${bordir || '-'}`;
-
-                            keterangan = `<i class="ti ti-info-circle"></i> 
-            <strong>Keterangan:</strong><br>
-            1. Tanggal kirim bordir akan dihapus<br>
-            2. Data bordir akan dihapus<br>
-            3. Status akan kembali ke "Potong"`;
-                            break;
-
-                        case 'pemotongan':
-                            detail = `Apakah Anda yakin ingin <strong>membatalkan produksi</strong> untuk:`;
-                            detail += `<br><strong>Produk:</strong> ${produk}`;
-                            detail += `<br><strong>Seri:</strong> ${seri}`;
-                            detail += `<br><strong>Pemotong:</strong> ${pemotong || '-'}`;
-                            detail += `<br><strong>Hasil Potong:</strong> ${totalPotong} Pcs`;
-
-                            keterangan = `<i class="ti ti-info-circle"></i> 
-        <strong>Keterangan:</strong><br>
-        1. Semua data produksi akan dihapus<br>
-        2. Stok bahan baku akan dikembalikan ke gudang<br>
-        3. Hutang upah pemotong akan dikurangi<br>
-        4. Data akan hilang permanen`;
-                            break;
-                    }
-
-                    document.getElementById('batal_detail').innerHTML = detail;
-                    document.getElementById('batal_keterangan').innerHTML = keterangan;
-
-                    // Tampilkan modal
-                    console.log('Menampilkan modal batal tahap...');
-                    modalBatalTahap.show();
-                }
-            });
-
             // PERBAIKAN: Event listener untuk input upah bordir manual
             document.getElementById('upah_per_potongan_bordir_manual')?.addEventListener('input', function() {
                 // Jika user input manual, reset dropdown
@@ -2771,18 +2531,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 const alertDiv = document.createElement('div');
                 alertDiv.className = `alert alert-${type} temp-alert alert-dismissible fade show position-fixed`;
                 alertDiv.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 9999;
-            min-width: 300px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        `;
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 9999;
+                min-width: 300px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            `;
 
                 alertDiv.innerHTML = `
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        `;
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
 
                 document.body.appendChild(alertDiv);
 
@@ -2793,6 +2553,117 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     }
                 }, 3000);
             }
+
+            // Event listener untuk tombol pembatalan tahap
+            $(document).ready(function() {
+                // Event listener untuk tombol pembatalan tahap menggunakan JQuery
+                $(document).on('click', '.btn-batal-produksi-tahap', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    const button = $(this);
+                    const id = button.data('id');
+                    const produk = button.data('produk');
+                    const seri = button.data('seri');
+                    const totalPotong = button.data('total-potong');
+                    const totalBordir = button.data('total-bordir') || 0;
+                    const totalJahit = button.data('total-jahit') || 0;
+                    const tahap = button.data('tahap');
+                    const status = button.data('status');
+                    const pemotong = button.data('pemotong');
+                    const bordir = button.data('bordir');
+                    const penjahit = button.data('penjahit');
+
+                    console.log('Tombol ditekan:', tahap); // Debug
+
+                    // Set data ke modal
+                    $('#batal_id').val(id);
+                    $('#batal_tahap').val(tahap);
+
+                    // Buat detail berdasarkan tahap
+                    let detail = '';
+                    let keterangan = '';
+
+                    switch (tahap) {
+                        case 'hasil_jahit':
+                            detail = `Apakah Anda yakin ingin membatalkan <strong>hasil jahit</strong> untuk:`;
+                            detail += `<br><strong>Produk:</strong> ${produk}`;
+                            detail += `<br><strong>Seri:</strong> ${seri}`;
+                            detail += `<br><strong>Penjahit:</strong> ${penjahit || '-'}`;
+                            detail += `<br><strong>Hasil Jahit:</strong> ${totalJahit} Pcs`;
+
+                            keterangan = `<i class="ti ti-info-circle"></i>
+<strong>Keterangan:</strong><br>
+1. Hasil jahit akan dihapus<br>
+2. Status akan kembali ke "Penjahitan"<br>
+3. Stok akan disesuaikan<br>
+4. Hutang upah penjahit akan dikurangi`;
+                            break;
+
+                        case 'tanggal_kirim_jahit':
+                            detail = `Apakah Anda yakin ingin membatalkan <strong>tanggal kirim jahit</strong> untuk:`;
+                            detail += `<br><strong>Produk:</strong> ${produk}`;
+                            detail += `<br><strong>Seri:</strong> ${seri}`;
+                            detail += `<br><strong>Penjahit:</strong> ${penjahit || '-'}`;
+
+                            keterangan = `<i class="ti ti-info-circle"></i>
+<strong>Keterangan:</strong><br>
+1. Tanggal kirim jahit akan dihapus<br>
+2. Data penjahit akan dihapus<br>
+3. Status akan kembali ke "Bordir"`;
+                            break;
+
+                        case 'hasil_bordir':
+                            detail = `Apakah Anda yakin ingin membatalkan <strong>hasil bordir</strong> untuk:`;
+                            detail += `<br><strong>Produk:</strong> ${produk}`;
+                            detail += `<br><strong>Seri:</strong> ${seri}`;
+                            detail += `<br><strong>Bordir:</strong> ${bordir || '-'}`;
+                            detail += `<br><strong>Hasil Bordir:</strong> ${totalBordir} Pcs`;
+
+                            keterangan = `<i class="ti ti-info-circle"></i>
+<strong>Keterangan:</strong><br>
+1. Hasil bordir akan dihapus<br>
+2. Status akan kembali ke "Bordir"<br>
+3. Hutang upah bordir akan dikurangi`;
+                            break;
+
+                        case 'tanggal_kirim_bordir':
+                            detail = `Apakah Anda yakin ingin membatalkan <strong>tanggal kirim bordir</strong> untuk:`;
+                            detail += `<br><strong>Produk:</strong> ${produk}`;
+                            detail += `<br><strong>Seri:</strong> ${seri}`;
+                            detail += `<br><strong>Bordir:</strong> ${bordir || '-'}`;
+
+                            keterangan = `<i class="ti ti-info-circle"></i>
+<strong>Keterangan:</strong><br>
+1. Tanggal kirim bordir akan dihapus<br>
+2. Data bordir akan dihapus<br>
+3. Status akan kembali ke "Potong"`;
+                            break;
+
+                        case 'pemotongan':
+                            detail = `Apakah Anda yakin ingin <strong>membatalkan produksi</strong> untuk:`;
+                            detail += `<br><strong>Produk:</strong> ${produk}`;
+                            detail += `<br><strong>Seri:</strong> ${seri}`;
+                            detail += `<br><strong>Pemotong:</strong> ${pemotong || '-'}`;
+                            detail += `<br><strong>Hasil Potong:</strong> ${totalPotong} Pcs`;
+
+                            keterangan = `<i class="ti ti-info-circle"></i>
+<strong>Keterangan:</strong><br>
+1. Semua data produksi akan dihapus<br>
+2. Data pemotongan akan dihapus<br>
+3. Hutang upah pemotong akan dikurangi<br>
+4. Data akan hilang permanen`;
+                            break;
+                    }
+
+                    $('#batal_detail').html(detail);
+                    $('#batal_keterangan').html(keterangan);
+
+                    // Tampilkan modal dengan Bootstrap 5
+                    const modal = new bootstrap.Modal(document.getElementById('modalBatalTahap'));
+                    modal.show();
+                });
+            });
 
             // Tombol Print PDF
             document.getElementById('btnPrintPDF')?.addEventListener('click', function() {
@@ -2933,21 +2804,115 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             });
 
             // Reset ATK container saat modal ditutup
-            document.getElementById('modalHasilPenjahitan')?.addEventListener('hidden.bs.modal', function() {
+            document.getElementById('modalHasilPenjahitan').addEventListener('hidden.bs.modal', function() {
                 // Reset ATK container ke 1 item
                 const firstAtkItem = document.querySelector('.atk-item:first-child');
 
                 // Kosongkan container
-                if (atkContainer) {
-                    atkContainer.innerHTML = '';
+                atkContainer.innerHTML = '';
 
-                    // Tambahkan kembali item pertama dengan nilai reset
+                // Tambahkan kembali item pertama dengan nilai reset
+                if (firstAtkItem) {
+                    // Clone item pertama
+                    const clonedItem = firstAtkItem.cloneNode(true);
+
+                    // Reset nilai
+                    const inputs = clonedItem.querySelectorAll('input');
+                    inputs.forEach(input => {
+                        if (input.type === 'text') {
+                            input.value = '';
+                        } else if (input.type === 'number') {
+                            input.value = '1';
+                        }
+                    });
+
+                    // Reset select
+                    const select = clonedItem.querySelector('select');
+                    if (select) {
+                        select.value = 'buah';
+                    }
+
+                    // Sembunyikan tombol hapus
+                    const deleteBtn = clonedItem.querySelector('.btn-hapus-atk');
+                    if (deleteBtn) {
+                        deleteBtn.style.display = 'none';
+                    }
+
+                    atkContainer.appendChild(clonedItem);
+                }
+
+                atkCounter = 1;
+                // Sembunyikan ATK card secara default saat modal ditutup
+                atkCard.style.display = 'none';
+            });
+
+            // Event listener untuk tombol Input Hasil Jahit (dari tombol di tabel)
+            document.addEventListener('click', function(e) {
+                if (e.target.closest('.btn-input-hasil-penjahitan')) {
+                    // e.preventDefault();
+                    const button = e.target.closest('.btn-input-hasil-penjahitan');
+                    const id = button.getAttribute('data-id');
+                    const produk = button.getAttribute('data-produk');
+                    const seri = button.getAttribute('data-seri');
+                    const totalPotong = button.getAttribute('data-total-potong');
+                    const totalBordir = parseInt(button.getAttribute('data-total-bordir')) || 0;
+                    const penjahit = button.getAttribute('data-penjahit');
+                    const namaPenjahit = button.getAttribute('data-nama-penjahit');
+
+                    // AMBIL TIPE PRODUK dari tombol
+                    const tipeProduk = button.getAttribute('data-tipe-produk');
+
+                    // Isi data ke modal
+                    document.getElementById('modal_hasil_id_hasil_potong').value = id;
+                    document.getElementById('modal_hasil_produk').value = produk;
+                    document.getElementById('modal_hasil_seri').value = seri;
+
+                    // Tampilkan total hasil potong
+                    document.getElementById('modal_hasil_total_potong').value = totalPotong + ' Pcs';
+
+                    // Jika ada hasil bordir, tampilkan juga
+                    if (totalBordir > 0) {
+                        document.getElementById('modal_hasil_total_potong').value =
+                            totalPotong + ' Pcs (Potong) | ' + totalBordir + ' Pcs (Bordir)';
+                    }
+
+                    document.getElementById('modal_hasil_nama_penjahit').value = namaPenjahit || '-';
+
+                    // Set maksimal berdasarkan hasil bordir jika ada, jika tidak gunakan hasil potong
+                    const maxJahit = totalBordir > 0 ? totalBordir : totalPotong;
+
+                    document.getElementById('modal_hasil_total_jahit').value = maxJahit;
+                    document.getElementById('modal_hasil_total_jahit').max = maxJahit;
+
+                    // Tampilkan informasi sumber maksimal
+                    let sourceInfo = totalBordir > 0 ? 'berdasarkan hasil bordir' : 'berdasarkan hasil potong (tanpa bordir)';
+                    document.getElementById('modal_hasil_max_total').textContent = maxJahit + ' Pcs ' + sourceInfo;
+
+                    document.getElementById('modal_hasil_tanggal_jahit').value = '<?= date('Y-m-d') ?>';
+
+                    // Reset input upah penjahit
+                    document.getElementById('upah_per_potongan_manual').value = '';
+                    document.getElementById('tarif_penjahit_dropdown').selectedIndex = 0;
+                    document.getElementById('total_upah_penjahit_display').value = '';
+                    document.getElementById('total_upah_penjahit_hidden').value = '';
+                    document.getElementById('upah_per_potongan_penjahit_hidden').value = '';
+
+                    // Toggle ATK section berdasarkan tipe produk
+                    toggleAtkSection(tipeProduk);
+
+                    // Reset ATK container
+                    atkCounter = 1;
+                    const atkItems = document.querySelectorAll('.atk-item');
+                    if (atkItems.length > 1) {
+                        for (let i = 1; i < atkItems.length; i++) {
+                            atkItems[i].remove();
+                        }
+                    }
+
+                    // Reset input ATK pertama
+                    const firstAtkItem = document.querySelector('.atk-item:first-child');
                     if (firstAtkItem) {
-                        // Clone item pertama
-                        const clonedItem = firstAtkItem.cloneNode(true);
-
-                        // Reset nilai
-                        const inputs = clonedItem.querySelectorAll('input');
+                        const inputs = firstAtkItem.querySelectorAll('input');
                         inputs.forEach(input => {
                             if (input.type === 'text') {
                                 input.value = '';
@@ -2956,33 +2921,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             }
                         });
 
-                        // Reset select
-                        const select = clonedItem.querySelector('select');
+                        const select = firstAtkItem.querySelector('select');
                         if (select) {
                             select.value = 'buah';
                         }
 
                         // Sembunyikan tombol hapus
-                        const deleteBtn = clonedItem.querySelector('.btn-hapus-atk');
+                        const deleteBtn = firstAtkItem.querySelector('.btn-hapus-atk');
                         if (deleteBtn) {
                             deleteBtn.style.display = 'none';
                         }
-
-                        atkContainer.appendChild(clonedItem);
                     }
 
-                    atkCounter = 1;
-                    // Sembunyikan ATK card secara default saat modal ditutup
-                    if (atkCard) {
-                        atkCard.style.display = 'none';
-                    }
+                    // Tampilkan modal
+                    const modalHasilPenjahitan = new bootstrap.Modal(document.getElementById('modalHasilPenjahitan'));
+                    modalHasilPenjahitan.show();
                 }
             });
 
             // Sembunyikan ATK card secara default saat halaman dimuat
-            if (atkCard) {
-                atkCard.style.display = 'none';
-            }
+            atkCard.style.display = 'none';
         });
     </script>
 

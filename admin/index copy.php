@@ -202,34 +202,11 @@ require_once './includes/header.php';
 
                                                             UNION
 
-                                                            (SELECT 'hasil_jahit_mukena' as type, hpf.tanggal_hasil_jahit as waktu, 
-                                                                CONCAT('Hasil Jahit Mukena: ', p.nama_produk) as aktivitas, 
-                                                                CONCAT(hpf.total_hasil_jahit, ' pcs dari ', hpf.total_hasil, ' pcs potong (Seri: ', hpf.seri, ')') as detail
-                                                            FROM hasil_potong_fix hpf 
-                                                            JOIN produk p ON hpf.id_produk = p.id_produk 
-                                                            WHERE p.tipe_produk = 'mukena' 
-                                                                AND hpf.tanggal_hasil_jahit IS NOT NULL
-                                                                AND hpf.total_hasil_jahit IS NOT NULL
-                                                            ORDER BY waktu DESC LIMIT 3)
-
-                                                            UNION
-
                                                             (SELECT 'penjualan_bahan' as type, tanggal_penjualan_bahan as waktu, 
                                                                 CONCAT('Penjualan Bahan ke: ', nama_reseller) as aktivitas, 
                                                                 CONCAT('Total Rp.', FORMAT(total_harga, 0)) as detail
                                                             FROM penjualan_bahan pb 
                                                             JOIN reseller r ON pb.id_reseller = r.id_reseller 
-                                                            ORDER BY waktu DESC LIMIT 3)
-
-                                                            UNION
-
-                                                            (SELECT 'hasil_finishing_koko' as type, dhfk.tanggal_finishing as waktu, 
-                                                                CONCAT('Hasil Finishing Koko: ', COALESCE(p.nama_produk, 'Produk')) as aktivitas, 
-                                                                CONCAT(dhfk.jumlah_selesai, ' pcs selesai, ', dhfk.jumlah_rusak, ' pcs kembali dari ', dh.jumlah, ' pcs dikirim') as detail
-                                                            FROM detail_hasil_finishing_koko dhfk 
-                                                            JOIN detail_hasil_kirim_finishing dh ON dhfk.id_detail_hasil_kirim_finishing = dh.id_detail_hasil_kirim_finishing
-                                                            LEFT JOIN produk p ON dh.id_produk = p.id_produk 
-                                                            WHERE dhfk.tanggal_finishing IS NOT NULL
                                                             ORDER BY waktu DESC LIMIT 3)
 
                                                             ORDER BY waktu DESC LIMIT 5

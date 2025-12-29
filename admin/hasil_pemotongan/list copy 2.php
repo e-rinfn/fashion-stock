@@ -1,9 +1,4 @@
 <?php
-
-// Aktifkan error reporting
-error_reporting(error_level: E_ALL);
-ini_set('display_errors', 1);
-
 require_once '../includes/header.php';
 require_once '../../config/functions.php';
 
@@ -13,6 +8,8 @@ require_once '../../config/functions.php';
 
 /**
  * Cek apakah data koko sudah ada untuk produk tertentu
+ * @param int $id_produk ID produk yang akan dicek
+ * @return bool True jika data koko sudah ada, false jika belum
  */
 function isKokoExist($id_produk)
 {
@@ -27,12 +24,41 @@ function isKokoExist($id_produk)
 }
 
 /**
- * Mencatat atau menambah hutang upah karyawan
+ * Mendapatkan stok koko untuk produk tertentu
+ * @param int $id_produk ID produk yang akan dicek stoknya
+ * @return int Jumlah stok koko, 0 jika tidak ada
+ */
+function getStokKoko($id_produk)
+{
+    global $conn;
+    $sql = "SELECT stok FROM koko WHERE id_produk = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $id_produk);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($result->num_rows > 0) {
+        $row = $result->fetch_assoc();
+        return $row['stok'];
+    }
+    return 0;
+}
+
+/**
+ * Mencatat atau menambah hutang upah karyawan (tanpa periode)
+ * @param int $id_karyawan ID karyawan
+ * @param string $jenis_karyawan Jenis karyawan ('pemotong' atau 'penjahit')
+ * @param string $tanggal_produksi Tanggal produksi
+ * @param float $jumlah_upah Jumlah upah yang harus dibayar
+ * @return bool True jika berhasil, false jika gagal
  */
 function catatHutangUpah($id_karyawan, $jenis_karyawan, $tanggal_produksi, $jumlah_upah)
 {
     global $conn;
 
+    /**
+     * 1. Cek catatan hutang tanpa periode
+     * Hanya berdasarkan id_karyawan + jenis_karyawan.
+     */
     $check = $conn->prepare("
         SELECT id_hutang, total_upah, sisa_hutang 
         FROM hutang_upah 
@@ -42,8 +68,14 @@ function catatHutangUpah($id_karyawan, $jenis_karyawan, $tanggal_produksi, $juml
     $check->execute();
     $result = $check->get_result();
 
+    /**
+     * 2. Jika catatan hutang SUDAH ADA → update total / sisa hutang
+     */
     if ($result->num_rows > 0) {
+
         $hutang = $result->fetch_assoc();
+
+        // Tambah upah ke total & sisa
         $total_upah_baru = $hutang['total_upah'] + $jumlah_upah;
         $sisa_hutang_baru = $hutang['sisa_hutang'] + $jumlah_upah;
 
@@ -53,13 +85,21 @@ function catatHutangUpah($id_karyawan, $jenis_karyawan, $tanggal_produksi, $juml
             WHERE id_hutang = ?
         ");
         $update->bind_param("ddi", $total_upah_baru, $sisa_hutang_baru, $hutang['id_hutang']);
+
         return $update->execute();
-    } else {
+    }
+
+    /**
+     * 3. Jika catatan hutang BELUM ADA → buat baru
+     */
+    else {
+
         $insert = $conn->prepare("
             INSERT INTO hutang_upah (id_karyawan, jenis_karyawan, total_upah, sisa_hutang, created_at, updated_at)
             VALUES (?, ?, ?, ?, NOW(), NOW())
         ");
         $insert->bind_param("isdd", $id_karyawan, $jenis_karyawan, $jumlah_upah, $jumlah_upah);
+
         return $insert->execute();
     }
 }
@@ -122,7 +162,7 @@ function updateHutangUpah($id_karyawan, $jenis_karyawan, $jumlah_upah)
 }
 
 /**
- * Mengurangi hutang upah penjahit dengan jumlah yang ditentukan
+ * Mengurangi hutang upah penjahit dengan validasi
  * @param int $id_penjahit ID penjahit
  * @param float $jumlah_kurang Jumlah yang akan dikurangi
  * @return bool True jika berhasil, Exception jika gagal
@@ -145,6 +185,7 @@ function kurangiHutangUpahPenjahit($id_penjahit, $jumlah_kurang)
 
         if ($result->num_rows === 0) {
             // Jika tidak ada hutang, tidak perlu melakukan apa-apa
+            // (mungkin data sudah dihapus sebelumnya)
             return true;
         }
 
@@ -191,12 +232,12 @@ function kurangiHutangUpahPenjahit($id_penjahit, $jumlah_kurang)
             return true;
         }
     } catch (Exception $e) {
-        throw new Exception("Gagal mengurangi hutang upah penjahit: " . $e->getMessage());
+        throw new Exception("Gagal mengurangi hutang upah: " . $e->getMessage());
     }
 }
 
 /**
- * Mengurangi hutang upah pemotong dengan jumlah yang ditentukan
+ * Mengurangi hutang upah pemotong dengan validasi
  * @param int $id_pemotong ID pemotong
  * @param float $jumlah_kurang Jumlah yang akan dikurangi
  * @return bool True jika berhasil, Exception jika gagal
@@ -218,6 +259,8 @@ function kurangiHutangUpahPemotong($id_pemotong, $jumlah_kurang)
         $result = $stmt->get_result();
 
         if ($result->num_rows === 0) {
+            // Jika tidak ada hutang, tidak perlu melakukan apa-apa
+            // (mungkin data sudah dihapus sebelumnya)
             return true;
         }
 
@@ -241,6 +284,7 @@ function kurangiHutangUpahPemotong($id_pemotong, $jumlah_kurang)
 
         // 4. Update atau hapus
         if ($total_upah_baru <= 0) {
+            // Hapus record hutang jika total upah menjadi 0
             $sql_delete = "DELETE FROM hutang_upah WHERE id_hutang = ?";
             $stmt = $conn->prepare($sql_delete);
             $stmt->bind_param("i", $hutang['id_hutang']);
@@ -249,6 +293,7 @@ function kurangiHutangUpahPemotong($id_pemotong, $jumlah_kurang)
             }
             return true;
         } else {
+            // Update hutang yang sudah ada
             $sql_update = "UPDATE hutang_upah 
                           SET total_upah = ?, 
                               sisa_hutang = ?,
@@ -266,151 +311,6 @@ function kurangiHutangUpahPemotong($id_pemotong, $jumlah_kurang)
     }
 }
 
-/**
- * Mengurangi hutang upah bordir dengan jumlah yang ditentukan
- * @param int $id_bordir ID bordir
- * @param float $jumlah_kurang Jumlah yang akan dikurangi
- * @return bool True jika berhasil, Exception jika gagal
- * @throws Exception Jika terjadi kesalahan
- */
-function kurangiHutangUpahBordir($id_bordir, $jumlah_kurang)
-{
-    global $conn;
-
-    try {
-        // 1. Cek apakah ada hutang
-        $sql_check = "SELECT id_hutang, total_upah, sisa_hutang, total_dibayar 
-                     FROM hutang_upah 
-                     WHERE id_karyawan = ? AND jenis_karyawan = 'bordir'
-                     LIMIT 1";
-        $stmt = $conn->prepare($sql_check);
-        $stmt->bind_param("i", $id_bordir);
-        $stmt->execute();
-        $result = $stmt->get_result();
-
-        if ($result->num_rows === 0) {
-            return true;
-        }
-
-        $hutang = $result->fetch_assoc();
-
-        // 2. Validasi: tidak boleh mengurangi lebih dari sisa hutang
-        if ($jumlah_kurang > $hutang['sisa_hutang']) {
-            throw new Exception("Tidak dapat mengurangi hutang bordir karena jumlah yang akan dikurangi (" .
-                formatRupiah($jumlah_kurang) . ") lebih besar dari sisa hutang (" .
-                formatRupiah($hutang['sisa_hutang']) . ")");
-        }
-
-        // 3. Hitung nilai baru
-        $total_upah_baru = $hutang['total_upah'] - $jumlah_kurang;
-        $sisa_hutang_baru = $hutang['sisa_hutang'] - $jumlah_kurang;
-
-        // Pastikan tidak minus
-        $total_upah_baru = max(0, $total_upah_baru);
-        $sisa_hutang_baru = max(0, $sisa_hutang_baru);
-
-        // 4. Update atau hapus
-        if ($total_upah_baru <= 0) {
-            $sql_delete = "DELETE FROM hutang_upah WHERE id_hutang = ?";
-            $stmt = $conn->prepare($sql_delete);
-            $stmt->bind_param("i", $hutang['id_hutang']);
-            if (!$stmt->execute()) {
-                throw new Exception("Gagal menghapus record hutang bordir: " . $conn->error);
-            }
-            return true;
-        } else {
-            $sql_update = "UPDATE hutang_upah 
-                          SET total_upah = ?, 
-                              sisa_hutang = ?,
-                              updated_at = NOW()
-                          WHERE id_hutang = ?";
-            $stmt = $conn->prepare($sql_update);
-            $stmt->bind_param("ddi", $total_upah_baru, $sisa_hutang_baru, $hutang['id_hutang']);
-            if (!$stmt->execute()) {
-                throw new Exception("Gagal update hutang bordir: " . $conn->error);
-            }
-            return true;
-        }
-    } catch (Exception $e) {
-        throw new Exception("Gagal mengurangi hutang upah bordir: " . $e->getMessage());
-    }
-}
-
-function kembalikanStokBahanBaku($id_hasil_potong_fix)
-{
-    global $conn;
-
-    try {
-        // Log untuk debugging
-        error_log("Memulai pengembalian stok untuk id_hasil_potong_fix: " . $id_hasil_potong_fix);
-
-        // 1. Ambil semua detail bahan yang digunakan dalam produksi ini
-        $sql_detail = "SELECT dh.*, b.nama_bahan, b.satuan, b.jumlah_stok, b.jumlah_meter
-                      FROM detail_hasil_potong_fix dh
-                      JOIN bahan_baku b ON dh.id_bahan = b.id_bahan
-                      WHERE dh.id_hasil_potong_fix = ?";
-
-        $stmt = $conn->prepare($sql_detail);
-        $stmt->bind_param("i", $id_hasil_potong_fix);
-        $stmt->execute();
-        $result = $stmt->get_result();
-
-        $total_bahan_dikembalikan = 0;
-        $detail_bahan_dikembalikan = [];
-
-        while ($detail = $result->fetch_assoc()) {
-            $id_bahan = $detail['id_bahan'];
-            $jumlah_digunakan = $detail['jumlah'] ?? 0;
-            $total_meter = $detail['total_meter'] ?? 0;
-            $nama_bahan = $detail['nama_bahan'];
-            $satuan = $detail['satuan'];
-
-            error_log("Mengembalikan bahan: $nama_bahan (ID: $id_bahan)");
-            error_log("  - Jumlah digunakan: $jumlah_digunakan");
-            error_log("  - Total meter: $total_meter");
-
-            if (($jumlah_digunakan > 0 || $total_meter > 0) && $id_bahan > 0) {
-                // 2. Update stok bahan baku - TAMBAHKAN kembali jumlah yang digunakan
-                $sql_update_stok = "UPDATE bahan_baku 
-                                   SET jumlah_stok = jumlah_stok + ?,
-                                       jumlah_meter = jumlah_meter + ?,
-                                       updated_at = NOW()
-                                   WHERE id_bahan = ?";
-
-                $stmt_update = $conn->prepare($sql_update_stok);
-                $stmt_update->bind_param("ddi", $jumlah_digunakan, $total_meter, $id_bahan);
-
-                if (!$stmt_update->execute()) {
-                    error_log("Gagal update stok untuk bahan ID $id_bahan: " . $conn->error);
-                    throw new Exception("Gagal mengembalikan stok bahan baku ID $id_bahan: " . $conn->error);
-                }
-
-                $total_bahan_dikembalikan += ($jumlah_digunakan + $total_meter);
-                $detail_bahan_dikembalikan[] = [
-                    'id_bahan' => $id_bahan,
-                    'nama_bahan' => $nama_bahan,
-                    'jumlah_stok' => $jumlah_digunakan,
-                    'jumlah_meter' => $total_meter,
-                    'satuan' => $satuan
-                ];
-
-                error_log("  - Berhasil dikembalikan");
-            }
-        }
-
-        error_log("Total bahan dikembalikan: " . $total_bahan_dikembalikan);
-
-        return [
-            'total' => $total_bahan_dikembalikan,
-            'detail' => $detail_bahan_dikembalikan
-        ];
-    } catch (Exception $e) {
-        error_log("Error dalam kembalikanStokBahanBaku: " . $e->getMessage());
-        throw new Exception("Gagal mengembalikan stok bahan baku: " . $e->getMessage());
-    }
-}
-
-
 // ============================================================================
 // AMBIL DATA DARI DATABASE UNTUK DROPDOWN DAN FILTER
 // ============================================================================
@@ -419,7 +319,7 @@ function kembalikanStokBahanBaku($id_hasil_potong_fix)
 $produk = query("SELECT * FROM produk");
 $pemotong = query("SELECT * FROM pemotong");
 $penjahit = query("SELECT * FROM penjahit");
-$bordir = query("SELECT * FROM bordir");
+$bordir = query("SELECT * FROM bordir"); // Tambah data bordir
 
 // ============================================================================
 // SET FILTER DARI REQUEST GET
@@ -431,19 +331,21 @@ $status = isset($_GET['status']) ? $_GET['status'] : 'all';
 $start_date = isset($_GET['start_date']) ? $_GET['start_date'] : '';
 $end_date = isset($_GET['end_date']) ? $_GET['end_date'] : '';
 
+// Tambah filter pemotong, penjahit, dan bordir
 $id_pemotong = isset($_GET['id_pemotong']) ? (int)$_GET['id_pemotong'] : 0;
-$id_penjahit = isset($_GET['id_penjahit']) ? $_GET['id_penjahit'] : 0;
-$id_bordir = isset($_GET['id_bordir']) ? $_GET['id_bordir'] : 0;
+$id_penjahit = isset($_GET['id_penjahit']) ? $_GET['id_penjahit'] : 0; // Bisa string untuk nilai -1
+$id_bordir = isset($_GET['id_bordir']) ? $_GET['id_bordir'] : 0; // Tambah filter bordir
 
 $start_date_default = date('Y-m-01');
 $end_date_default   = date('Y-m-t');
 
 // ============================================================================
-// HITUNG TOTAL DATA
+// HITUNG TOTAL DATA UNTUK FOOTER TABEL
 // ============================================================================
 
 /**
- * 1. HITUNG TOTAL TANPA FILTER
+ * 1. HITUNG TOTAL TANPA FILTER (SEMUA DATA)
+ * Menghitung total hasil potong, hasil bordir, dan hasil jahit dari semua data tanpa filter
  */
 $sql_total_all = "SELECT 
     SUM(h.total_hasil) as total_hasil_all,
@@ -452,13 +354,14 @@ $sql_total_all = "SELECT
 FROM hasil_potong_fix h 
 WHERE 1=1";
 
-$total_all = query($sql_total_all)[0] ?? [];
+$total_all = query($sql_total_all)[0];
 $total_hasil_all = $total_all['total_hasil_all'] ?? 0;
 $total_hasil_bordir_all = $total_all['total_hasil_bordir_all'] ?? 0;
 $total_hasil_jahit_all = $total_all['total_hasil_jahit_all'] ?? 0;
 
 /**
- * 2. HITUNG TOTAL DENGAN FILTER
+ * 2. HITUNG TOTAL DENGAN FILTER YANG DITERAPKAN
+ * Menghitung total hasil potong, bordir, dan jahit dengan filter yang diterapkan user
  */
 $sql_total_filtered = "SELECT 
     SUM(h.total_hasil) as total_hasil_filtered,
@@ -509,18 +412,19 @@ if (!empty($end_date)) {
     $sql_total_filtered .= " AND h.tanggal_hasil_potong <= '$end_date'";
 }
 
-$total_filtered = query($sql_total_filtered)[0] ?? [];
+$total_filtered = query($sql_total_filtered)[0];
 $total_hasil_filtered = $total_filtered['total_hasil_filtered'] ?? 0;
 $total_hasil_bordir_filtered = $total_filtered['total_hasil_bordir_filtered'] ?? 0;
 $total_hasil_jahit_filtered = $total_filtered['total_hasil_jahit_filtered'] ?? 0;
 
 /**
  * 3. QUERY UNTUK DATA TABEL DENGAN FILTER
+ * Query utama untuk menampilkan data di tabel dengan filter yang diterapkan
  */
 $sql = "SELECT h.*, p.nama_produk, p.tipe_produk, pem.nama_pemotong, 
                pen.nama_penjahit, bor.nama_bordir,
                COALESCE(h.tarif_upah, 0) as tarif_upah,
-               COALESCE(h.tarif_upah_bordir, 0) as tarif_upah_bordir
+               (SELECT SUM(jumlah) FROM detail_hasil_potong_fix WHERE id_hasil_potong_fix = h.id_hasil_potong_fix) as total_hasil_potong
         FROM hasil_potong_fix h 
         JOIN produk p ON h.id_produk = p.id_produk 
         JOIN pemotong pem ON h.id_pemotong = pem.id_pemotong 
@@ -574,9 +478,13 @@ $produksi = query($sql);
 // PERSIAPAN DATA UNTUK DITAMPILKAN DI TABEL
 // ============================================================================
 
+/**
+ * Gabungkan data produksi untuk tampilan dengan perhitungan upah
+ * Menghitung upah pemotong, upah penjahit, dan total upah
+ */
 $all_data = [];
 foreach ($produksi as $prod) {
-    // Dapatkan tarif upah
+    // Dapatkan tarif upah berdasarkan tanggal produksi
     $tarif_pemotong = getTarifUpah('pemotongan', $prod['tanggal_hasil_potong']);
     $tarif_bordir = !empty($prod['tanggal_hasil_bordir']) ?
         getTarifUpah('bordir', $prod['tanggal_hasil_bordir']) :
@@ -589,6 +497,7 @@ foreach ($produksi as $prod) {
     $upah_pemotong = $prod['total_hasil'] * $tarif_pemotong;
     $upah_bordir = !empty($prod['total_hasil_bordir']) ? $prod['total_hasil_bordir'] * $tarif_bordir : 0;
     $upah_penjahit = !empty($prod['total_hasil_jahit']) ? $prod['total_hasil_jahit'] * $tarif_penjahit : 0;
+    $total_upah = $upah_pemotong + $upah_bordir + $upah_penjahit;
 
     $all_data[] = [
         'type' => 'produksi',
@@ -597,6 +506,7 @@ foreach ($produksi as $prod) {
         'produk' => $prod['nama_produk'],
         'tipe_produk' => $prod['tipe_produk'],
         'seri' => $prod['seri'],
+        'seri_numeric' => intval(preg_replace('/[^0-9]/', '', $prod['seri'])), // Ekstrak angka saja
         'pemotong' => $prod['nama_pemotong'],
         'bordir' => $prod['nama_bordir'] ?? '-',
         'penjahit' => $prod['nama_penjahit'],
@@ -604,12 +514,20 @@ foreach ($produksi as $prod) {
         'id_penjahit' => $prod['id_penjahit'],
         'status' => $prod['status_potong'],
         'total_hasil' => $prod['total_hasil'],
+        'total_harga' => $prod['total_harga'],
         'tanggal_kirim_bordir' => $prod['tanggal_kirim_bordir'] ?? null,
         'tanggal_hasil_bordir' => $prod['tanggal_hasil_bordir'] ?? null,
         'total_hasil_bordir' => $prod['total_hasil_bordir'] ?? 0,
         'tanggal_kirim_jahit' => $prod['tanggal_kirim_jahit'] ?? null,
         'tanggal_hasil_jahit' => $prod['tanggal_hasil_jahit'] ?? null,
-        'total_hasil_jahit' => $prod['total_hasil_jahit'] ?? 0
+        'total_hasil_jahit' => $prod['total_hasil_jahit'] ?? 0,
+        'upah_pemotong' => $upah_pemotong,
+        'upah_bordir' => $upah_bordir,
+        'upah_penjahit' => $upah_penjahit,
+        'total_upah' => $total_upah,
+        'rate_pemotong' => $tarif_pemotong,
+        'rate_bordir' => $tarif_bordir,
+        'rate_penjahit' => $tarif_penjahit
     ];
 }
 
@@ -622,10 +540,10 @@ usort($all_data, function ($a, $b) {
 // PROSES INPUT BORDIR DAN PENJAHITAN DARI FORM POST
 // ============================================================================
 
+/**
+ * 1. SIMPAN TANGGAL KIRIM BORDIR (Modal Pertama untuk Bordir)
+ */
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    /**
-     * 1. SIMPAN TANGGAL KIRIM BORDIR
-     */
     if (isset($_POST['simpan_tanggal_kirim_bordir'])) {
         $id_hasil_potong_fix = intval($_POST['id_hasil_potong_fix']);
         $id_bordir = isset($_POST['id_bordir']) && !empty($_POST['id_bordir']) ? intval($_POST['id_bordir']) : null;
@@ -681,6 +599,62 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $upah_per_potongan = floatval($_POST['upah_per_potongan_bordir']);
         $total_upah = floatval($_POST['total_upah_bordir']);
 
+        // Validasi input upah
+        if ($total_upah <= 0) {
+            $error_modal = "Total upah harus lebih dari 0!";
+        }
+
+        // Validasi perhitungan
+        if ($upah_per_potongan > 0 && $total_hasil_bordir > 0) {
+            $calculated_upah = $upah_per_potongan * $total_hasil_bordir;
+            if (abs($calculated_upah - $total_upah) > 1) { // Toleransi 1 rupiah
+                $error_modal = "Perhitungan upah tidak sesuai! Total seharusnya: Rp " . number_format($calculated_upah);
+            }
+        }
+
+        // Ambil data produksi
+        $produksi_data = query("SELECT 
+        hp.id_produk, 
+        hp.total_hasil, 
+        hp.id_bordir, 
+        hp.tanggal_kirim_bordir,
+        hp.seri,
+        p.tipe_produk,
+        hp.tanggal_hasil_bordir as existing_tanggal,
+        hp.total_hasil_bordir as existing_jumlah
+    FROM hasil_potong_fix hp
+    JOIN produk p ON hp.id_produk = p.id_produk
+    WHERE hp.id_hasil_potong_fix = $id_hasil_potong_fix")[0];
+
+        $id_produk = $produksi_data['id_produk'];
+        $total_hasil_potong = $produksi_data['total_hasil'];
+        $id_bordir = $produksi_data['id_bordir'];
+        $tanggal_kirim_bordir = $produksi_data['tanggal_kirim_bordir'];
+        $seri = $produksi_data['seri'];
+        $tipe_produk = $produksi_data['tipe_produk'];
+        $existing_tanggal = $produksi_data['existing_tanggal'];
+        $existing_jumlah = $produksi_data['existing_jumlah'];
+
+        // Cek apakah data sudah ada (existing)
+        $existing = !empty($existing_tanggal) && !empty($existing_jumlah);
+
+        // Inisialisasi variabel change_log
+        $change_log = '';
+        if ($existing) {
+            // Log perubahan
+            $changes = [];
+            if ($existing_tanggal != $tanggal_hasil_bordir) {
+                $changes[] = "Tanggal: " . $existing_tanggal . " → " . $tanggal_hasil_bordir;
+            }
+            if ($existing_jumlah != $total_hasil_bordir) {
+                $changes[] = "Jumlah: " . $existing_jumlah . " → " . $total_hasil_bordir . " Pcs";
+            }
+
+            if (!empty($changes)) {
+                $change_log = "Update hasil bordir: " . implode(", ", $changes);
+            }
+        }
+
         // Validasi
         $error_modal = null;
 
@@ -688,8 +662,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $error_modal = "Tanggal hasil bordir harus diisi";
         } elseif ($total_hasil_bordir <= 0) {
             $error_modal = "Total hasil bordir harus lebih dari 0";
-        } elseif ($total_upah <= 0) {
-            $error_modal = "Total upah harus lebih dari 0!";
+        } elseif ($total_hasil_bordir > $total_hasil_potong) {
+            $error_modal = "Total hasil bordir tidak boleh melebihi total hasil potong ($total_hasil_potong Pcs)";
+        } elseif (empty($id_bordir) || empty($tanggal_kirim_bordir)) {
+            $error_modal = "Data bordir atau tanggal kirim belum diinput. Silakan input tanggal kirim terlebih dahulu.";
         }
 
         if (!$error_modal) {
@@ -704,18 +680,30 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     SET tanggal_hasil_bordir = '$tanggal_hasil_bordir', 
                         tarif_upah_bordir = $upah_per_potongan_manual,
                         total_hasil_bordir = $total_hasil_bordir,
-                        status_potong = 'bordir'
-                    WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
+                        status_potong = 'penjahitan'";
+
+                // Jika ada perubahan, tambahkan log
+                if ($existing && !empty($change_log)) {
+                    $sql_update .= ", keterangan = CONCAT(COALESCE(keterangan, ''), ' | $change_log')";
+                }
+
+                $sql_update .= " WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
 
                 if (!$conn->query($sql_update)) {
                     throw new Exception("Gagal update data hasil bordir: " . $conn->error);
                 }
 
-                // 2. Catat hutang upah bordir
-                // Ambil id bordir dari database
-                $result = query("SELECT id_bordir FROM hasil_potong_fix WHERE id_hasil_potong_fix = $id_hasil_potong_fix");
-                if (!empty($result) && !empty($result[0]['id_bordir'])) {
-                    $id_bordir = $result[0]['id_bordir'];
+                // 2. Catat/Update hutang upah bordir TANPA PERIODE
+                if ($existing) {
+                    // Update hutang yang sudah ada
+                    $upah_sebelumnya = $existing_jumlah * getTarifUpah('bordir', $existing_tanggal);
+                    $selisih_upah = $upah_bordir - $upah_sebelumnya;
+
+                    if ($selisih_upah != 0) {
+                        updateHutangUpah($id_bordir, 'bordir', $selisih_upah);
+                    }
+                } else {
+                    // Data baru
                     if (!catatHutangUpah($id_bordir, 'bordir', $tanggal_hasil_bordir, $upah_bordir)) {
                         throw new Exception("Gagal mencatat hutang upah bordir");
                     }
@@ -724,7 +712,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $conn->commit();
                 $conn->autocommit(TRUE);
 
-                $_SESSION['success'] = "Data hasil bordir berhasil disimpan. Upah bordir: " . formatRupiah($upah_bordir);
+                $success_msg = $existing ?
+                    "Data hasil bordir berhasil diupdate. Upah bordir: " . formatRupiah($upah_bordir) :
+                    "Data hasil bordir berhasil disimpan. Upah bordir: " . formatRupiah($upah_bordir);
+
+                $_SESSION['success'] = $success_msg;
                 header("Location: list.php");
                 exit();
             } catch (Exception $e) {
@@ -736,7 +728,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 
     /**
-     * 3. SIMPAN TANGGAL KIRIM JAHIT
+     * 3. SIMPAN TANGGAL KIRIM JAHIT (Modal Pertama untuk Penjahit)
      */
     if (isset($_POST['simpan_tanggal_kirim'])) {
         $id_hasil_potong_fix = intval($_POST['id_hasil_potong_fix']);
@@ -780,7 +772,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 
     /**
-     * 4. SIMPAN HASIL JAHIT
+     * 4. SIMPAN HASIL JAHIT (Modal Kedua)
      */
     if (isset($_POST['simpan_hasil_jahit'])) {
         $id_hasil_potong_fix = intval($_POST['id_hasil_potong_fix']);
@@ -793,10 +785,61 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $upah_per_potongan = floatval($_POST['upah_per_potongan_penjahit']);
         $total_upah = floatval($_POST['total_upah_penjahit']);
 
-        // Ambil data ATK finishing
-        $atk_nama = $_POST['atk_nama'] ?? [];
-        $atk_jumlah = $_POST['atk_jumlah'] ?? [];
-        $atk_satuan = $_POST['atk_satuan'] ?? [];
+        // Validasi input upah
+        if ($total_upah <= 0) {
+            $error_modal = "Total upah harus lebih dari 0!";
+        }
+
+        // Validasi perhitungan
+        if ($upah_per_potongan > 0 && $total_hasil_jahit > 0) {
+            $calculated_upah = $upah_per_potongan * $total_hasil_jahit;
+            if (abs($calculated_upah - $total_upah) > 1) { // Toleransi 1 rupiah
+                $error_modal = "Perhitungan upah tidak sesuai! Total seharusnya: Rp " . number_format($calculated_upah);
+            }
+        }
+
+        // Ambil data produksi
+        $produksi_data = query("SELECT 
+        hp.id_produk, 
+        hp.total_hasil, 
+        hp.id_penjahit, 
+        hp.tanggal_kirim_jahit,
+        hp.seri,
+        p.tipe_produk,
+        hp.tanggal_hasil_jahit as existing_tanggal,
+        hp.total_hasil_jahit as existing_jumlah
+    FROM hasil_potong_fix hp
+    JOIN produk p ON hp.id_produk = p.id_produk
+    WHERE hp.id_hasil_potong_fix = $id_hasil_potong_fix")[0];
+
+        $id_produk = $produksi_data['id_produk'];
+        $total_hasil_potong = $produksi_data['total_hasil'];
+        $id_penjahit = $produksi_data['id_penjahit'];
+        $tanggal_kirim_jahit = $produksi_data['tanggal_kirim_jahit'];
+        $seri = $produksi_data['seri'];
+        $tipe_produk = $produksi_data['tipe_produk'];
+        $existing_tanggal = $produksi_data['existing_tanggal'];
+        $existing_jumlah = $produksi_data['existing_jumlah'];
+
+        // Cek apakah data sudah ada (existing)
+        $existing = !empty($existing_tanggal) && !empty($existing_jumlah);
+
+        // Inisialisasi variabel change_log
+        $change_log = '';
+        if ($existing) {
+            // Log perubahan
+            $changes = [];
+            if ($existing_tanggal != $tanggal_hasil_jahit) {
+                $changes[] = "Tanggal: " . $existing_tanggal . " → " . $tanggal_hasil_jahit;
+            }
+            if ($existing_jumlah != $total_hasil_jahit) {
+                $changes[] = "Jumlah: " . $existing_jumlah . " → " . $total_hasil_jahit . " Pcs";
+            }
+
+            if (!empty($changes)) {
+                $change_log = "Update hasil jahit: " . implode(", ", $changes);
+            }
+        }
 
         // Validasi
         $error_modal = null;
@@ -805,25 +848,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $error_modal = "Tanggal hasil jahit harus diisi";
         } elseif ($total_hasil_jahit <= 0) {
             $error_modal = "Total hasil jahit harus lebih dari 0";
-        } elseif ($total_upah <= 0) {
-            $error_modal = "Total upah harus lebih dari 0!";
-        }
-
-        // AMBIL DATA TIPE PRODUK SEBELUM VALIDASI
-        $produksi_data = query("SELECT 
-        hp.id_produk, 
-        p.tipe_produk
-    FROM hasil_potong_fix hp
-    JOIN produk p ON hp.id_produk = p.id_produk
-    WHERE hp.id_hasil_potong_fix = $id_hasil_potong_fix")[0] ?? [];
-
-        $tipe_produk = $produksi_data['tipe_produk'] ?? '';
-
-        // Validasi ATK hanya untuk mukena
-        if ($tipe_produk == 'mukena') {
-            if (empty($atk_nama[0]) || empty($atk_nama[0])) { // Validasi minimal 1 ATK hanya untuk mukena
-                $error_modal = "Minimal satu ATK finishing harus diisi untuk produk mukena!";
-            }
+        } elseif ($total_hasil_jahit > $total_hasil_potong) {
+            $error_modal = "Total hasil jahit tidak boleh melebihi total hasil potong ($total_hasil_potong Pcs)";
+        } elseif (empty($id_penjahit) || empty($tanggal_kirim_jahit)) {
+            $error_modal = "Data penjahit atau tanggal kirim belum diinput. Silakan input tanggal kirim terlebih dahulu.";
         }
 
         if (!$error_modal) {
@@ -835,97 +863,122 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                 // 1. Update data hasil jahit
                 $sql_update = "UPDATE hasil_potong_fix 
-            SET tanggal_hasil_jahit = '$tanggal_hasil_jahit', 
-                tarif_upah = $upah_per_potongan_manual,
-                total_hasil_jahit = $total_hasil_jahit,
-                status_potong = 'selesai'
-            WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
+                    SET tanggal_hasil_jahit = '$tanggal_hasil_jahit', 
+                        tarif_upah = $upah_per_potongan_manual,
+                        total_hasil_jahit = $total_hasil_jahit,
+                        status_potong = 'selesai'";
+
+                // Jika ada perubahan, tambahkan log
+                if ($existing && !empty($change_log)) {
+                    $sql_update .= ", keterangan = CONCAT(COALESCE(keterangan, ''), ' | $change_log')";
+                }
+
+                $sql_update .= " WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
 
                 if (!$conn->query($sql_update)) {
                     throw new Exception("Gagal update data hasil jahit: " . $conn->error);
                 }
 
-                // 2. Catat hutang upah penjahit
-                // Ambil id penjahit dari database
-                $result = query("SELECT id_penjahit FROM hasil_potong_fix WHERE id_hasil_potong_fix = $id_hasil_potong_fix");
-                if (!empty($result) && !empty($result[0]['id_penjahit'])) {
-                    $id_penjahit = $result[0]['id_penjahit'];
-                    if (!catatHutangUpah($id_penjahit, 'penjahit', $tanggal_hasil_jahit, $upah_penjahit)) {
-                        throw new Exception("Gagal mencatat hutang upah penjahit");
-                    }
-                }
-
-                // 3. SIMPAN ATK FINISHING (HANYA UNTUK MUKENA)
+                // 2. LOGIKA BERBEDA BERDASARKAN TIPE PRODUK
                 if ($tipe_produk == 'mukena') {
-                    $atk_data = [];
-                    foreach ($atk_nama as $index => $nama) {
-                        if (!empty($nama) && isset($atk_jumlah[$index]) && isset($atk_satuan[$index])) {
-                            $atk_data[] = [
-                                'nama' => $conn->real_escape_string($nama),
-                                'jumlah' => intval($atk_jumlah[$index]),
-                                'satuan' => $conn->real_escape_string($atk_satuan[$index])
-                            ];
+                    // MUKENA: Update stok
+                    if ($existing) {
+                        // Hitung selisih
+                        $selisih = $total_hasil_jahit - $existing_jumlah;
+                        if ($selisih != 0) {
+                            $sql_update_stok = "UPDATE produk 
+                               SET stok = stok + $selisih 
+                               WHERE id_produk = $id_produk";
+
+                            if (!$conn->query($sql_update_stok)) {
+                                throw new Exception("Gagal update stok produk: " . $conn->error);
+                            }
+                            $pesan_stok = $selisih > 0 ?
+                                "Stok produk bertambah +$selisih" :
+                                "Stok produk berkurang $selisih";
+                        } else {
+                            $pesan_stok = "Stok produk tidak berubah";
                         }
-                    }
-
-                    // Simpan ATK finishing ke database
-                    foreach ($atk_data as $atk) {
-                        $sql_atk = "INSERT INTO atk_finishing (id_hasil_potong_fix, nama_atk, jumlah, satuan, created_at) 
-                    VALUES (?, ?, ?, ?, NOW())";
-                        $stmt_atk = $conn->prepare($sql_atk);
-                        $stmt_atk->bind_param("isis", $id_hasil_potong_fix, $atk['nama'], $atk['jumlah'], $atk['satuan']);
-                        if (!$stmt_atk->execute()) {
-                            throw new Exception("Gagal menyimpan ATK finishing: " . $stmt_atk->error);
-                        }
-                    }
-                }
-
-                // 4. Update stok berdasarkan tipe produk
-                if (!empty($produksi_data)) {
-                    $id_produk = $produksi_data['id_produk'];
-
-                    if ($tipe_produk == 'mukena') {
-                        // Update stok produk
+                    } else {
+                        // Data baru
                         $sql_update_stok = "UPDATE produk 
-                    SET stok = stok + $total_hasil_jahit 
-                    WHERE id_produk = $id_produk";
+                           SET stok = stok + $total_hasil_jahit 
+                           WHERE id_produk = $id_produk";
 
                         if (!$conn->query($sql_update_stok)) {
                             throw new Exception("Gagal update stok produk: " . $conn->error);
                         }
-                    } else {
-                        // Untuk koko, update stok koko
-                        $koko_exist = isKokoExist($id_produk);
+                        $pesan_stok = "Stok produk bertambah +$total_hasil_jahit";
+                    }
+                } else {
+                    // PRODUK TIPE KOKO: masuk ke tabel koko (belum selesai produksi)
 
-                        if ($koko_exist) {
-                            $sql_update_koko = "UPDATE koko 
-                        SET stok = stok + $total_hasil_jahit,
-                            updated_at = NOW()
-                        WHERE id_produk = $id_produk";
+                    // Cek apakah data koko sudah ada untuk produk ini
+                    $koko_exist = isKokoExist($id_produk);
 
-                            if (!$conn->query($sql_update_koko)) {
-                                throw new Exception("Gagal update stok koko: " . $conn->error);
-                            }
-                        } else {
-                            // Insert data koko baru
-                            $produk_data = query("SELECT nama_produk, harga_jual FROM produk WHERE id_produk = $id_produk")[0] ?? [];
-                            $nama_koko = $produk_data['nama_produk'] ?? "Produk Koko";
-                            $harga_jual = $produk_data['harga_jual'] ?? 0;
+                    if ($koko_exist) {
+                        // UPDATE stok koko
+                        $sql_update_koko = "UPDATE koko 
+                       SET stok = stok + $total_hasil_jahit,
+                           updated_at = NOW()
+                       WHERE id_produk = $id_produk";
 
-                            $sql_insert_koko = "INSERT INTO koko (id_produk, nama_koko, harga_jual, stok, created_at, updated_at)
-                        VALUES ($id_produk, '$nama_koko', $harga_jual, $total_hasil_jahit, NOW(), NOW())";
-
-                            if (!$conn->query($sql_insert_koko)) {
-                                throw new Exception("Gagal menambah data koko baru: " . $conn->error);
-                            }
+                        if (!$conn->query($sql_update_koko)) {
+                            throw new Exception("Gagal update stok koko: " . $conn->error);
                         }
+
+                        $pesan_stok = "Stok koko berhasil ditambah +" . $total_hasil_jahit;
+                    } else {
+                        // INSERT data koko baru
+                        // Ambil informasi produk dari tabel produk
+                        $sql_produk = "SELECT nama_produk, harga_jual FROM produk WHERE id_produk = $id_produk";
+                        $result_produk = $conn->query($sql_produk);
+
+                        if ($result_produk && $result_produk->num_rows > 0) {
+                            $row_produk = $result_produk->fetch_assoc();
+                            $nama_koko = $row_produk['nama_produk'];
+                            $harga_jual = $row_produk['harga_jual'] ?: 0;
+                        } else {
+                            $nama_koko = "Produk Koko";
+                            $harga_jual = 0;
+                        }
+
+                        // INSERT dengan semua kolom yang diperlukan
+                        $sql_insert_koko = "INSERT INTO koko (id_produk, nama_koko, harga_jual, stok, created_at, updated_at)
+                       VALUES ($id_produk, '$nama_koko', $harga_jual, $total_hasil_jahit, NOW(), NOW())";
+
+                        if (!$conn->query($sql_insert_koko)) {
+                            throw new Exception("Gagal menambah data koko baru: " . $conn->error);
+                        }
+
+                        $pesan_stok = "Data koko baru berhasil dibuat (stok +" . $total_hasil_jahit . ")";
+                    }
+                }
+
+                // 3. Catat/Update hutang upah penjahit TANPA PERIODE
+                if ($existing) {
+                    // Update hutang yang sudah ada
+                    $upah_sebelumnya = $existing_jumlah * getTarifUpah('penjahitan', $existing_tanggal);
+                    $selisih_upah = $upah_penjahit - $upah_sebelumnya;
+
+                    if ($selisih_upah != 0) {
+                        updateHutangUpah($id_penjahit, 'penjahit', $selisih_upah);
+                    }
+                } else {
+                    // Data baru
+                    if (!catatHutangUpah($id_penjahit, 'penjahit', $tanggal_hasil_jahit, $upah_penjahit)) {
+                        throw new Exception("Gagal mencatat hutang upah penjahit");
                     }
                 }
 
                 $conn->commit();
                 $conn->autocommit(TRUE);
 
-                $_SESSION['success'] = "Data hasil jahit berhasil disimpan. Upah penjahit: " . formatRupiah($upah_penjahit);
+                $success_msg = $existing ?
+                    "Data hasil jahit berhasil diupdate. $pesan_stok. Upah penjahit: " . formatRupiah($upah_penjahit) :
+                    "Data hasil jahit berhasil disimpan. $pesan_stok. Upah penjahit: " . formatRupiah($upah_penjahit);
+
+                $_SESSION['success'] = $success_msg;
                 header("Location: list.php");
                 exit();
             } catch (Exception $e) {
@@ -937,216 +990,357 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 
     /**
-     * 5. PROSES PEMBATALAN TAHAP
+     * 5. BATAL HASIL JAHIT (Batal Penjahitan)
      */
-    if (isset($_POST['batal_tahap'])) {
+    if (isset($_POST['batal_penjahitan'])) {
         $id_hasil_potong_fix = intval($_POST['id_hasil_potong_fix']);
-        $tahap = $_POST['tahap'];
+
+        // Ambil data sebelum dibatalkan
+        $produksi_data = query("SELECT 
+        hp.id_produk, 
+        hp.total_hasil_jahit, 
+        hp.id_penjahit, 
+        hp.tanggal_hasil_jahit, 
+        hp.tanggal_kirim_jahit, 
+        hp.total_hasil,
+        hp.seri,
+        p.tipe_produk
+    FROM hasil_potong_fix hp
+    JOIN produk p ON hp.id_produk = p.id_produk
+    WHERE hp.id_hasil_potong_fix = $id_hasil_potong_fix")[0];
+
+        $id_produk = $produksi_data['id_produk'];
+        $total_hasil_jahit = $produksi_data['total_hasil_jahit'];
+        $id_penjahit = $produksi_data['id_penjahit'];
+        $tanggal_hasil_jahit = $produksi_data['tanggal_hasil_jahit'];
+        $tanggal_kirim_jahit = $produksi_data['tanggal_kirim_jahit'];
+        $total_hasil_potong = $produksi_data['total_hasil'];
+        $seri = $produksi_data['seri'];
+        $tipe_produk = $produksi_data['tipe_produk'];
+
+        // Validasi: pastikan ada total_hasil_jahit untuk dibatalkan
+        if (empty($total_hasil_jahit) || $total_hasil_jahit <= 0) {
+            $error_modal = "Tidak ada data hasil jahit yang bisa dibatalkan.";
+        } else {
+            // Hitung upah yang akan dihapus
+            $upah_dihapus = 0;
+            if ($total_hasil_jahit > 0 && $id_penjahit > 0 && !empty($tanggal_hasil_jahit)) {
+                // Ambil tarif yang sebenarnya digunakan dari database
+                $produksi_data = query("SELECT tarif_upah FROM hasil_potong_fix WHERE id_hasil_potong_fix = $id_hasil_potong_fix")[0];
+
+                // Gunakan tarif yang disimpan, jika tidak ada gunakan tarif standar
+                $tarif_penjahit = !empty($produksi_data['tarif_upah'])
+                    ? floatval($produksi_data['tarif_upah'])
+                    : getTarifUpah('penjahitan', $tanggal_hasil_jahit);
+
+                $upah_dihapus = $total_hasil_jahit * $tarif_penjahit;
+            }
+
+            $conn->autocommit(FALSE);
+            try {
+                // 1. Reset HANYA data hasil jahit
+                $sql_batal = "UPDATE hasil_potong_fix 
+             SET tanggal_hasil_jahit = NULL, 
+                 total_hasil_jahit = NULL,
+                 status_potong = 'penjahitan'
+             WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
+
+                if (!$conn->query($sql_batal)) {
+                    throw new Exception("Gagal membatalkan data hasil jahit, stok pada finishing koko kurang dari hasil jahit ini.");
+                }
+
+                // 2. LOGIKA BERBEDA BERDASARKAN TIPE PRODUK
+                $pesan_stok = "";
+                if ($tipe_produk == 'mukena' && $total_hasil_jahit > 0) {
+                    // MUKENA: Kurangi stok dari tabel produk
+
+                    // Cek stok produk saat ini
+                    $produk_data = query("SELECT stok, nama_produk FROM produk WHERE id_produk = $id_produk")[0];
+                    $stok_sekarang = $produk_data['stok'];
+                    $nama_produk = htmlspecialchars($produk_data['nama_produk']);
+
+                    if ($stok_sekarang >= $total_hasil_jahit) {
+                        // Stok cukup, kurangi normal
+                        $sql_kurangi_stok = "UPDATE produk 
+                            SET stok = stok - $total_hasil_jahit 
+                            WHERE id_produk = $id_produk";
+
+                        if (!$conn->query($sql_kurangi_stok)) {
+                            throw new Exception("Gagal mengurangi stok produk.");
+                        }
+                        $pesan_stok = "Stok produk dikurangi $total_hasil_jahit pcs";
+                    } else {
+                        // Stok tidak cukup, set ke 0
+                        $selisih = $total_hasil_jahit - $stok_sekarang;
+
+                        $sql_kurangi_stok = "UPDATE produk 
+                            SET stok = 0 
+                            WHERE id_produk = $id_produk";
+
+                        if (!$conn->query($sql_kurangi_stok)) {
+                            throw new Exception("Gagal mengurangi stok produk.");
+                        }
+
+                        // Simpan pesan warning di session
+                        $warning_msg = "Stok produk '$nama_produk' kurang. ";
+                        $warning_msg .= "Hanya berhasil mengurangi $stok_sekarang dari $total_hasil_jahit pcs. ";
+                        $warning_msg .= "Selisih $selisih pcs tidak dapat dikurangi.";
+
+                        $_SESSION['warning'] = $warning_msg;
+
+                        $pesan_stok = "Stok produk direset ke 0 (stok tidak mencukupi).";
+                    }
+                } elseif ($tipe_produk == 'koko' && $total_hasil_jahit > 0) {
+                    // KOKO: Kurangi stok dari tabel koko
+
+                    // Cek stok koko saat ini
+                    $koko_data = query("SELECT stok, nama_koko FROM koko WHERE id_produk = $id_produk LIMIT 1");
+
+                    if (!empty($koko_data)) {
+                        $stok_sekarang = $koko_data[0]['stok'];
+                        $nama_koko = htmlspecialchars($koko_data[0]['nama_koko']);
+
+                        if ($stok_sekarang >= $total_hasil_jahit) {
+                            // Stok cukup, kurangi normal
+                            $sql_kurangi_stok = "UPDATE koko 
+                                SET stok = stok - $total_hasil_jahit,
+                                    updated_at = NOW()
+                                WHERE id_produk = $id_produk";
+
+                            if (!$conn->query($sql_kurangi_stok)) {
+                                throw new Exception("Gagal mengurangi stok koko.");
+                            }
+                            $pesan_stok = "Stok koko dikurangi $total_hasil_jahit roll";
+                        } else {
+                            // Stok tidak cukup, set ke 0
+                            $selisih = $total_hasil_jahit - $stok_sekarang;
+
+                            $sql_kurangi_stok = "UPDATE koko 
+                                SET stok = 0,
+                                    updated_at = NOW()
+                                WHERE id_produk = $id_produk";
+
+                            if (!$conn->query($sql_kurangi_stok)) {
+                                throw new Exception("Gagal update stok koko.");
+                            }
+
+                            // Simpan pesan warning di session
+                            $warning_msg = "Stok koko '$nama_koko' kurang. ";
+                            $warning_msg .= "Hanya berhasil mengurangi $stok_sekarang dari $total_hasil_jahit roll. ";
+                            $warning_msg .= "Selisih $selisih roll tidak dapat dikurangi.";
+
+                            $_SESSION['warning'] = $warning_msg;
+
+                            $pesan_stok = "Stok koko direset ke 0 (stok tidak mencukupi).";
+                        }
+                    } else {
+                        // Data koko tidak ditemukan
+                        $pesan_stok = "Data koko tidak ditemukan. Tidak ada stok yang dapat dikurangi.";
+                    }
+                }
+
+                // 3. Hapus/Update hutang upah penjahit (hanya jika ada upah)
+                if ($upah_dihapus > 0 && $id_penjahit > 0) {
+                    if (!kurangiHutangUpahPenjahit($id_penjahit, $upah_dihapus)) {
+                        throw new Exception("Gagal mengurangi hutang upah penjahit.");
+                    }
+                }
+
+                $conn->commit();
+                $conn->autocommit(TRUE);
+
+                $pesan_success = "Data hasil jahit berhasil dibatalkan";
+                if ($total_hasil_jahit > 0 && !empty($pesan_stok)) {
+                    $pesan_success .= " dan " . strtolower($pesan_stok);
+                }
+                if ($upah_dihapus > 0) {
+                    $pesan_success .= ". Upah penjahit dikurangi: " . formatRupiah($upah_dihapus);
+                }
+                $pesan_success .= ". Data penjahit dan tanggal kirim tetap tersimpan.";
+
+                $_SESSION['success'] = $pesan_success;
+                header("Location: list.php");
+                exit();
+            } catch (Exception $e) {
+                $conn->rollback();
+                $conn->autocommit(TRUE);
+                // Pesan error sederhana
+                $error_modal = "Gagal membatalkan data hasil jahit, stok koko kurang dari hasil jahit ini.";
+            }
+        }
+    }
+
+    /**
+     * 6. HAPUS PENJAHIT DAN TANGGAL KIRIM
+     */
+    if (isset($_POST['hapus_penjahit'])) {
+        $id_hasil_potong_fix = intval($_POST['id_hasil_potong_fix']);
+
+        // Ambil data sebelum dihapus
+        $produksi_data = query("SELECT 
+        hp.id_produk, 
+        hp.total_hasil_jahit, 
+        hp.id_penjahit, 
+        hp.tanggal_hasil_jahit, 
+        hp.tanggal_kirim_jahit, 
+        hp.total_hasil,
+        hp.seri,
+        p.tipe_produk
+    FROM hasil_potong_fix hp
+    JOIN produk p ON hp.id_produk = p.id_produk
+    WHERE hp.id_hasil_potong_fix = $id_hasil_potong_fix")[0];
+
+        $id_produk = $produksi_data['id_produk'];
+        $total_hasil_jahit = $produksi_data['total_hasil_jahit'];
+        $id_penjahit = $produksi_data['id_penjahit'];
+        $tanggal_hasil_jahit = $produksi_data['tanggal_hasil_jahit'];
+        $seri = $produksi_data['seri'];
+        $tipe_produk = $produksi_data['tipe_produk'];
+
+        // Hitung upah yang akan dihapus
+        $upah_dihapus = 0;
+        if ($total_hasil_jahit > 0 && $id_penjahit > 0 && !empty($tanggal_hasil_jahit)) {
+            $tarif_penjahit = getTarifUpah('penjahitan', $tanggal_hasil_jahit);
+            $upah_dihapus = $total_hasil_jahit * $tarif_penjahit;
+        }
 
         $conn->autocommit(FALSE);
         try {
-            // Ambil data produksi
-            $produksi_data = query("SELECT 
-            hp.*,
-            p.tipe_produk,
-            p.stok as stok_produk,
-            pem.nama_pemotong,
-            bor.nama_bordir,
-            pen.nama_penjahit
-        FROM hasil_potong_fix hp
-        JOIN produk p ON hp.id_produk = p.id_produk
-        JOIN pemotong pem ON hp.id_pemotong = pem.id_pemotong
-        LEFT JOIN bordir bor ON hp.id_bordir = bor.id_bordir
-        LEFT JOIN penjahit pen ON hp.id_penjahit = pen.id_penjahit
-        WHERE hp.id_hasil_potong_fix = $id_hasil_potong_fix")[0] ?? [];
+            // 1. Reset SEMUA data penjahitan
+            $sql_hapus = "UPDATE hasil_potong_fix 
+             SET id_penjahit = NULL, 
+                 tanggal_kirim_jahit = NULL, 
+                 tanggal_hasil_jahit = NULL, 
+                 total_hasil_jahit = NULL,
+                 status_potong = 'diproses'
+             WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
 
-            if (empty($produksi_data)) {
-                throw new Exception("Data produksi tidak ditemukan");
+            if (!$conn->query($sql_hapus)) {
+                throw new Exception("Gagal menghapus data penjahit.");
             }
 
-            $tipe_produk = $produksi_data['tipe_produk'];
-            $id_produk = $produksi_data['id_produk'];
-            $total_hasil_jahit = $produksi_data['total_hasil_jahit'] ?? 0;
-            $total_hasil_bordir = $produksi_data['total_hasil_bordir'] ?? 0;
-            $id_penjahit = $produksi_data['id_penjahit'];
-            $id_bordir = $produksi_data['id_bordir'];
-            $id_pemotong = $produksi_data['id_pemotong'];
-            $seri = $produksi_data['seri'];
+            // 2. LOGIKA BERBEDA BERDASARKAN TIPE PRODUK
+            $pesan_stok = "";
+            if ($tipe_produk == 'mukena' && $total_hasil_jahit > 0) {
+                // MUKENA: Kurangi stok produk
 
-            switch ($tahap) {
-                case 'hasil_jahit':
-                    // Batalkan hasil jahit
-                    $sql_update = "UPDATE hasil_potong_fix 
-            SET tanggal_hasil_jahit = NULL,
-                total_hasil_jahit = NULL,
-                status_potong = 'penjahitan'
-            WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
+                // Cek stok produk saat ini
+                $produk_data = query("SELECT stok, nama_produk FROM produk WHERE id_produk = $id_produk")[0];
+                $stok_sekarang = $produk_data['stok'];
+                $nama_produk = htmlspecialchars($produk_data['nama_produk']);
 
-                    if (!$conn->query($sql_update)) {
-                        throw new Exception("Gagal membatalkan hasil jahit");
+                if ($stok_sekarang >= $total_hasil_jahit) {
+                    // Stok cukup, kurangi normal
+                    $sql_kurangi_stok = "UPDATE produk 
+                            SET stok = stok - $total_hasil_jahit 
+                            WHERE id_produk = $id_produk";
+
+                    if (!$conn->query($sql_kurangi_stok)) {
+                        throw new Exception("Gagal mengurangi stok produk.");
+                    }
+                    $pesan_stok = "stok produk dikurangi $total_hasil_jahit pcs";
+                } else {
+                    // Stok tidak cukup, set ke 0
+                    $selisih = $total_hasil_jahit - $stok_sekarang;
+
+                    $sql_kurangi_stok = "UPDATE produk 
+                            SET stok = 0 
+                            WHERE id_produk = $id_produk";
+
+                    if (!$conn->query($sql_kurangi_stok)) {
+                        throw new Exception("Gagal mengurangi stok produk.");
                     }
 
-                    // Kurangi stok berdasarkan tipe produk
-                    if ($total_hasil_jahit > 0) {
-                        if ($tipe_produk == 'mukena') {
-                            // Kurangi stok produk
-                            $sql_stok = "UPDATE produk 
-                    SET stok = stok - $total_hasil_jahit 
-                    WHERE id_produk = $id_produk";
-                        } else {
-                            // Kurangi stok koko
-                            $sql_stok = "UPDATE koko 
-                    SET stok = stok - $total_hasil_jahit,
-                        updated_at = NOW()
-                    WHERE id_produk = $id_produk";
+                    // Simpan pesan warning di session
+                    $warning_msg = "Stok produk '$nama_produk' kurang saat penghapusan penjahit. ";
+                    $warning_msg .= "Hanya berhasil mengurangi $stok_sekarang dari $total_hasil_jahit pcs.";
+
+                    $_SESSION['warning'] = $warning_msg;
+
+                    $pesan_stok = "stok produk direset ke 0 (stok tidak mencukupi)";
+                }
+            } elseif ($tipe_produk == 'koko' && $total_hasil_jahit > 0) {
+                // KOKO: Kurangi stok koko
+
+                // Cek apakah data koko ada
+                $koko_data = query("SELECT stok, nama_koko FROM koko WHERE id_produk = $id_produk LIMIT 1");
+
+                if (!empty($koko_data)) {
+                    $stok_sekarang = $koko_data[0]['stok'];
+                    $nama_koko = htmlspecialchars($koko_data[0]['nama_koko']);
+
+                    if ($stok_sekarang >= $total_hasil_jahit) {
+                        // Stok cukup, kurangi normal
+                        $sql_kurangi_stok = "UPDATE koko 
+                                SET stok = stok - $total_hasil_jahit,
+                                    updated_at = NOW()
+                                WHERE id_produk = $id_produk";
+
+                        if (!$conn->query($sql_kurangi_stok)) {
+                            throw new Exception("Gagal mengurangi stok koko.");
                         }
+                        $pesan_stok = "stok koko dikurangi $total_hasil_jahit roll";
 
-                        if (!$conn->query($sql_stok)) {
-                            throw new Exception("Gagal mengurangi stok");
-                        }
-                    }
-
-                    // Kurangi hutang upah penjahit
-                    if ($id_penjahit > 0 && $total_hasil_jahit > 0) {
-                        $tarif_upah_manual = $produksi_data['tarif_upah'] ?? 0;
-                        $upah_dikurangi = $total_hasil_jahit * $tarif_upah_manual;
-
-                        if (!kurangiHutangUpahPenjahit($id_penjahit, $upah_dikurangi)) {
-                            throw new Exception("Gagal mengurangi hutang upah penjahit");
-                        }
-                    }
-
-                    // HAPUS ATK FINISHING (jika ada)
-                    if ($tipe_produk == 'mukena') {
-                        $sql_delete_atk = "DELETE FROM atk_finishing WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
-                        if (!$conn->query($sql_delete_atk)) {
-                            throw new Exception("Gagal menghapus ATK finishing: " . $conn->error);
-                        }
-                    }
-
-                    $success_msg = "Hasil jahit berhasil dibatalkan. Status kembali ke 'Penjahitan'";
-                    break;
-
-                case 'tanggal_kirim_jahit':
-                    // Batalkan tanggal kirim jahit dan penjahit
-                    $sql_update = "UPDATE hasil_potong_fix 
-            SET id_penjahit = NULL,
-                tanggal_kirim_jahit = NULL,
-                status_potong = 'bordir'
-            WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
-
-                    if (!$conn->query($sql_update)) {
-                        throw new Exception("Gagal membatalkan tanggal kirim jahit");
-                    }
-
-                    $success_msg = "Tanggal kirim jahit dan data penjahit berhasil dibatalkan. Status kembali ke 'Bordir'";
-                    break;
-
-                case 'hasil_bordir':
-                    // Batalkan hasil bordir
-                    $sql_update = "UPDATE hasil_potong_fix 
-            SET tanggal_hasil_bordir = NULL,
-                total_hasil_bordir = NULL,
-                status_potong = 'bordir'
-            WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
-
-                    if (!$conn->query($sql_update)) {
-                        throw new Exception("Gagal membatalkan hasil bordir");
-                    }
-
-                    // Kurangi hutang upah bordir
-                    if ($id_bordir > 0 && $total_hasil_bordir > 0) {
-                        $tarif_upah_bordir_manual = $produksi_data['tarif_upah_bordir'] ?? 0;
-                        $upah_dikurangi = $total_hasil_bordir * $tarif_upah_bordir_manual;
-
-                        if (!kurangiHutangUpahBordir($id_bordir, $upah_dikurangi)) {
-                            throw new Exception("Gagal mengurangi hutang upah bordir");
-                        }
-                    }
-
-                    $success_msg = "Hasil bordir berhasil dibatalkan. Status kembali ke 'Bordir'";
-                    break;
-
-                case 'tanggal_kirim_bordir':
-                    // Batalkan tanggal kirim bordir dan bordir
-                    $sql_update = "UPDATE hasil_potong_fix 
-            SET id_bordir = NULL,
-                tanggal_kirim_bordir = NULL,
-                status_potong = 'diproses'
-            WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
-
-                    if (!$conn->query($sql_update)) {
-                        throw new Exception("Gagal membatalkan tanggal kirim bordir");
-                    }
-
-                    $success_msg = "Tanggal kirim bordir dan data bordir berhasil dibatalkan. Status kembali ke 'Potong'";
-                    break;
-
-                case 'pemotongan':
-                    // PERBAIKAN: KEMBALIKAN STOK BAHAN BAKU SEBELUM MENGHAPUS DATA
-                    try {
-                        // 1. Kembalikan stok bahan baku terlebih dahulu
-                        $hasil_kembali = kembalikanStokBahanBaku($id_hasil_potong_fix);
-
-                        // 2. Kurangi hutang upah pemotong
-                        if ($id_pemotong > 0) {
-                            // Ambil data upah pemotong dari database
-                            $sql_upah = "SELECT total_upah FROM hasil_potong_fix WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
-                            $result_upah = $conn->query($sql_upah);
-                            if ($result_upah->num_rows > 0) {
-                                $row_upah = $result_upah->fetch_assoc();
-                                $total_upah = $row_upah['total_upah'] ?? 0;
-
-                                if ($total_upah > 0) {
-                                    if (!kurangiHutangUpahPemotong($id_pemotong, $total_upah)) {
-                                        throw new Exception("Gagal mengurangi hutang upah pemotong");
-                                    }
-                                }
+                        // Cek jika stok menjadi 0 atau kurang, hapus record
+                        $stok_baru = $stok_sekarang - $total_hasil_jahit;
+                        if ($stok_baru <= 0) {
+                            $sql_hapus_koko = "DELETE FROM koko WHERE id_produk = $id_produk";
+                            if ($conn->query($sql_hapus_koko)) {
+                                $pesan_stok = "data koko dihapus karena stok habis";
                             }
                         }
+                    } else {
+                        // Stok tidak cukup, hapus record koko
+                        $selisih = $total_hasil_jahit - $stok_sekarang;
 
-                        // 3. Hapus detail hasil potong (detail bahan baku)
-                        $sql_delete_detail = "DELETE FROM detail_hasil_potong_fix WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
-                        if (!$conn->query($sql_delete_detail)) {
-                            throw new Exception("Gagal menghapus detail bahan baku: " . $conn->error);
+                        $sql_hapus_koko = "DELETE FROM koko WHERE id_produk = $id_produk";
+                        if (!$conn->query($sql_hapus_koko)) {
+                            throw new Exception("Gagal menghapus data koko.");
                         }
 
-                        // 4. Hapus data dari hasil_potong_fix
-                        $sql_delete = "DELETE FROM hasil_potong_fix WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
-                        if (!$conn->query($sql_delete)) {
-                            throw new Exception("Gagal menghapus data produksi");
-                        }
+                        // Simpan pesan warning di session
+                        $warning_msg = "Stok koko '$nama_koko' kurang saat penghapusan penjahit. ";
+                        $warning_msg .= "Hanya berhasil mengurangi $stok_sekarang dari $total_hasil_jahit roll. ";
+                        $warning_msg .= "Data koko dihapus karena stok tidak mencukupi.";
 
-                        // 5. Tambahkan pesan sukses dengan informasi stok yang dikembalikan
-                        $detail_bahan = "";
-                        if (isset($hasil_kembali['detail']) && count($hasil_kembali['detail']) > 0) {
-                            $detail_bahan = "Bahan baku yang dikembalikan: ";
-                            foreach ($hasil_kembali['detail'] as $bahan) {
-                                $detail_bahan .= "{$bahan['nama_bahan']} ({$bahan['jumlah_stok']} {$bahan['satuan']}), ";
-                            }
-                            $detail_bahan = rtrim($detail_bahan, ', ');
-                        }
+                        $_SESSION['warning'] = $warning_msg;
 
-                        $success_msg = "Produksi berhasil dibatalkan. Data telah dihapus." . $detail_bahan;
-                    } catch (Exception $e) {
-                        throw new Exception("Gagal membatalkan pemotongan: " . $e->getMessage());
+                        $pesan_stok = "data koko dihapus (stok tidak mencukupi)";
                     }
-                    break;
+                } else {
+                    // Data koko tidak ditemukan
+                    $pesan_stok = "data koko tidak ditemukan";
+                }
+            }
 
-                default:
-                    throw new Exception("Tahap pembatalan tidak valid");
+            // 3. Hapus/Update hutang upah penjahit (hanya jika ada upah)
+            if ($upah_dihapus > 0 && $id_penjahit > 0) {
+                if (!kurangiHutangUpahPenjahit($id_penjahit, $upah_dihapus)) {
+                    throw new Exception("Gagal mengurangi hutang upah penjahit.");
+                }
             }
 
             $conn->commit();
             $conn->autocommit(TRUE);
 
-            $_SESSION['success'] = $success_msg;
+            // Pesan sukses berdasarkan kondisi
+            $pesan_success = "Data penjahit berhasil dihapus";
+            if ($total_hasil_jahit > 0 && !empty($pesan_stok)) {
+                $pesan_success .= " dan " . $pesan_stok;
+            }
+            if ($upah_dihapus > 0) {
+                $pesan_success .= ". Upah penjahit dikurangi: " . formatRupiah($upah_dihapus);
+            }
+            $pesan_success .= ". Status kembali ke 'Potong'.";
+
+            $_SESSION['success'] = $pesan_success;
             header("Location: list.php");
             exit();
         } catch (Exception $e) {
             $conn->rollback();
             $conn->autocommit(TRUE);
-            $error_modal = "Gagal membatalkan: " . $e->getMessage();
+            // Pesan error sederhana
+            $error_modal = "Gagal menghapus data penjahit. Silakan coba lagi.";
         }
     }
 }
@@ -1158,7 +1352,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data Produksi</title>
+    <title>Master Data Produksi</title>
     <style>
         .swal2-container {
             z-index: 99999 !important;
@@ -1184,12 +1378,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             font-size: 0.875rem;
         }
 
+        .upah-column {
+            background-color: #e8f5e8 !important;
+            font-weight: bold;
+        }
+
         .table th {
             font-size: 0.8rem;
         }
 
         .table td {
             font-size: 0.8rem;
+        }
+
+        .tarif-info {
+            font-size: 0.7rem;
+            color: #6c757d;
         }
 
         .total-info {
@@ -1232,8 +1436,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             margin-top: 10px;
         }
     </style>
-
-
 </head>
 
 <body data-pc-preset="preset-1" data-pc-direction="ltr" data-pc-theme="light">
@@ -1275,10 +1477,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <div class="pc-content">
             <div class="row">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2>Data Produksi</h2>
+                    <h2>Master Data Produksi</h2>
                     <div class="btn-group">
                         <div>
-                            <a href="new.php" class="btn btn-warning">
+                            <a href="new.php" class="btn btn-success">
                                 <i class="ti ti-circle-plus"></i> Tambah Produksi
                             </a>
                         </div>
@@ -1288,10 +1490,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <div class="row">
                     <!-- Filter Form -->
                     <div class="col-md-8">
+
+
+
                         <form method="GET" class="mb-3">
                             <!-- Baris 1: Filter Dropdown -->
                             <div class="row g-3 mb-3">
-                                <div class="col-md-3">
+                                <div class="col-md-2">
                                     <label class="form-label">Filter Produk</label>
                                     <select name="id_produk" class="form-select">
                                         <option value="0">Semua Produk</option>
@@ -1319,6 +1524,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     <label class="form-label">Filter Bordir</label>
                                     <select name="id_bordir" class="form-select">
                                         <option value="0">Semua Bordir</option>
+                                        <option value="-1" <?= (isset($_GET['id_bordir']) && $_GET['id_bordir'] == '-1') ? 'selected' : '' ?>>Belum Ada Bordir</option>
                                         <?php foreach ($bordir as $br): ?>
                                             <option value="<?= $br['id_bordir'] ?>" <?= (isset($_GET['id_bordir']) && $_GET['id_bordir'] == $br['id_bordir']) ? 'selected' : '' ?>>
                                                 <?= htmlspecialchars($br['nama_bordir']) ?>
@@ -1331,6 +1537,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     <label class="form-label">Filter Penjahit</label>
                                     <select name="id_penjahit" class="form-select">
                                         <option value="0">Semua Penjahit</option>
+                                        <option value="-1" <?= (isset($_GET['id_penjahit']) && $_GET['id_penjahit'] == '-1') ? 'selected' : '' ?>>Belum Ada Penjahit</option>
                                         <?php foreach ($penjahit as $pj): ?>
                                             <option value="<?= $pj['id_penjahit'] ?>" <?= (isset($_GET['id_penjahit']) && $_GET['id_penjahit'] == $pj['id_penjahit']) ? 'selected' : '' ?>>
                                                 <?= htmlspecialchars($pj['nama_penjahit']) ?>
@@ -1339,7 +1546,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     </select>
                                 </div>
 
-                                <div class="col-md-3">
+                                <div class="col-md-2">
                                     <label class="form-label">Filter Status</label>
                                     <select name="status" class="form-select">
                                         <option value="all" <?= ($status == 'all') ? 'selected' : '' ?>>Semua Status</option>
@@ -1368,7 +1575,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 </div>
 
                                 <div class="col-md-6">
-                                    <div class="d-flex gap-2 mb-4">
+                                    <div class="d-flex gap-2">
                                         <button type="submit" class="btn btn-primary">
                                             <i class="ti ti-filter"></i> Filter
                                         </button>
@@ -1383,11 +1590,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                             <a href="list.php" class="btn btn-secondary">
                                                 <i class="ti ti-rotate"></i> Reset
                                             </a>
+
                                         <?php endif; ?>
 
                                         <button type="button" class="btn btn-danger" id="btnPrintPDF">
                                             <i class="ti ti-file-text"></i> Print PDF
                                         </button>
+
                                     </div>
                                 </div>
                             </div>
@@ -1408,6 +1617,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                         <div class="card-body py-2">
                                             <div class="row g-2">
                                                 <?php
+                                                // Fungsi untuk menampilkan nilai filter dengan label yang sesuai
                                                 function getFilterLabel($key, $value)
                                                 {
                                                     global $produk, $pemotong, $penjahit, $bordir;
@@ -1465,8 +1675,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                                             ];
                                                             $status_colors = [
                                                                 'diproses' => 'warning',
-                                                                'bordir' => 'primary',
-                                                                'penjahitan' => 'info',
+                                                                'bordir' => 'info',
+                                                                'penjahitan' => 'primary',
                                                                 'selesai' => 'success'
                                                             ];
                                                             return '<span class="badge bg-' . ($status_colors[$value] ?? 'secondary') .
@@ -1485,6 +1695,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                                 ?>
 
                                                 <?php
+                                                // Array filter yang akan ditampilkan
                                                 $filters_to_display = [
                                                     'id_produk' => $id_produk,
                                                     'id_pemotong' => $id_pemotong,
@@ -1497,6 +1708,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                                                 $active_filters = [];
 
+                                                // Loop melalui semua filter
                                                 foreach ($filters_to_display as $key => $value) {
                                                     $label = getFilterLabel($key, $value);
                                                     if ($label) {
@@ -1517,6 +1729,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                                         </div>
                                                     </div>
 
+                                                    <!-- Informasi Jumlah Data yang Difilter -->
                                                     <div class="col-12 mt-2">
                                                         <p class="mb-0 small">
                                                             <i class="ti ti-database"></i>
@@ -1598,6 +1811,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     </div>
                 </div>
 
+
+
                 <div class="card p-3">
                     <!-- Tampilkan pesan error atau success -->
                     <?php if (isset($_SESSION['error'])): ?>
@@ -1619,9 +1834,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <?php if (isset($error_modal)): ?>
                         <div class="alert alert-danger alert-dismissible fade show" role="alert">
                             <?= htmlspecialchars($error_modal) ?>
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            <button type="button"
+                                class="btn-close"
+                                data-bs-dismiss="alert"
+                                aria-label="Close"></button>
                         </div>
                     <?php endif; ?>
+
 
                     <div class="table-responsive">
                         <table class="table table-sm table-bordered table-hover align-middle">
@@ -1670,13 +1889,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                         $totalHasil = $data['total_hasil'] ?? 0;
                                         $totalHasilBordir = $data['total_hasil_bordir'] ?? 0;
                                         $totalHasilJahit = $data['total_hasil_jahit'] ?? 0;
-                                        $sisa = $totalHasil - $totalHasilJahit;
+                                        $sisa = $totalHasil - ($totalHasilBordir + $totalHasilJahit);
                                         $total_sisa += $sisa;
                                         ?>
                                         <tr>
                                             <td class="text-center">
                                                 <?php
-                                                $status = $data['status'];
+                                                $status = $data['status']; // ambil status
+
+                                                // Tentukan warna badge
                                                 switch ($status) {
                                                     case 'selesai':
                                                         $badge = 'success';
@@ -1694,16 +1915,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                                         $badge = 'info';
                                                         $label = 'Penjahitan';
                                                         break;
+                                                    case '-':
                                                     default:
                                                         $badge = 'secondary';
                                                         $label = '-';
                                                         break;
                                                 }
                                                 ?>
-                                                <span class="badge bg-<?= $badge ?> p-1 fw-normal"><?= $label ?></span>
+
+                                                <span class="badge bg-<?= $badge ?> p-1 fw-normal">
+                                                    <?= $label ?>
+                                                </span>
+
                                             </td>
                                             <td class="text-center"><?= htmlspecialchars($data['seri']) ?></td>
-                                            <td><?= htmlspecialchars($data['pemotong']) ?></td>
+                                            <td>
+                                                <?= htmlspecialchars($data['pemotong']) ?>
+                                            </td>
                                             <td><?= dateIndo($data['tanggal']) ?></td>
                                             <td>
                                                 <?= htmlspecialchars($data['produk']) ?>
@@ -1718,7 +1946,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                             <td>
                                                 <?= !empty($data['tanggal_kirim_bordir']) ? dateIndo($data['tanggal_kirim_bordir']) : '-' ?>
                                             </td>
-                                            <td>
+                                            <td class="">
                                                 <?php if (!empty($data['bordir'])): ?>
                                                     <?= htmlspecialchars($data['bordir']) ?>
                                                 <?php else: ?>
@@ -1734,7 +1962,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                             <td>
                                                 <?= !empty($data['tanggal_kirim_jahit']) ? dateIndo($data['tanggal_kirim_jahit']) : '-' ?>
                                             </td>
-                                            <td>
+                                            <td class="">
                                                 <?php if (!empty($data['penjahit'])): ?>
                                                     <?= htmlspecialchars($data['penjahit']) ?>
                                                 <?php else: ?>
@@ -1759,6 +1987,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                                     </a>
 
                                                     <?php
+                                                    // Logika tombol berdasarkan status
                                                     $has_tanggal_kirim_bordir = !empty($data['tanggal_kirim_bordir']);
                                                     $has_hasil_bordir = !empty($data['total_hasil_bordir']);
                                                     $has_tanggal_kirim_jahit = !empty($data['tanggal_kirim_jahit']);
@@ -1767,22 +1996,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                                     $is_bordir = $data['status'] == 'bordir';
                                                     $is_penjahitan = $data['status'] == 'penjahitan';
                                                     $is_selesai = $data['status'] == 'selesai';
-
-                                                    // Tentukan tahap pembatalan
-                                                    $tahap_pembatalan = 'tidak_ada';
-                                                    if ($is_selesai) {
-                                                        $tahap_pembatalan = 'hasil_jahit'; // Hapus hasil jahit dulu
-                                                    } elseif ($has_hasil_jahit) {
-                                                        $tahap_pembatalan = 'hasil_jahit';
-                                                    } elseif ($is_penjahitan && $has_tanggal_kirim_jahit) {
-                                                        $tahap_pembatalan = 'tanggal_kirim_jahit'; // Hapus tanggal kirim jahit
-                                                    } elseif ($has_hasil_bordir) {
-                                                        $tahap_pembatalan = 'hasil_bordir'; // Hapus hasil bordir dulu
-                                                    } elseif ($is_bordir && $has_tanggal_kirim_bordir) {
-                                                        $tahap_pembatalan = 'tanggal_kirim_bordir'; // Hapus tanggal kirim bordir
-                                                    } elseif ($is_diproses) {
-                                                        $tahap_pembatalan = 'pemotongan'; // Hapus pemotongan (batal produksi)
-                                                    }
                                                     ?>
 
                                                     <?php if ($is_diproses): ?>
@@ -1797,10 +2010,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                                             <i class="ti ti-calendar"></i>
                                                         </button>
 
+                                                        <!-- Tombol Batal Produksi -->
+                                                        <button class="btn btn-sm btn-danger btn-batal-produksi"
+                                                            data-id="<?= $data['id'] ?>"
+                                                            data-pemotong="<?= htmlspecialchars($data['pemotong']) ?>"
+                                                            data-seri="<?= htmlspecialchars($data['seri']) ?>"
+                                                            data-total-potong="<?= $data['total_hasil'] ?>"
+                                                            data-tanggal-potong="<?= $data['tanggal'] ?>"
+                                                            data-produk="<?= htmlspecialchars($data['produk']) ?>"
+                                                            data-upah-pemotong="<?= $data['upah_pemotong'] ?>"
+                                                            title="Batalkan Produksi">
+                                                            <i class="ti ti-trash"></i>
+                                                        </button>
+
                                                     <?php elseif ($is_bordir): ?>
                                                         <!-- Status: Bordir -->
 
                                                         <?php if ($has_tanggal_kirim_bordir && !$has_hasil_bordir): ?>
+                                                            <!-- Ada tanggal kirim bordir tapi belum ada hasil bordir -->
                                                             <button class="btn btn-sm btn-success btn-input-hasil-bordir"
                                                                 data-id="<?= $data['id'] ?>"
                                                                 data-produk="<?= htmlspecialchars($data['produk']) ?>"
@@ -1813,66 +2040,104 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                                                 title="Input Hasil Bordir">
                                                                 <i class="ti ti-check"></i>
                                                             </button>
-
                                                         <?php endif; ?>
 
-                                                        <!-- Status: Penjahitan -->
-                                                        <?php if ($has_hasil_bordir && !$has_tanggal_kirim_jahit): ?>
-                                                            <button class="btn btn-sm btn-info btn-input-tanggal-penjahitan"
+                                                        <?php if ($has_tanggal_kirim_bordir): ?>
+                                                            <!-- Tombol Edit Tanggal Kirim Bordir -->
+                                                            <button class="btn btn-sm btn-info btn-edit-tanggal-bordir"
                                                                 data-id="<?= $data['id'] ?>"
                                                                 data-produk="<?= htmlspecialchars($data['produk']) ?>"
                                                                 data-seri="<?= htmlspecialchars($data['seri']) ?>"
                                                                 data-total-potong="<?= $data['total_hasil'] ?>"
-                                                                data-total-bordir="<?= $data['total_hasil_bordir'] ?? 0 ?>"
                                                                 data-tanggal-potong="<?= $data['tanggal'] ?>"
-                                                                title="Input Tanggal Kirim Jahit">
-                                                                <i class="ti ti-calendar"></i>
+                                                                data-bordir="<?= $data['id_bordir'] ?>"
+                                                                data-tanggal-kirim="<?= $data['tanggal_kirim_bordir'] ?>"
+                                                                title="Edit Tanggal Kirim Bordir">
+                                                                <i class="ti ti-edit"></i>
                                                             </button>
                                                         <?php endif; ?>
 
+                                                        <?php if ($has_hasil_bordir): ?>
+                                                            <!-- Tombol Batal Hasil Bordir -->
+                                                            <button class="btn btn-sm btn-outline-warning btn-batal-hasil-bordir"
+                                                                data-id="<?= $data['id'] ?>"
+                                                                data-produk="<?= htmlspecialchars($data['produk']) ?>"
+                                                                data-seri="<?= htmlspecialchars($data['seri']) ?>"
+                                                                data-bordir="<?= htmlspecialchars($data['bordir']) ?>"
+                                                                data-hasil-bordir="<?= $data['total_hasil_bordir'] ?>"
+                                                                title="Batal Hasil Bordir">
+                                                                <i class="ti ti-eraser"></i>
+                                                            </button>
+                                                        <?php endif; ?>
 
-                                                    <?php elseif ($is_penjahitan): ?>
+                                                        <!-- Tombol Hapus Bordir -->
+                                                        <button class="btn btn-sm btn-outline-danger btn-hapus-bordir"
+                                                            data-id="<?= $data['id'] ?>"
+                                                            data-produk="<?= htmlspecialchars($data['produk']) ?>"
+                                                            data-seri="<?= htmlspecialchars($data['seri']) ?>"
+                                                            data-bordir="<?= htmlspecialchars($data['bordir']) ?>"
+                                                            title="Hapus Bordir">
+                                                            <i class="ti ti-user-off"></i>
+                                                        </button>
 
-
-
-                                                        <!-- Dalam loop data produksi, temukan bagian tombol ini: -->
+                                                    <?php elseif ($is_penjahitan || $is_selesai): ?>
+                                                        <!-- Status: Penjahitan atau Selesai -->
 
                                                         <?php if ($has_tanggal_kirim_jahit && !$has_hasil_jahit): ?>
+                                                            <!-- Ada tanggal kirim jahit tapi belum ada hasil jahit -->
                                                             <button class="btn btn-sm btn-success btn-input-hasil-penjahitan"
                                                                 data-id="<?= $data['id'] ?>"
                                                                 data-produk="<?= htmlspecialchars($data['produk']) ?>"
                                                                 data-seri="<?= htmlspecialchars($data['seri']) ?>"
-                                                                data-tipe-produk="<?= $data['tipe_produk'] ?>"
                                                                 data-total-potong="<?= $data['total_hasil'] ?>"
-                                                                data-total-bordir="<?= $data['total_hasil_bordir'] ?? 0 ?>"
+                                                                data-tanggal-potong="<?= $data['tanggal'] ?>"
                                                                 data-penjahit="<?= $data['id_penjahit'] ?>"
                                                                 data-nama-penjahit="<?= htmlspecialchars($data['penjahit']) ?>"
                                                                 data-tanggal-kirim="<?= $data['tanggal_kirim_jahit'] ?>"
                                                                 title="Input Hasil Jahit">
                                                                 <i class="ti ti-check"></i>
                                                             </button>
-
                                                         <?php endif; ?>
 
-                                                    <?php endif; ?>
+                                                        <?php if ($has_tanggal_kirim_jahit): ?>
+                                                            <!-- Tombol Edit Tanggal Kirim Jahit -->
+                                                            <button class="btn btn-sm btn-info btn-edit-tanggal-penjahitan"
+                                                                data-id="<?= $data['id'] ?>"
+                                                                data-produk="<?= htmlspecialchars($data['produk']) ?>"
+                                                                data-seri="<?= htmlspecialchars($data['seri']) ?>"
+                                                                data-total-potong="<?= $data['total_hasil'] ?>"
+                                                                data-tanggal-potong="<?= $data['tanggal'] ?>"
+                                                                data-penjahit="<?= $data['id_penjahit'] ?>"
+                                                                data-tanggal-kirim="<?= $data['tanggal_kirim_jahit'] ?>"
+                                                                title="Edit Tanggal Kirim Jahit">
+                                                                <i class="ti ti-edit"></i>
+                                                            </button>
+                                                        <?php endif; ?>
 
-                                                    <!-- TOMBOL PEMBATALAN BERDASARKAN TAHAP -->
-                                                    <?php if ($tahap_pembatalan != 'tidak_ada'): ?>
-                                                        <button class="btn btn-sm btn-outline-danger btn-batal-produksi-tahap"
+                                                        <?php if ($has_hasil_jahit): ?>
+                                                            <!-- Tombol Batal Hasil Jahit -->
+                                                            <button class="btn btn-sm btn-outline-warning btn-batal-hasil-jahit"
+                                                                data-id="<?= $data['id'] ?>"
+                                                                data-produk="<?= htmlspecialchars($data['produk']) ?>"
+                                                                data-seri="<?= htmlspecialchars($data['seri']) ?>"
+                                                                data-penjahit="<?= htmlspecialchars($data['penjahit']) ?>"
+                                                                data-hasil-jahit="<?= $data['total_hasil_jahit'] ?>"
+                                                                data-tipe-produk="<?= $data['tipe_produk'] ?>"
+                                                                title="Batal Hasil Jahit">
+                                                                <i class="ti ti-eraser"></i>
+                                                            </button>
+                                                        <?php endif; ?>
+
+                                                        <!-- Tombol Hapus Penjahit -->
+                                                        <button class="btn btn-sm btn-outline-danger btn-hapus-penjahit"
                                                             data-id="<?= $data['id'] ?>"
                                                             data-produk="<?= htmlspecialchars($data['produk']) ?>"
                                                             data-seri="<?= htmlspecialchars($data['seri']) ?>"
-                                                            data-total-potong="<?= $data['total_hasil'] ?>"
-                                                            data-total-bordir="<?= $data['total_hasil_bordir'] ?>"
-                                                            data-total-jahit="<?= $data['total_hasil_jahit'] ?>"
-                                                            data-tahap="<?= $tahap_pembatalan ?>"
-                                                            data-status="<?= $data['status'] ?>"
-                                                            data-pemotong="<?= htmlspecialchars($data['pemotong']) ?>"
-                                                            data-bordir="<?= htmlspecialchars($data['bordir']) ?>"
                                                             data-penjahit="<?= htmlspecialchars($data['penjahit']) ?>"
-                                                            title="Batalkan Tahap <?= ucfirst(str_replace('_', ' ', $tahap_pembatalan)) ?>">
-                                                            <i class="ti ti-x"></i>
+                                                            title="Hapus Penjahit">
+                                                            <i class="ti ti-user-off"></i>
                                                         </button>
+
                                                     <?php endif; ?>
                                                 </div>
                                             </td>
@@ -1887,7 +2152,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     <tr class="text-center fw-bold">
                                         <td colspan="5" class="text-end">TOTAL:</td>
                                         <td><?= $total_hasil_potong ?> Pcs</td>
-                                        <td colspan="3"></td>
+                                        <td colspan="4"></td>
                                         <td><?= $total_hasil_bordir ?> Pcs</td>
                                         <td colspan="3"></td>
                                         <td><?= $total_hasil_jahit ?> Pcs</td>
@@ -1908,7 +2173,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Input Tanggal Kirim Bordir</h5>
+                    <h5 class="modal-title" id="modalTitleTanggalBordir">Input Tanggal Kirim Bordir</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form method="POST" id="formTanggalBordir">
@@ -1937,20 +2202,28 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <select name="id_bordir" class="form-control" id="modal_bordir_bordir" required>
                                 <option value="">-- Pilih Bordir --</option>
                                 <?php foreach ($bordir as $b): ?>
-                                    <option value="<?= $b['id_bordir'] ?>"><?= htmlspecialchars($b['nama_bordir']) ?></option>
+                                    <option value="<?= $b['id_bordir'] ?>">
+                                        <?= htmlspecialchars($b['nama_bordir']) ?>
+                                    </option>
                                 <?php endforeach; ?>
                             </select>
+                            <small class="text-muted">Pilih bordir yang akan mengerjakan</small>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label">Tanggal Kirim Bordir <span class="text-danger">*</span></label>
                             <input type="date" name="tanggal_kirim_bordir" class="form-control"
                                 id="modal_bordir_tanggal_kirim" required value="<?= date('Y-m-d') ?>">
+                            <small class="text-muted">Tanggal ketika bahan dikirim ke bordir</small>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="ti ti-info-circle"></i> Data hasil bordir dapat diinput nanti setelah bordir selesai.
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-                        <button type="submit" name="simpan_tanggal_kirim_bordir" class="btn btn-primary">Simpan</button>
+                        <button type="submit" name="simpan_tanggal_kirim_bordir" class="btn btn-primary">Simpan Tanggal Kirim</button>
                     </div>
                 </form>
             </div>
@@ -1959,10 +2232,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     <!-- Modal Input Hasil Bordir -->
     <div class="modal fade" id="modalHasilBordir" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Input Hasil Bordir</h5>
+                    <h5 class="modal-title" id="modalTitleHasilBordir">Input Hasil Bordir</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form method="POST" id="formHasilBordir">
@@ -1970,6 +2243,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <input type="hidden" name="id_hasil_potong_fix" id="modal_hasil_bordir_id">
                         <input type="hidden" name="total_upah_bordir" id="total_upah_bordir_hidden">
                         <input type="hidden" name="upah_per_potongan_bordir" id="upah_per_potongan_bordir_hidden">
+
+                        <!-- Alert jika sudah ada data -->
+                        <div class="alert alert-info d-none" id="modalBordirExistAlert">
+                            <i class="ti ti-info-circle"></i>
+                            <strong>Perhatian:</strong> Data hasil bordir sudah ada sebelumnya.
+                            <div id="modalBordirExistDetail"></div>
+                        </div>
 
                         <div class="row mb-3">
                             <div class="col-md-6">
@@ -1994,21 +2274,30 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 <input type="text" class="form-control" id="modal_hasil_bordir_nama_bordir" readonly>
                             </div>
 
+                            <div hidden class="col-md-6">
+                                <label class="form-label">Tanggal Kirim</label>
+                                <input type="text" class="form-control" id="modal_hasil_bordir_tanggal_kirim" readonly>
+                            </div>
+                        </div>
+
+                        <hr>
+                        <div class="row mb-3">
                             <div class="col-md-6">
                                 <label class="form-label">Total Hasil Bordir (Pcs) <span class="text-danger">*</span></label>
                                 <input type="number" name="total_hasil_bordir" class="form-control"
                                     min="1" max="" id="modal_hasil_bordir_total" required>
                                 <small class="text-muted">Maksimal: <span id="modal_hasil_bordir_max">0</span> Pcs</small>
                             </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Tanggal Hasil Bordir <span class="text-danger">*</span></label>
+                                <input type="date" name="tanggal_hasil_bordir" class="form-control"
+                                    id="modal_hasil_bordir_tanggal" required>
+                                <small class="text-muted">bulan/tanggal/tahun</small>
+                            </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label">Tanggal Hasil Bordir <span class="text-danger">*</span></label>
-                            <input type="date" name="tanggal_hasil_bordir" class="form-control"
-                                id="modal_hasil_bordir_tanggal" required value="<?= date('Y-m-d') ?>">
-                        </div>
-
-                        <!-- Di dalam modal, bagian input upah bordir -->
+                        <!-- Input Upah Bordir -->
                         <div class="card mb-3">
                             <div class="card-header bg-light">
                                 <h6 class="mb-0">Upah Bordir</h6>
@@ -2016,23 +2305,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col-md-6">
-                                        <label class="form-label">Upah per Potongan <span class="text-danger">*</span></label>
+                                        <label class="form-label">Upah per Potongan</label>
                                         <div class="input-group mb-2">
                                             <span class="input-group-text">Rp</span>
                                             <input type="number" name="upah_per_potongan_bordir_manual"
                                                 class="form-control" id="upah_per_potongan_bordir_manual"
-                                                min="0" step="100" value="" required>
+                                                min="0" step="100" value=""
+                                                placeholder="Input manual upah">
                                         </div>
-
-                                        <!-- PERBAIKAN: Tambah instruksi -->
-                                        <small class="text-muted d-block mb-2">
-                                            Pilih tarif standar atau input manual
-                                        </small>
-
-                                        <label class="form-label">Pilih Tarif Standar (Opsional)</label>
-                                        <select class="form-control select2-custom" id="tarif_bordir_dropdown">
+                                        <small class="text-muted">Pilih tarif dari dropdown:</small>
+                                        <select class="form-control mt-1" id="tarif_bordir_dropdown">
                                             <option value="">-- Pilih Tarif Standar --</option>
                                             <?php
+                                            // Query untuk mendapatkan tarif bordir
                                             $tarif_bordir = query("SELECT * FROM tarif_upah WHERE jenis_tarif = 'bordir' ORDER BY berlaku_sejak DESC");
                                             foreach ($tarif_bordir as $tarif):
                                             ?>
@@ -2042,31 +2327,41 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                                 </option>
                                             <?php endforeach; ?>
                                         </select>
-                                        <small class="text-muted d-block mt-1">
-                                            Tarif akan otomatis terisi ke input di atas
-                                        </small>
                                     </div>
 
                                     <div class="col-md-6">
                                         <label class="form-label">Total Upah</label>
                                         <div class="input-group">
                                             <span class="input-group-text">Rp</span>
-                                            <input type="text" class="form-control bg-light"
-                                                id="total_upah_bordir_display" readonly style="font-weight: bold;">
+                                            <input type="text" class="form-control"
+                                                id="total_upah_bordir_display" readonly>
                                         </div>
                                         <div class="mt-2">
                                             <small class="text-muted">
-                                                Formula: Total Hasil × Upah per Potongan
+                                                <span id="detail_upah_bordir_perhitungan">
+                                                    0 potongan × Rp 0
+                                                </span>
                                             </small>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
+
+                        <div class="alert alert-warning" id="modal_hasil_bordir_alert">
+                            <i class="ti ti-alert-triangle"></i>
+                            <span id="modal_hasil_bordir_alert_text">
+                                Pastikan jumlah hasil bordir sesuai dengan kondisi fisik.
+                            </span>
+                        </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-                        <button type="submit" name="simpan_hasil_bordir" class="btn btn-success">Simpan</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            Tutup
+                        </button>
+                        <button type="submit" name="simpan_hasil_bordir" class="btn btn-success" id="modalBordirSubmitBtn">
+                            Simpan Hasil Bordir
+                        </button>
                     </div>
                 </form>
             </div>
@@ -2078,12 +2373,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Input Tanggal Kirim Penjahitan</h5>
+                    <h5 class="modal-title" id="modalTitleTanggal">Input Tanggal Kirim Penjahitan</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form method="POST" id="formTanggalPenjahitan">
                     <div class="modal-body">
+                        <?php if (isset($error_modal)): ?>
+                            <div class="alert alert-danger"><?= $error_modal ?></div>
+                        <?php endif; ?>
+
                         <input type="hidden" name="id_hasil_potong_fix" id="modal_tanggal_id_hasil_potong">
+                        <input type="hidden" id="modal_tanggal_tanggal_potong">
 
                         <div class="row mb-3">
                             <div class="col-md-6">
@@ -2107,20 +2407,28 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <select name="id_penjahit" class="form-control" id="modal_tanggal_penjahit" required>
                                 <option value="">-- Pilih Penjahit --</option>
                                 <?php foreach ($penjahit as $j): ?>
-                                    <option value="<?= $j['id_penjahit'] ?>"><?= htmlspecialchars($j['nama_penjahit']) ?></option>
+                                    <option value="<?= $j['id_penjahit'] ?>">
+                                        <?= htmlspecialchars($j['nama_penjahit']) ?>
+                                    </option>
                                 <?php endforeach; ?>
                             </select>
+                            <small class="text-muted">Pilih penjahit yang akan mengerjakan</small>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label">Tanggal Kirim Jahit <span class="text-danger">*</span></label>
                             <input type="date" name="tanggal_kirim_jahit" class="form-control"
                                 id="modal_tanggal_kirim_jahit" required value="<?= date('Y-m-d') ?>">
+                            <small class="text-muted">Tanggal ketika bahan dikirim ke penjahit</small>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="ti ti-info-circle"></i> Data hasil jahit dapat diinput nanti setelah penjahitan selesai.
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-                        <button type="submit" name="simpan_tanggal_kirim" class="btn btn-primary">Simpan</button>
+                        <button type="submit" name="simpan_tanggal_kirim" class="btn btn-primary">Simpan Tanggal Kirim</button>
                     </div>
                 </form>
             </div>
@@ -2132,7 +2440,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Input Hasil Penjahitan</h5>
+                    <h5 class="modal-title" id="modalTitleHasil">Input Hasil Penjahitan</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form method="POST" id="formHasilPenjahitan">
@@ -2140,6 +2448,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <input type="hidden" name="id_hasil_potong_fix" id="modal_hasil_id_hasil_potong">
                         <input type="hidden" name="total_upah_penjahit" id="total_upah_penjahit_hidden">
                         <input type="hidden" name="upah_per_potongan_penjahit" id="upah_per_potongan_penjahit_hidden">
+
+                        <!-- Alert jika sudah ada data -->
+                        <div class="alert alert-info d-none" id="modalHasilExistAlert">
+                            <i class="ti ti-info-circle"></i>
+                            <strong>Perhatian:</strong> Data hasil jahit sudah ada sebelumnya.
+                            <div id="modalHasilExistDetail"></div>
+                        </div>
 
                         <div class="row mb-3">
                             <div class="col-md-6">
@@ -2164,149 +2479,162 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 <input type="text" class="form-control" id="modal_hasil_nama_penjahit" readonly>
                             </div>
 
+                            <div hidden class="col-md-6">
+                                <label class="form-label">Tanggal Kirim</label>
+                                <input type="text" class="form-control" id="modal_hasil_tanggal_kirim_text" readonly>
+                            </div>
+                        </div>
+
+                        <hr>
+                        <div class="row mb-3">
                             <div class="col-md-6">
                                 <label class="form-label">Total Hasil Jahit (Pcs) <span class="text-danger">*</span></label>
                                 <input type="number" name="total_hasil_jahit" class="form-control"
                                     min="1" max="" id="modal_hasil_total_jahit" required>
                                 <small class="text-muted">Maksimal: <span id="modal_hasil_max_total">0</span> Pcs</small>
                             </div>
-                        </div>
 
-                        <div class="mb-3">
-                            <label class="form-label">Tanggal Hasil Jahit <span class="text-danger">*</span></label>
-                            <input type="date" name="tanggal_hasil_jahit" class="form-control"
-                                id="modal_hasil_tanggal_jahit" required value="<?= date('Y-m-d') ?>">
-                        </div>
-
-                        <div class="row">
                             <div class="col-md-6">
-                                <!-- Input ATK Finishing (Hanya untuk produk mukena) -->
-                                <div class="card mb-3" id="atk-card">
-                                    <div class="card-header bg-light">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <h6 class="mb-0">ATK Finishing yang Digunakan</h6>
-                                            <button type="button" class="btn btn-sm btn-primary" id="btnTambahAtk">
-                                                <i class="ti ti-plus"></i> Tambah ATK
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div class="card-body" id="atk-container-wrapper">
-                                        <!-- Container untuk ATK items -->
-                                        <div id="atk-container">
-                                            <div class="atk-item row mb-3">
-                                                <div class="col-md-5">
-                                                    <label class="form-label">Nama ATK Finishing <span class="text-danger">*</span></label>
-                                                    <input type="text" name="atk_nama[]" class="form-control atk-nama"
-                                                        placeholder="Contoh: Renda, Kancing, Tali, Label, dll." required>
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <label class="form-label">Jumlah <span class="text-danger">*</span></label>
-                                                    <div class="input-group">
-                                                        <input type="number" name="atk_jumlah[]" class="form-control atk-jumlah"
-                                                            min="1" value="1" required>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <label class="form-label">Satuan</label>
-                                                    <select name="atk_satuan[]" class="form-control atk-satuan">
-                                                        <option value="meter">Meter</option>
-                                                        <option value="buah" selected>Buah</option>
-                                                        <option value="set">Set</option>
-                                                        <option value="roll">Roll</option>
-                                                        <option value="lbr">Lembar</option>
-                                                    </select>
-                                                </div>
-                                                <div class="col-md-1 d-flex align-items-end">
-                                                    <button type="button" class="btn btn-sm btn-danger btn-hapus-atk" style="display: none;">
-                                                        <i class="ti ti-trash"></i>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <small class="text-muted">
-                                            <i class="ti ti-info-circle"></i> ATK Finishing adalah bahan pendukung seperti renda, kancing, tali, label, dll.
-                                        </small>
-                                    </div>
-                                </div>
+                                <label class="form-label">Tanggal Hasil Jahit <span class="text-danger">*</span></label>
+                                <input type="date" name="tanggal_hasil_jahit" class="form-control"
+                                    id="modal_hasil_tanggal_jahit" required>
+                                <small class="text-muted">bulan/tanggal/tahun</small>
                             </div>
+                        </div>
 
-                            <div class="col-md-6">
-                                <!-- Input Upah Penjahit -->
-                                <div class="card mb-3">
-                                    <div class="card-header bg-light">
-                                        <h6 class="mb-0">Upah Penjahit</h6>
+                        <!-- Input Upah Penjahit -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">Upah Penjahit</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Upah per Potongan</label>
+                                        <div class="input-group mb-2">
+                                            <span class="input-group-text">Rp</span>
+                                            <input type="number" name="upah_per_potongan_manual"
+                                                class="form-control" id="upah_per_potongan_manual"
+                                                min="0" step="100" value=""
+                                                placeholder="Input manual upah">
+                                        </div>
+                                        <small class="text-muted">Pilih tarif dari dropdown:</small>
+                                        <select class="form-control mt-1" id="tarif_penjahit_dropdown">
+                                            <option value="">-- Pilih Tarif Standar --</option>
+                                            <?php
+                                            // Query untuk mendapatkan tarif penjahitan
+                                            $tarif_penjahit = query("SELECT * FROM tarif_upah WHERE jenis_tarif = 'penjahitan' ORDER BY berlaku_sejak DESC");
+                                            foreach ($tarif_penjahit as $tarif):
+                                            ?>
+                                                <option value="<?= $tarif['tarif_per_unit'] ?>"
+                                                    data-tanggal="<?= $tarif['berlaku_sejak'] ?>">
+                                                    Rp <?= number_format($tarif['tarif_per_unit']) ?> sejak <?= dateIndo($tarif['berlaku_sejak']) ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
                                     </div>
-                                    <div class="card-body">
-                                        <div class="row">
-                                            <div class="col-md-7">
-                                                <label class="form-label">Upah per Potongan</label>
-                                                <div class="input-group mb-2">
-                                                    <span class="input-group-text">Rp</span>
-                                                    <input type="number" name="upah_per_potongan_manual"
-                                                        class="form-control" id="upah_per_potongan_manual"
-                                                        min="0" step="100" value="" required>
-                                                </div>
-                                                <select class="form-control mt-1" id="tarif_penjahit_dropdown">
-                                                    <option value="">-- Pilih Tarif Standar --</option>
-                                                    <?php
-                                                    $tarif_penjahit = query("SELECT * FROM tarif_upah WHERE jenis_tarif = 'penjahitan' ORDER BY berlaku_sejak DESC");
-                                                    foreach ($tarif_penjahit as $tarif):
-                                                    ?>
-                                                        <option value="<?= $tarif['tarif_per_unit'] ?>"
-                                                            data-tanggal="<?= $tarif['berlaku_sejak'] ?>">
-                                                            Rp <?= number_format($tarif['tarif_per_unit']) ?> sejak <?= dateIndo($tarif['berlaku_sejak']) ?>
-                                                        </option>
-                                                    <?php endforeach; ?>
-                                                </select>
-                                            </div>
 
-                                            <div class="col-md-5">
-                                                <label class="form-label">Total Upah</label>
-                                                <div class="input-group">
-                                                    <span class="input-group-text">Rp</span>
-                                                    <input type="text" class="form-control"
-                                                        id="total_upah_penjahit_display" readonly>
-                                                </div>
-                                            </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Total Upah</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">Rp</span>
+                                            <input type="text" class="form-control"
+                                                id="total_upah_penjahit_display" readonly>
+                                        </div>
+                                        <div class="mt-2">
+                                            <small class="text-muted">
+                                                <span id="detail_upah_perhitungan">
+                                                    0 potongan × Rp 0
+                                                </span>
+                                            </small>
                                         </div>
                                     </div>
                                 </div>
                             </div>
+                        </div>
 
+                        <div class="alert alert-warning" id="modal_hasil_alert">
+                            <i class="ti ti-alert-triangle"></i>
+                            <span id="modal_hasil_alert_text">
+                                Pastikan jumlah hasil jahit sesuai dengan kondisi fisik.
+                            </span>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-                        <button type="submit" name="simpan_hasil_jahit" class="btn btn-success">Simpan</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            Tutup
+                        </button>
+                        <button type="submit" name="simpan_hasil_jahit" class="btn btn-success" id="modalHasilSubmitBtn">
+                            Simpan Hasil Jahit
+                        </button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
-    <!-- Modal Konfirmasi Pembatalan Tahap -->
-    <div class="modal fade" id="modalBatalTahap" tabindex="-1" aria-hidden="true">
+
+    <!-- Modal Konfirmasi Batal Hasil Jahit -->
+    <div class="modal fade" id="modalBatalPenjahitan" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="modalBatalTitle">Konfirmasi Pembatalan</h5>
+                    <h5 class="modal-title">Konfirmasi Batal Hasil Jahit</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form method="POST" id="formBatalTahap">
+                <form method="POST" id="formBatalPenjahitan">
                     <div class="modal-body">
-                        <input type="hidden" name="id_hasil_potong_fix" id="batal_id">
-                        <input type="hidden" name="tahap" id="batal_tahap">
+                        <input type="hidden" name="id_hasil_potong_fix" id="batal_modal_id">
+                        <input type="hidden" name="tipe_produk" id="batal_modal_tipe_produk">
 
-                        <p id="batal_detail"></p>
+                        <p>Apakah Anda yakin ingin membatalkan <strong>hasil jahit</strong> untuk:</p>
+                        <p><strong>Produk:</strong> <span id="batal_modal_produk"></span></p>
+                        <p><strong>Seri:</strong> <span id="batal_modal_seri"></span></p>
+                        <p><strong>Tipe Produk:</strong> <span id="batal_modal_tipe_text" class="badge"></span></p>
 
-                        <div class="alert alert-warning" id="batal_keterangan">
-                            <!-- Keterangan akan diisi oleh JavaScript -->
+                        <div class="alert alert-info">
+                            <i class="ti ti-info-circle"></i>
+                            <strong>Catatan:</strong><br>
+                            1. Hanya data hasil jahit yang akan dihapus<br>
+                            2. Data penjahit dan tanggal kirim tetap tersimpan<br>
+                            3. Status akan kembali ke "Penjahitan"<br>
                         </div>
-
                         <p class="text-danger"><strong>Tindakan ini tidak dapat dikembalikan!</strong></p>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn btn-danger" name="batal_tahap">Ya, Lanjutkan</button>
+                        <button type="submit" name="batal_penjahitan" class="btn btn-danger">Ya, Batalkan Hasil Jahit</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Konfirmasi Hapus Penjahit -->
+    <div class="modal fade" id="modalHapusPenjahit" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Konfirmasi Hapus Data Penjahit</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="POST" id="formHapusPenjahit">
+                    <div class="modal-body">
+                        <input type="hidden" name="id_hasil_potong_fix" id="hapus_penjahit_id">
+                        <p>Apakah Anda yakin ingin menghapus <strong>data penjahit dan tanggal kirim</strong> untuk:</p>
+                        <p><strong>Produk:</strong> <span id="hapus_penjahit_produk"></span></p>
+                        <p><strong>Seri:</strong> <span id="hapus_penjahit_seri"></span></p>
+                        <div class="alert alert-warning">
+                            <i class="ti ti-alert-triangle"></i>
+                            <strong>Peringatan:</strong><br>
+                            1. Semua data penjahit dan tanggal kirim akan dihapus<br>
+                            2. Status akan kembali ke "Bordir"<br>
+                            3. Jika ada hasil jahit, akan dihapus juga
+                        </div>
+                        <p class="text-danger"><strong>Tindakan ini tidak dapat dikembalikan!</strong></p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" name="hapus_penjahit" class="btn btn-danger">Ya, Hapus Penjahit</button>
                     </div>
                 </form>
             </div>
@@ -2321,119 +2649,166 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM Content Loaded - Modal Batal Tahap Ready');
+            console.log('DOM Content Loaded');
 
-            // Inisialisasi modal
+            // Inisialisasi semua modal
             const modalTanggalBordir = new bootstrap.Modal(document.getElementById('modalTanggalBordir'));
             const modalHasilBordir = new bootstrap.Modal(document.getElementById('modalHasilBordir'));
             const modalTanggalPenjahitan = new bootstrap.Modal(document.getElementById('modalTanggalPenjahitan'));
             const modalHasilPenjahitan = new bootstrap.Modal(document.getElementById('modalHasilPenjahitan'));
-            const modalBatalTahap = new bootstrap.Modal(document.getElementById('modalBatalTahap'));
+            const modalBatalPenjahitan = new bootstrap.Modal(document.getElementById('modalBatalPenjahitan'));
+            const modalHapusPenjahit = new bootstrap.Modal(document.getElementById('modalHapusPenjahit'));
 
-            // Fungsi format rupiah
+            // Fungsi format number dan rupiah
+            function formatNumber(angka) {
+                return angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+            }
+
             function formatRupiah(angka) {
-                const number = parseFloat(angka) || 0;
-                return 'Rp ' + number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                return 'Rp ' + formatNumber(angka);
             }
 
-            // Fungsi untuk memformat angka ke input number
-            function formatAngkaInput(angka) {
-                return parseFloat(angka) || 0;
-            }
+            // Inisialisasi event untuk modal bordir
+            function initModalBordirEvents() {
+                const modal = document.getElementById('modalHasilBordir');
+                if (!modal) return;
 
-            // PERBAIKAN: Fungsi untuk menghitung total upah bordir
-            function hitungTotalUpahBordir() {
-                const upahPerPotongan = parseFloat(document.getElementById('upah_per_potongan_bordir_manual')?.value) || 0;
-                const totalHasil = parseFloat(document.getElementById('modal_hasil_bordir_total')?.value) || 0;
-                const totalUpah = upahPerPotongan * totalHasil;
+                const totalBordirInput = modal.querySelector('#modal_hasil_bordir_total');
+                const upahManualInput = modal.querySelector('#upah_per_potongan_bordir_manual');
+                const tarifDropdown = modal.querySelector('#tarif_bordir_dropdown');
+                const tanggalBordirInput = modal.querySelector('#modal_hasil_bordir_tanggal');
+                const totalUpahDisplay = modal.querySelector('#total_upah_bordir_display');
+                const detailUpahSpan = modal.querySelector('#detail_upah_bordir_perhitungan');
+                const totalUpahHidden = modal.querySelector('#total_upah_bordir_hidden');
+                const upahPerPotonganHidden = modal.querySelector('#upah_per_potongan_bordir_hidden');
 
-                if (document.getElementById('total_upah_bordir_display')) {
-                    document.getElementById('total_upah_bordir_display').value = formatRupiah(totalUpah);
+                function hitungTotalUpahBordir() {
+                    const totalHasil = parseInt(totalBordirInput.value) || 0;
+                    const upahPerPotongan = parseFloat(upahManualInput.value) || 0;
+                    const totalUpah = totalHasil * upahPerPotongan;
+
+                    totalUpahDisplay.value = formatRupiah(totalUpah);
+                    totalUpahHidden.value = totalUpah;
+                    upahPerPotonganHidden.value = upahPerPotongan;
+                    detailUpahSpan.innerHTML = `${totalHasil} potongan × Rp ${formatNumber(upahPerPotongan)}`;
                 }
-                if (document.getElementById('total_upah_bordir_hidden')) {
-                    document.getElementById('total_upah_bordir_hidden').value = totalUpah;
-                }
-                if (document.getElementById('upah_per_potongan_bordir_hidden')) {
-                    document.getElementById('upah_per_potongan_bordir_hidden').value = upahPerPotongan;
-                }
-            }
 
-            // PERBAIKAN: Fungsi untuk menghitung total upah penjahit
-            function hitungTotalUpahPenjahit() {
-                const upahPerPotongan = parseFloat(document.getElementById('upah_per_potongan_manual')?.value) || 0;
-                const totalHasil = parseFloat(document.getElementById('modal_hasil_total_jahit')?.value) || 0;
-                const totalUpah = upahPerPotongan * totalHasil;
-
-                if (document.getElementById('total_upah_penjahit_display')) {
-                    document.getElementById('total_upah_penjahit_display').value = formatRupiah(totalUpah);
-                }
-                if (document.getElementById('total_upah_penjahit_hidden')) {
-                    document.getElementById('total_upah_penjahit_hidden').value = totalUpah;
-                }
-                if (document.getElementById('upah_per_potongan_penjahit_hidden')) {
-                    document.getElementById('upah_per_potongan_penjahit_hidden').value = upahPerPotongan;
-                }
-            }
-
-            // PERBAIKAN: Event listener untuk dropdown tarif bordir
-            document.getElementById('tarif_bordir_dropdown')?.addEventListener('change', function() {
-                const selectedValue = this.value;
-                const upahInput = document.getElementById('upah_per_potongan_bordir_manual');
-
-                if (selectedValue && upahInput) {
-                    // Isi input manual dengan nilai dari dropdown
-                    upahInput.value = formatAngkaInput(selectedValue);
-
-                    // Hitung ulang total upah
+                totalBordirInput.addEventListener('input', hitungTotalUpahBordir);
+                upahManualInput.addEventListener('input', function() {
+                    tarifDropdown.value = '';
                     hitungTotalUpahBordir();
+                });
 
-                    // PERBAIKAN: Tampilkan pesan sukses
-                    showTemporaryMessage('Tarif bordir berhasil dipilih', 'success');
-                } else if (upahInput) {
-                    // Jika pilihan "-- Pilih Tarif Standar --" dipilih, kosongkan input
-                    upahInput.value = '';
-                    if (document.getElementById('total_upah_bordir_display')) {
-                        document.getElementById('total_upah_bordir_display').value = '';
+                tarifDropdown.addEventListener('change', function() {
+                    const selectedTarif = parseFloat(this.value) || 0;
+                    if (selectedTarif > 0) {
+                        upahManualInput.value = selectedTarif;
+                        hitungTotalUpahBordir();
                     }
-                    if (document.getElementById('total_upah_bordir_hidden')) {
-                        document.getElementById('total_upah_bordir_hidden').value = '';
+                });
+
+                tanggalBordirInput.addEventListener('change', function() {
+                    const selectedDate = this.value;
+                    if (selectedDate) {
+                        const options = tarifDropdown.options;
+                        let found = false;
+                        for (let i = 0; i < options.length; i++) {
+                            const option = options[i];
+                            const tanggalBerlaku = option.dataset.tanggal;
+                            if (tanggalBerlaku && selectedDate >= tanggalBerlaku) {
+                                tarifDropdown.value = option.value;
+                                upahManualInput.value = option.value;
+                                hitungTotalUpahBordir();
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found && options.length > 1) {
+                            tarifDropdown.value = options[1].value;
+                            upahManualInput.value = options[1].value;
+                            hitungTotalUpahBordir();
+                        }
                     }
-                    if (document.getElementById('upah_per_potongan_bordir_hidden')) {
-                        document.getElementById('upah_per_potongan_bordir_hidden').value = '';
-                    }
+                });
+
+                // Set default date
+                if (!tanggalBordirInput.value) {
+                    tanggalBordirInput.value = '<?= date("Y-m-d") ?>';
+                    tanggalBordirInput.dispatchEvent(new Event('change'));
                 }
-            });
+            }
 
-            // PERBAIKAN: Event listener untuk dropdown tarif penjahit
-            document.getElementById('tarif_penjahit_dropdown')?.addEventListener('change', function() {
-                const selectedValue = this.value;
-                const upahInput = document.getElementById('upah_per_potongan_manual');
+            // Inisialisasi event untuk modal jahit
+            function initModalJahitEvents() {
+                const modal = document.getElementById('modalHasilPenjahitan');
+                if (!modal) return;
 
-                if (selectedValue && upahInput) {
-                    // Isi input manual dengan nilai dari dropdown
-                    upahInput.value = formatAngkaInput(selectedValue);
+                const totalJahitInput = modal.querySelector('#modal_hasil_total_jahit');
+                const upahManualInput = modal.querySelector('#upah_per_potongan_manual');
+                const tarifDropdown = modal.querySelector('#tarif_penjahit_dropdown');
+                const tanggalJahitInput = modal.querySelector('#modal_hasil_tanggal_jahit');
+                const totalUpahDisplay = modal.querySelector('#total_upah_penjahit_display');
+                const detailUpahSpan = modal.querySelector('#detail_upah_perhitungan');
+                const totalUpahHidden = modal.querySelector('#total_upah_penjahit_hidden');
+                const upahPerPotonganHidden = modal.querySelector('#upah_per_potongan_penjahit_hidden');
 
-                    // Hitung ulang total upah
-                    hitungTotalUpahPenjahit();
+                function hitungTotalUpahJahit() {
+                    const totalHasil = parseInt(totalJahitInput.value) || 0;
+                    const upahPerPotongan = parseFloat(upahManualInput.value) || 0;
+                    const totalUpah = totalHasil * upahPerPotongan;
 
-                    // PERBAIKAN: Tampilkan pesan sukses
-                    showTemporaryMessage('Tarif penjahit berhasil dipilih', 'success');
-                } else if (upahInput) {
-                    // Jika pilihan "-- Pilih Tarif Standar --" dipilih, kosongkan input
-                    upahInput.value = '';
-                    if (document.getElementById('total_upah_penjahit_display')) {
-                        document.getElementById('total_upah_penjahit_display').value = '';
-                    }
-                    if (document.getElementById('total_upah_penjahit_hidden')) {
-                        document.getElementById('total_upah_penjahit_hidden').value = '';
-                    }
-                    if (document.getElementById('upah_per_potongan_penjahit_hidden')) {
-                        document.getElementById('upah_per_potongan_penjahit_hidden').value = '';
-                    }
+                    totalUpahDisplay.value = formatRupiah(totalUpah);
+                    totalUpahHidden.value = totalUpah;
+                    upahPerPotonganHidden.value = upahPerPotongan;
+                    detailUpahSpan.innerHTML = `${totalHasil} potongan × Rp ${formatNumber(upahPerPotongan)}`;
                 }
-            });
 
-            // Event listener untuk tombol-tombol MODAL LAIN
+                totalJahitInput.addEventListener('input', hitungTotalUpahJahit);
+                upahManualInput.addEventListener('input', function() {
+                    tarifDropdown.value = '';
+                    hitungTotalUpahJahit();
+                });
+
+                tarifDropdown.addEventListener('change', function() {
+                    const selectedTarif = parseFloat(this.value) || 0;
+                    if (selectedTarif > 0) {
+                        upahManualInput.value = selectedTarif;
+                        hitungTotalUpahJahit();
+                    }
+                });
+
+                tanggalJahitInput.addEventListener('change', function() {
+                    const selectedDate = this.value;
+                    if (selectedDate) {
+                        const options = tarifDropdown.options;
+                        let found = false;
+                        for (let i = 0; i < options.length; i++) {
+                            const option = options[i];
+                            const tanggalBerlaku = option.dataset.tanggal;
+                            if (tanggalBerlaku && selectedDate >= tanggalBerlaku) {
+                                tarifDropdown.value = option.value;
+                                upahManualInput.value = option.value;
+                                hitungTotalUpahJahit();
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found && options.length > 1) {
+                            tarifDropdown.value = options[1].value;
+                            upahManualInput.value = options[1].value;
+                            hitungTotalUpahJahit();
+                        }
+                    }
+                });
+
+                // Set default date
+                if (!tanggalJahitInput.value) {
+                    tanggalJahitInput.value = '<?= date("Y-m-d") ?>';
+                    tanggalJahitInput.dispatchEvent(new Event('change'));
+                }
+            }
+
+            // Event listener untuk tombol-tombol
             document.addEventListener('click', function(e) {
                 // Tombol Input Tanggal Kirim Bordir
                 if (e.target.closest('.btn-input-tanggal-bordir')) {
@@ -2463,6 +2838,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     const seri = button.getAttribute('data-seri');
                     const totalPotong = button.getAttribute('data-total-potong');
                     const namaBordir = button.getAttribute('data-nama-bordir');
+                    const tanggalKirim = button.getAttribute('data-tanggal-kirim');
 
                     document.getElementById('modal_hasil_bordir_id').value = id;
                     document.getElementById('modal_hasil_bordir_produk').value = produk;
@@ -2474,12 +2850,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     document.getElementById('modal_hasil_bordir_max').textContent = totalPotong;
                     document.getElementById('modal_hasil_bordir_tanggal').value = '<?= date('Y-m-d') ?>';
 
-                    // Reset input upah bordir
+                    // Reset input upah
                     document.getElementById('upah_per_potongan_bordir_manual').value = '';
                     document.getElementById('tarif_bordir_dropdown').selectedIndex = 0;
                     document.getElementById('total_upah_bordir_display').value = '';
-                    document.getElementById('total_upah_bordir_hidden').value = '';
-                    document.getElementById('upah_per_potongan_bordir_hidden').value = '';
+                    document.getElementById('detail_upah_bordir_perhitungan').textContent = '0 potongan × Rp 0';
+
+                    setTimeout(() => {
+                        initModalBordirEvents();
+                        const tanggalInput = document.getElementById('modal_hasil_bordir_tanggal');
+                        if (tanggalInput) {
+                            tanggalInput.dispatchEvent(new Event('change'));
+                        }
+                    }, 100);
 
                     modalHasilBordir.show();
                 }
@@ -2492,22 +2875,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     const produk = button.getAttribute('data-produk');
                     const seri = button.getAttribute('data-seri');
                     const totalPotong = button.getAttribute('data-total-potong');
-                    const totalBordir = button.getAttribute('data-total-bordir') || 0;
 
                     document.getElementById('modal_tanggal_id_hasil_potong').value = id;
                     document.getElementById('modal_tanggal_produk').value = produk;
                     document.getElementById('modal_tanggal_seri').value = seri;
-
-                    // Tampilkan informasi lengkap
-                    let infoText = '';
-                    if (totalBordir > 0) {
-                        infoText = `${totalBordir} Pcs (Hasil Bordir)`;
-                        infoText += ` dari ${totalPotong} Pcs hasil potong`;
-                    } else {
-                        infoText = `${totalPotong} Pcs (Tanpa proses bordir)`;
-                    }
-
-                    document.getElementById('modal_tanggal_total_potong').value = infoText;
+                    document.getElementById('modal_tanggal_total_potong').value = totalPotong + ' Pcs';
                     document.getElementById('modal_tanggal_kirim_jahit').value = '<?= date('Y-m-d') ?>';
                     document.getElementById('modal_tanggal_penjahit').selectedIndex = 0;
 
@@ -2522,277 +2894,72 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     const produk = button.getAttribute('data-produk');
                     const seri = button.getAttribute('data-seri');
                     const totalPotong = button.getAttribute('data-total-potong');
-                    const totalBordir = parseInt(button.getAttribute('data-total-bordir')) || 0;
-                    const penjahit = button.getAttribute('data-penjahit');
                     const namaPenjahit = button.getAttribute('data-nama-penjahit');
-
-                    // AMBIL TIPE PRODUK dari tombol
-                    const tipeProduk = button.getAttribute('data-tipe-produk');
+                    const tanggalKirim = button.getAttribute('data-tanggal-kirim');
 
                     document.getElementById('modal_hasil_id_hasil_potong').value = id;
                     document.getElementById('modal_hasil_produk').value = produk;
                     document.getElementById('modal_hasil_seri').value = seri;
-
-                    // Tampilkan total hasil potong
                     document.getElementById('modal_hasil_total_potong').value = totalPotong + ' Pcs';
-
-                    // Jika ada hasil bordir, tampilkan juga
-                    if (totalBordir > 0) {
-                        document.getElementById('modal_hasil_total_potong').value =
-                            totalPotong + ' Pcs (Potong) | ' + totalBordir + ' Pcs (Bordir)';
-                    }
-
                     document.getElementById('modal_hasil_nama_penjahit').value = namaPenjahit || '-';
-
-                    // Set maksimal berdasarkan hasil bordir jika ada, jika tidak gunakan hasil potong
-                    const maxJahit = totalBordir > 0 ? totalBordir : totalPotong;
-
-                    document.getElementById('modal_hasil_total_jahit').value = maxJahit;
-                    document.getElementById('modal_hasil_total_jahit').max = maxJahit;
-
-                    // Tampilkan informasi sumber maksimal
-                    let sourceInfo = totalBordir > 0 ? 'berdasarkan hasil bordir' : 'berdasarkan hasil potong (tanpa bordir)';
-                    document.getElementById('modal_hasil_max_total').textContent = maxJahit + ' Pcs ' + sourceInfo;
-
+                    document.getElementById('modal_hasil_total_jahit').value = totalPotong;
+                    document.getElementById('modal_hasil_total_jahit').max = totalPotong;
+                    document.getElementById('modal_hasil_max_total').textContent = totalPotong;
                     document.getElementById('modal_hasil_tanggal_jahit').value = '<?= date('Y-m-d') ?>';
 
-                    // Reset input upah penjahit
+                    // Reset input upah
                     document.getElementById('upah_per_potongan_manual').value = '';
                     document.getElementById('tarif_penjahit_dropdown').selectedIndex = 0;
                     document.getElementById('total_upah_penjahit_display').value = '';
-                    document.getElementById('total_upah_penjahit_hidden').value = '';
-                    document.getElementById('upah_per_potongan_penjahit_hidden').value = '';
+                    document.getElementById('detail_upah_perhitungan').textContent = '0 potongan × Rp 0';
 
-                    // Toggle ATK section berdasarkan tipe produk
-                    const atkCard = document.getElementById('atk-card');
-                    if (tipeProduk === 'mukena') {
-                        atkCard.style.display = 'block';
-                        // Set required untuk input ATK
-                        const atkInputs = document.querySelectorAll('#atk-container input');
-                        atkInputs.forEach(input => input.required = true);
-                    } else {
-                        atkCard.style.display = 'none';
-                        // Hapus required untuk input ATK
-                        const atkInputs = document.querySelectorAll('#atk-container input');
-                        atkInputs.forEach(input => input.required = false);
-                    }
-
-                    // Reset ATK container ke 1 item
-                    const atkContainer = document.getElementById('atk-container');
-                    const atkItems = document.querySelectorAll('.atk-item');
-
-                    // Hapus semua item kecuali yang pertama
-                    for (let i = atkItems.length - 1; i > 0; i--) {
-                        atkItems[i].remove();
-                    }
-
-                    // Reset input pertama
-                    const firstAtkItem = document.querySelector('.atk-item:first-child');
-                    if (firstAtkItem) {
-                        const inputs = firstAtkItem.querySelectorAll('input');
-                        inputs.forEach(input => {
-                            if (input.type === 'text') {
-                                input.value = '';
-                            } else if (input.type === 'number') {
-                                input.value = '1';
-                            }
-                        });
-
-                        const select = firstAtkItem.querySelector('select');
-                        if (select) {
-                            select.value = 'buah';
+                    setTimeout(() => {
+                        initModalJahitEvents();
+                        const tanggalInput = document.getElementById('modal_hasil_tanggal_jahit');
+                        if (tanggalInput) {
+                            tanggalInput.dispatchEvent(new Event('change'));
                         }
-
-                        // Sembunyikan tombol hapus
-                        const deleteBtn = firstAtkItem.querySelector('.btn-hapus-atk');
-                        if (deleteBtn) {
-                            deleteBtn.style.display = 'none';
-                        }
-                    }
+                    }, 100);
 
                     modalHasilPenjahitan.show();
                 }
-            });
 
-            // ========== PERBAIKAN UTAMA: EVENT LISTENER UNTUK TOMBOL BATAL TAHAP ==========
-            document.addEventListener('click', function(e) {
-                if (e.target.closest('.btn-batal-produksi-tahap')) {
-                    console.log('Tombol batal diklik!');
-
-                    // HAPUS e.preventDefault() - ini penyebab masalah!
-                    const button = e.target.closest('.btn-batal-produksi-tahap');
+                // Tombol Batal Produksi
+                if (e.target.closest('.btn-batal-produksi')) {
+                    e.preventDefault();
+                    const button = e.target.closest('.btn-batal-produksi');
                     const id = button.getAttribute('data-id');
-                    const produk = button.getAttribute('data-produk');
+                    const pemotong = button.getAttribute('data-pemotong');
                     const seri = button.getAttribute('data-seri');
                     const totalPotong = button.getAttribute('data-total-potong');
-                    const totalBordir = button.getAttribute('data-total-bordir') || 0;
-                    const totalJahit = button.getAttribute('data-total-jahit') || 0;
-                    const tahap = button.getAttribute('data-tahap');
-                    const status = button.getAttribute('data-status');
-                    const pemotong = button.getAttribute('data-pemotong');
-                    const bordir = button.getAttribute('data-bordir');
-                    const penjahit = button.getAttribute('data-penjahit');
+                    const produk = button.getAttribute('data-produk');
 
-                    console.log('Data yang diterima:', {
-                        id,
-                        produk,
-                        seri,
-                        tahap,
-                        totalJahit,
-                        totalBordir
+                    Swal.fire({
+                        title: 'Yakin ingin membatalkan produksi ini?',
+                        html: `<div class="text-start">
+                                <p><strong>Produksi Seri ${seri}</strong> akan dibatalkan.</p>
+                                <div class="alert alert-warning mt-2">
+                                    <p><strong>Detail Produksi:</strong></p>
+                                    <p>Produk: ${produk}</p>
+                                    <p>Pemotong: ${pemotong}</p>
+                                    <p>Hasil Potong: ${totalPotong} Pcs</p>
+                                </div>
+                                <p class="text-danger"><strong>Tindakan ini tidak dapat dikembalikan!</strong></p>
+                            </div>`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: 'Ya, batalkan!',
+                        cancelButtonText: 'Batal',
+                        width: '600px'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.location.href = 'batal_pemotongan.php?id=' + id;
+                        }
                     });
-
-                    // Set data ke modal
-                    document.getElementById('batal_id').value = id;
-                    document.getElementById('batal_tahap').value = tahap;
-
-                    // Buat detail berdasarkan tahap
-                    let detail = '';
-                    let keterangan = '';
-
-                    switch (tahap) {
-                        case 'hasil_jahit':
-                            detail = `Apakah Anda yakin ingin membatalkan <strong>hasil jahit</strong> untuk:`;
-                            detail += `<br><strong>Produk:</strong> ${produk}`;
-                            detail += `<br><strong>Seri:</strong> ${seri}`;
-                            detail += `<br><strong>Penjahit:</strong> ${penjahit || '-'}`;
-                            detail += `<br><strong>Hasil Jahit:</strong> ${totalJahit} Pcs`;
-
-                            keterangan = `<i class="ti ti-info-circle"></i> 
-            <strong>Keterangan:</strong><br>
-            1. Hasil jahit akan dihapus<br>
-            2. Status akan kembali ke "Penjahitan"<br>
-            3. Stok akan disesuaikan<br>
-            4. Hutang upah penjahit akan dikurangi`;
-                            break;
-
-                        case 'tanggal_kirim_jahit':
-                            detail = `Apakah Anda yakin ingin membatalkan <strong>tanggal kirim jahit</strong> untuk:`;
-                            detail += `<br><strong>Produk:</strong> ${produk}`;
-                            detail += `<br><strong>Seri:</strong> ${seri}`;
-                            detail += `<br><strong>Penjahit:</strong> ${penjahit || '-'}`;
-
-                            keterangan = `<i class="ti ti-info-circle"></i> 
-            <strong>Keterangan:</strong><br>
-            1. Tanggal kirim jahit akan dihapus<br>
-            2. Data penjahit akan dihapus<br>
-            3. Status akan kembali ke "Bordir"`;
-                            break;
-
-                        case 'hasil_bordir':
-                            detail = `Apakah Anda yakin ingin membatalkan <strong>hasil bordir</strong> untuk:`;
-                            detail += `<br><strong>Produk:</strong> ${produk}`;
-                            detail += `<br><strong>Seri:</strong> ${seri}`;
-                            detail += `<br><strong>Bordir:</strong> ${bordir || '-'}`;
-                            detail += `<br><strong>Hasil Bordir:</strong> ${totalBordir} Pcs`;
-
-                            keterangan = `<i class="ti ti-info-circle"></i> 
-            <strong>Keterangan:</strong><br>
-            1. Hasil bordir akan dihapus<br>
-            2. Status akan kembali ke "Bordir"<br>
-            3. Hutang upah bordir akan dikurangi`;
-                            break;
-
-                        case 'tanggal_kirim_bordir':
-                            detail = `Apakah Anda yakin ingin membatalkan <strong>tanggal kirim bordir</strong> untuk:`;
-                            detail += `<br><strong>Produk:</strong> ${produk}`;
-                            detail += `<br><strong>Seri:</strong> ${seri}`;
-                            detail += `<br><strong>Bordir:</strong> ${bordir || '-'}`;
-
-                            keterangan = `<i class="ti ti-info-circle"></i> 
-            <strong>Keterangan:</strong><br>
-            1. Tanggal kirim bordir akan dihapus<br>
-            2. Data bordir akan dihapus<br>
-            3. Status akan kembali ke "Potong"`;
-                            break;
-
-                        case 'pemotongan':
-                            detail = `Apakah Anda yakin ingin <strong>membatalkan produksi</strong> untuk:`;
-                            detail += `<br><strong>Produk:</strong> ${produk}`;
-                            detail += `<br><strong>Seri:</strong> ${seri}`;
-                            detail += `<br><strong>Pemotong:</strong> ${pemotong || '-'}`;
-                            detail += `<br><strong>Hasil Potong:</strong> ${totalPotong} Pcs`;
-
-                            keterangan = `<i class="ti ti-info-circle"></i> 
-        <strong>Keterangan:</strong><br>
-        1. Semua data produksi akan dihapus<br>
-        2. Stok bahan baku akan dikembalikan ke gudang<br>
-        3. Hutang upah pemotong akan dikurangi<br>
-        4. Data akan hilang permanen`;
-                            break;
-                    }
-
-                    document.getElementById('batal_detail').innerHTML = detail;
-                    document.getElementById('batal_keterangan').innerHTML = keterangan;
-
-                    // Tampilkan modal
-                    console.log('Menampilkan modal batal tahap...');
-                    modalBatalTahap.show();
                 }
             });
-
-            // PERBAIKAN: Event listener untuk input upah bordir manual
-            document.getElementById('upah_per_potongan_bordir_manual')?.addEventListener('input', function() {
-                // Jika user input manual, reset dropdown
-                if (this.value) {
-                    document.getElementById('tarif_bordir_dropdown').selectedIndex = 0;
-                }
-                hitungTotalUpahBordir();
-            });
-
-            // PERBAIKAN: Event listener untuk total hasil bordir
-            document.getElementById('modal_hasil_bordir_total')?.addEventListener('input', function() {
-                hitungTotalUpahBordir();
-            });
-
-            // PERBAIKAN: Event listener untuk input upah penjahit manual
-            document.getElementById('upah_per_potongan_manual')?.addEventListener('input', function() {
-                // Jika user input manual, reset dropdown
-                if (this.value) {
-                    document.getElementById('tarif_penjahit_dropdown').selectedIndex = 0;
-                }
-                hitungTotalUpahPenjahit();
-            });
-
-            // PERBAIKAN: Event listener untuk total hasil jahit
-            document.getElementById('modal_hasil_total_jahit')?.addEventListener('input', function() {
-                hitungTotalUpahPenjahit();
-            });
-
-            // PERBAIKAN: Fungsi untuk menampilkan pesan sementara
-            function showTemporaryMessage(message, type = 'success') {
-                // Hapus pesan sebelumnya jika ada
-                const existingAlert = document.querySelector('.temp-alert');
-                if (existingAlert) {
-                    existingAlert.remove();
-                }
-
-                // Buat elemen alert baru
-                const alertDiv = document.createElement('div');
-                alertDiv.className = `alert alert-${type} temp-alert alert-dismissible fade show position-fixed`;
-                alertDiv.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 9999;
-            min-width: 300px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        `;
-
-                alertDiv.innerHTML = `
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        `;
-
-                document.body.appendChild(alertDiv);
-
-                // Otomatis hilangkan setelah 3 detik
-                setTimeout(() => {
-                    if (alertDiv.parentNode) {
-                        alertDiv.remove();
-                    }
-                }, 3000);
-            }
 
             // Tombol Print PDF
             document.getElementById('btnPrintPDF')?.addEventListener('click', function() {
@@ -2827,194 +2994,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
 
             setDefaultDateRange();
-        });
-    </script>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const atkContainer = document.getElementById('atk-container');
-            const atkCard = document.getElementById('atk-card');
-            const btnTambahAtk = document.getElementById('btnTambahAtk');
-            let atkCounter = 1;
-
-            // Fungsi untuk mengatur tampilan ATK berdasarkan tipe produk
-            function toggleAtkSection(tipeProduk) {
-                if (tipeProduk === 'mukena') {
-                    atkCard.style.display = 'block';
-                    // Set required untuk input ATK pertama
-                    const firstAtkItem = document.querySelector('.atk-item:first-child');
-                    if (firstAtkItem) {
-                        const atkNamaInput = firstAtkItem.querySelector('.atk-nama');
-                        const atkJumlahInput = firstAtkItem.querySelector('.atk-jumlah');
-                        if (atkNamaInput) atkNamaInput.required = true;
-                        if (atkJumlahInput) atkJumlahInput.required = true;
-                    }
-                } else {
-                    atkCard.style.display = 'none';
-                    // Hapus required untuk semua input ATK
-                    const allAtkNamaInputs = document.querySelectorAll('.atk-nama');
-                    const allAtkJumlahInputs = document.querySelectorAll('.atk-jumlah');
-                    allAtkNamaInputs.forEach(input => input.required = false);
-                    allAtkJumlahInputs.forEach(input => input.required = false);
-                }
-            }
-
-            // Fungsi untuk menambahkan item ATK baru
-            function tambahAtkItem() {
-                atkCounter++;
-
-                const atkItem = document.createElement('div');
-                atkItem.className = 'atk-item row mb-3';
-                atkItem.innerHTML = `
-            <div class="col-md-5">
-                <label class="form-label">Nama ATK Finishing <span class="text-danger">*</span></label>
-                <input type="text" name="atk_nama[]" class="form-control atk-nama"
-                    placeholder="Contoh: Renda, Kancing, Tali, Label, dll." required>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Jumlah <span class="text-danger">*</span></label>
-                <div class="input-group">
-                    <input type="number" name="atk_jumlah[]" class="form-control atk-jumlah"
-                        min="1" value="1" required>
-                    <span class="input-group-text">Pcs</span>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Satuan</label>
-                <select name="atk_satuan[]" class="form-control atk-satuan">
-                    <option value="meter">Meter</option>
-                    <option value="buah" selected>Buah</option>
-                    <option value="set">Set</option>
-                    <option value="roll">Roll</option>
-                    <option value="lbr">Lembar</option>
-                </select>
-            </div>
-            <div class="col-md-1 d-flex align-items-end">
-                <button type="button" class="btn btn-sm btn-danger btn-hapus-atk">
-                    <i class="ti ti-trash"></i>
-                </button>
-            </div>
-        `;
-
-                atkContainer.appendChild(atkItem);
-
-                // Tampilkan tombol hapus pada item pertama jika sudah ada lebih dari 1 item
-                if (atkCounter > 1) {
-                    const firstDeleteBtn = document.querySelector('.atk-item:first-child .btn-hapus-atk');
-                    if (firstDeleteBtn) {
-                        firstDeleteBtn.style.display = 'block';
-                    }
-                }
-            }
-
-            // Event listener untuk tombol tambah ATK
-            btnTambahAtk.addEventListener('click', tambahAtkItem);
-
-            // Event delegation untuk tombol hapus ATK
-            atkContainer.addEventListener('click', function(e) {
-                if (e.target.closest('.btn-hapus-atk')) {
-                    const atkItem = e.target.closest('.atk-item');
-                    const atkItems = document.querySelectorAll('.atk-item');
-
-                    // Hanya hapus jika ada lebih dari 1 item
-                    if (atkItems.length > 1) {
-                        atkItem.remove();
-                        atkCounter--;
-
-                        // Sembunyikan tombol hapus pada item pertama jika hanya tersisa 1 item
-                        if (atkCounter === 1) {
-                            const firstDeleteBtn = document.querySelector('.atk-item:first-child .btn-hapus-atk');
-                            if (firstDeleteBtn) {
-                                firstDeleteBtn.style.display = 'none';
-                            }
-                        }
-                    }
-                }
-            });
-
-            // Reset ATK container saat modal ditutup
-            document.getElementById('modalHasilPenjahitan')?.addEventListener('hidden.bs.modal', function() {
-                // Reset ATK container ke 1 item
-                const firstAtkItem = document.querySelector('.atk-item:first-child');
-
-                // Kosongkan container
-                if (atkContainer) {
-                    atkContainer.innerHTML = '';
-
-                    // Tambahkan kembali item pertama dengan nilai reset
-                    if (firstAtkItem) {
-                        // Clone item pertama
-                        const clonedItem = firstAtkItem.cloneNode(true);
-
-                        // Reset nilai
-                        const inputs = clonedItem.querySelectorAll('input');
-                        inputs.forEach(input => {
-                            if (input.type === 'text') {
-                                input.value = '';
-                            } else if (input.type === 'number') {
-                                input.value = '1';
-                            }
-                        });
-
-                        // Reset select
-                        const select = clonedItem.querySelector('select');
-                        if (select) {
-                            select.value = 'buah';
-                        }
-
-                        // Sembunyikan tombol hapus
-                        const deleteBtn = clonedItem.querySelector('.btn-hapus-atk');
-                        if (deleteBtn) {
-                            deleteBtn.style.display = 'none';
-                        }
-
-                        atkContainer.appendChild(clonedItem);
-                    }
-
-                    atkCounter = 1;
-                    // Sembunyikan ATK card secara default saat modal ditutup
-                    if (atkCard) {
-                        atkCard.style.display = 'none';
-                    }
-                }
-            });
-
-            // Sembunyikan ATK card secara default saat halaman dimuat
-            if (atkCard) {
-                atkCard.style.display = 'none';
-            }
-        });
-    </script>
-
-    <script>
-        // Force remove all backdrops on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            // Hapus semua backdrop yang mungkin tersisa
-            const backdrops = document.querySelectorAll('.modal-backdrop');
-            backdrops.forEach(backdrop => {
-                backdrop.remove();
-            });
-
-            // Reset body
-            document.body.classList.remove('modal-open');
-            document.body.style.overflow = '';
-            document.body.style.paddingRight = '';
-
-            // Prevent Bootstrap from creating multiple instances
-            if (typeof bootstrap !== 'undefined') {
-                // Store original Modal
-                const OriginalModal = bootstrap.Modal;
-
-                // Override to prevent multiple instances
-                bootstrap.Modal = function(element, config) {
-                    const existingModal = bootstrap.Modal.getInstance(element);
-                    if (existingModal) {
-                        existingModal.dispose();
-                    }
-                    return new OriginalModal(element, config);
-                };
-                bootstrap.Modal.prototype = OriginalModal.prototype;
-            }
         });
     </script>
 </body>

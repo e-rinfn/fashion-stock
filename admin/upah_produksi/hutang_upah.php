@@ -1,4 +1,9 @@
 <?php
+
+// Aktifkan error reporting
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 require_once '../includes/header.php';
 require_once '../../config/database.php';
 require_once '../../config/functions.php';
@@ -29,6 +34,7 @@ function bulanTahunIndo($tanggal)
 
 // Ambil data untuk filter
 $pemotong = query("SELECT * FROM pemotong ORDER BY nama_pemotong");
+$bordir = query("SELECT * FROM bordir ORDER BY nama_bordir"); // TAMBAHKAN INI
 $penjahit = query("SELECT * FROM penjahit ORDER BY nama_penjahit");
 $petugas_finishing = query("SELECT * FROM petugas_finishing ORDER BY nama_petugas");
 
@@ -43,6 +49,7 @@ $search_karyawan = isset($_GET['search_karyawan']) ? $_GET['search_karyawan'] : 
 $sql = "SELECT h.*, 
                CASE 
                    WHEN h.jenis_karyawan = 'pemotong' THEN p.nama_pemotong
+                   WHEN h.jenis_karyawan = 'bordir' THEN b.nama_bordir
                    WHEN h.jenis_karyawan = 'penjahit' THEN j.nama_penjahit
                    WHEN h.jenis_karyawan = 'finishing' THEN pf.nama_petugas
                    ELSE '-'
@@ -51,6 +58,9 @@ $sql = "SELECT h.*,
         LEFT JOIN pemotong p 
             ON h.jenis_karyawan = 'pemotong' 
            AND h.id_karyawan = p.id_pemotong
+        LEFT JOIN bordir b 
+            ON h.jenis_karyawan = 'bordir' 
+           AND h.id_karyawan = b.id_bordir
         LEFT JOIN penjahit j 
             ON h.jenis_karyawan = 'penjahit' 
            AND h.id_karyawan = j.id_penjahit
@@ -73,6 +83,7 @@ if ($jenis_karyawan !== 'all') {
 if (!empty($search_karyawan)) {
     $sql .= " AND (
         p.nama_pemotong LIKE ?
+        OR b.nama_bordir LIKE ?
         OR j.nama_penjahit LIKE ?
         OR pf.nama_petugas LIKE ?
     )";
@@ -81,6 +92,7 @@ if (!empty($search_karyawan)) {
     $params[] = $search_param;
     $params[] = $search_param;
     $params[] = $search_param;
+    $params[] = $search_param; // Tambah bordir
 }
 
 // Filter karyawan spesifik (jika menggunakan ID)
@@ -381,6 +393,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                                 $jenis_display = $h['jenis_karyawan'];
                                                 $badgeColor = match ($jenis_display) {
                                                     'pemotong' => 'warning',
+                                                    'bordir' => 'primary',
                                                     'penjahit' => 'info',
                                                     'finishing' => 'success',
                                                     default => 'secondary'
@@ -389,6 +402,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                                 // Tampilkan dengan format yang benar
                                                 $jenis_text = match ($jenis_display) {
                                                     'pemotong' => 'Pemotong',
+                                                    'bordir' => 'Bordir',
                                                     'penjahit' => 'Penjahit',
                                                     'finishing' => 'Finishing',
                                                     default => $jenis_display

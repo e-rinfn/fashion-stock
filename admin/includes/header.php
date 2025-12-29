@@ -19,7 +19,7 @@ if ($_SESSION['role'] !== 'admin') {
 <!-- [Head] start -->
 
 <head>
-    <title>irveena</title>
+    <title>Ipenk Legend</title>
     <!-- [Meta] -->
     <meta charset="utf-8" />
     <meta
@@ -36,7 +36,7 @@ if ($_SESSION['role'] !== 'admin') {
 
     <!-- [Favicon] icon -->
     <!-- <link rel="icon" href="<?= $base_url ?>assets/images/favicon.svg" type="image/x-icon" /> -->
-    <link rel="icon" type="image/x-icon" href="<?= $base_url ?>/assets/img/Logo.png" />
+    <link rel="icon" type="image/x-icon" href="<?= $base_url ?>/assets/img/Logo-Ipenk.png" />
 
 
     <!-- [Google Font] Family -->

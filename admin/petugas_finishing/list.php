@@ -42,11 +42,11 @@ if (!isLoggedIn()) {
 
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h2>Data Petugas Finishing</h2>
-                    <div>
+                    <!-- <div>
                         <a href="add.php" class="btn btn-success">
                             <i class="ti ti-circle-plus"></i> Tambah Petugas Finishing
                         </a>
-                    </div>
+                    </div> -->
                 </div>
 
 
@@ -77,7 +77,7 @@ if (!isLoggedIn()) {
                                     <th style="width: 30%;">Nama Petugas Finishing</th>
                                     <th style="width: 20%;">Kontak</th>
                                     <th style="width: 35%;">Tanggal Bergabung</th>
-                                    <th style="width: 10%;">Aksi</th>
+                                    <!-- <th style="width: 10%;">Aksi</th> -->
                                 </tr>
                             </thead>
                             <tbody>
@@ -97,7 +97,7 @@ if (!isLoggedIn()) {
                                             <td><?= htmlspecialchars($row['nama_petugas']) ?></td>
                                             <td><?= htmlspecialchars($row['kontak']) ?></td>
                                             <td class="text-end"><?= dateIndo($row['tanggal_bergabung']) ?></td>
-                                            <td class="text-center">
+                                            <!-- <td class="text-center">
                                                 <a href="edit.php?id=<?= $row['id_petugas_finishing'] ?>" class="btn btn-sm btn-primary">
                                                     <i class="ti ti-pencil"></i>
                                                 </a>
@@ -106,7 +106,7 @@ if (!isLoggedIn()) {
                                                     data-id="<?= $row['id_petugas_finishing'] ?>">
                                                     <i class="ti ti-trash"></i>
                                                 </a>
-                                            </td>
+                                            </td> -->
                                         </tr>
                                 <?php endforeach;
                                 endif; ?>

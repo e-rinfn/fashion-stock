@@ -38,14 +38,11 @@ $penjahit = query($sql);
 
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h2>Data Penjahit</h2>
-                    <div>
-                        <!-- <a href="biaya_upah_penjahit.php" class="btn btn-warning">
-                            <i class="ti ti-report-money"></i> Upah Penjahit
-                        </a> -->
+                    <!-- <div>
                         <a href="add.php" class="btn btn-success">
                             <i class="ti ti-circle-plus"></i> Tambah Penjahit
                         </a>
-                    </div>
+                    </div> -->
                 </div>
 
 
@@ -74,7 +71,7 @@ $penjahit = query($sql);
                                     <th style="width: 30%;">Nama Penjahit</th>
                                     <th style="width: 20%;">Kontak</th>
                                     <th style="width: 35%;">Alamat</th>
-                                    <th style="width: 10%;">Aksi</th>
+                                    <!-- <th style="width: 10%;">Aksi</th> -->
                                 </tr>
                             </thead>
                             <tbody>
@@ -90,7 +87,7 @@ $penjahit = query($sql);
                                             <td><?= htmlspecialchars($pj['nama_penjahit']) ?></td>
                                             <td><?= htmlspecialchars($pj['kontak']) ?></td>
                                             <td><?= htmlspecialchars($pj['alamat']) ?></td>
-                                            <td class="text-center">
+                                            <!-- <td class="text-center">
                                                 <a href="edit.php?id=<?= $pj['id_penjahit'] ?>" class="btn btn-sm btn-primary">
                                                     <i class="ti ti-pencil"></i>
                                                 </a>
@@ -99,7 +96,7 @@ $penjahit = query($sql);
                                                     data-id="<?= $pj['id_penjahit'] ?>">
                                                     <i class="ti ti-trash"></i>
                                                 </a>
-                                            </td>
+                                            </td> -->
                                         </tr>
                                     <?php endforeach; ?>
                                 <?php endif; ?>

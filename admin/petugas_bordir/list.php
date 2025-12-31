@@ -42,11 +42,11 @@ if (!isLoggedIn()) {
 
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h2>Data Bordir</h2>
-                    <div>
+                    <!-- <div>
                         <a href="add.php" class="btn btn-success">
                             <i class="ti ti-circle-plus"></i> Tambah Bordir
                         </a>
-                    </div>
+                    </div> -->
                 </div>
 
 
@@ -78,7 +78,7 @@ if (!isLoggedIn()) {
                                     <th style="width: 30%;">Alamat</th>
                                     <th style="width: 15%;">Telepon</th>
                                     <th style="width: 15%;">Tanggal Dibuat</th>
-                                    <th style="width: 15%;">Aksi</th>
+                                    <!-- <th style="width: 15%;">Aksi</th> -->
                                 </tr>
 
                             </thead>
@@ -100,7 +100,7 @@ if (!isLoggedIn()) {
                                             <td><?= htmlspecialchars($row['alamat']) ?></td>
                                             <td><?= htmlspecialchars($row['telepon']) ?></td>
                                             <td class="text-center"><?= date('d/m/Y', strtotime($row['created_at'])) ?></td>
-                                            <td class="text-center">
+                                            <!-- <td class="text-center">
                                                 <a href="edit.php?id=<?= $row['id_bordir'] ?>" class="btn btn-sm btn-primary">
                                                     <i class="ti ti-pencil"></i>
                                                 </a>
@@ -109,7 +109,7 @@ if (!isLoggedIn()) {
                                                     data-id="<?= $row['id_bordir'] ?>">
                                                     <i class="ti ti-trash"></i>
                                                 </a>
-                                            </td>
+                                            </td> -->
 
                                         </tr>
                                 <?php endforeach;

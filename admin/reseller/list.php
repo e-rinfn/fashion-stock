@@ -35,11 +35,11 @@ require_once '../../config/functions.php';
 
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h2>Data Reseller</h2>
-                    <div>
+                    <!-- <div>
                         <a href="add.php" class="btn btn-success">
                             <i class="ti ti-circle-plus"></i> Tambah Reseller
                         </a>
-                    </div>
+                    </div> -->
                 </div>
 
 
@@ -70,7 +70,7 @@ require_once '../../config/functions.php';
                                     <th style="width: 30%;">Nama Reseller</th>
                                     <th style="width: 20%;">Kontak</th>
                                     <th style="width: 35%;">Tanggal Bergabung</th>
-                                    <th style="width: 10%;">Aksi</th>
+                                    <!-- <th style="width: 10%;">Aksi</th> -->
                                 </tr>
                             </thead>
                             <tbody>
@@ -90,14 +90,14 @@ require_once '../../config/functions.php';
                                             <td><?= htmlspecialchars($row['nama_reseller']) ?></td>
                                             <td><?= htmlspecialchars($row['kontak']) ?></td>
                                             <td class="text-end"><?= dateIndo($row['tanggal_bergabung']) ?></td>
-                                            <td class="text-center">
+                                            <!-- <td class="text-center">
                                                 <a href="edit.php?id=<?= $row['id_reseller'] ?>" class="btn btn-sm btn-primary">
                                                     <i class="ti ti-pencil"></i>
                                                 </a>
                                                 <a href="#" class="btn btn-sm btn-danger btn-delete" data-id="<?= $row['id_reseller'] ?>">
                                                     <i class="ti ti-trash"></i>
                                                 </a>
-                                            </td>
+                                            </td> -->
                                         </tr>
                                     <?php endforeach; ?>
                                 <?php endif; ?>

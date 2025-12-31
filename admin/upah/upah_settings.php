@@ -111,7 +111,7 @@ if (isset($_GET['hapus'])) {
                                     <th style="width: 15%;">Tarif per Unit</th>
                                     <th style="width: 15%;">Berlaku Sejak</th>
                                     <th style="width: 35%;">Keterangan</th>
-                                    <th style="width: 10%;">Aksi</th>
+                                    <!-- <th style="width: 10%;">Aksi</th> -->
                                 </tr>
                             </thead>
                             <tbody>
@@ -145,13 +145,13 @@ if (isset($_GET['hapus'])) {
                                         <td><?= formatRupiah($tarif['tarif_per_unit']) ?></td>
                                         <td><?= dateIndo($tarif['berlaku_sejak']) ?></td>
                                         <td><?= htmlspecialchars($tarif['keterangan'] ?? '-') ?></td>
-                                        <td class="text-center">
+                                        <!-- <td class="text-center">
                                             <a href="upah_settings.php?hapus=<?= $tarif['id_tarif'] ?>"
                                                 class="btn btn-sm btn-danger btn-hapus"
                                                 data-id="<?= $tarif['id_tarif'] ?>">
                                                 <i class="ti ti-trash"></i>
                                             </a>
-                                        </td>
+                                        </td> -->
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>

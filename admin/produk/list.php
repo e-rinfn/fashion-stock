@@ -38,11 +38,11 @@ $produk = query($sql);
 
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h2>Data Produk</h2>
-                    <div>
+                    <!-- <div>
                         <a href="add.php" class="btn btn-success">
                             <i class="ti ti-circle-plus"></i> Tambah Produk
                         </a>
-                    </div>
+                    </div> -->
                 </div>
 
 
@@ -74,7 +74,7 @@ $produk = query($sql);
                                     <th style="width: 20%;">Tipe Produk</th>
                                     <th style="width: 20%;">Stok (Pcs)</th>
                                     <th style="width: 15%;">Harga Per Pcs</th>
-                                    <th style="width: 10%;">Aksi</th>
+                                    <!-- <th style="width: 10%;">Aksi</th> -->
                                 </tr>
                             </thead>
                             <tbody>
@@ -92,7 +92,7 @@ $produk = query($sql);
                                             <td class="text-end"><?= $p['stok'] ?></td>
                                             <td class="text-end"><?= formatRupiah($p['harga_jual']) ?></td>
                                             <!-- <td><?= htmlspecialchars(substr($p['deskripsi'], 0, 50)) ?>...</td> -->
-                                            <td>
+                                            <!-- <td>
                                                 <div class="text-center">
                                                     <a href="edit.php?id=<?= $p['id_produk'] ?>" class="btn btn-sm btn-primary">
                                                         <i class="ti ti-pencil"></i>
@@ -103,7 +103,7 @@ $produk = query($sql);
                                                         <i class="ti ti-trash"></i>
                                                     </a>
                                                 </div>
-                                            </td>
+                                            </td> -->
                                         </tr>
                                     <?php endforeach; ?>
                                 <?php endif; ?>

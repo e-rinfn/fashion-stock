@@ -51,11 +51,11 @@ $bahan_baku = query($sql);
 
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h2>Data Bahan Baku</h2>
-                    <div>
+                    <!-- <div>
                         <a href="add.php" class="btn btn-success">
                             <i class="ti ti-circle-plus"></i> Tambah Bahan Baku
                         </a>
-                    </div>
+                    </div> -->
                 </div>
 
 
@@ -82,7 +82,7 @@ $bahan_baku = query($sql);
                                     <th colspan="2" style="width: 20%;">Stok</th>
                                     <th style="width: 15%;">Total (Meter)</th>
                                     <th style="width: 20%;">Harga Per Meter</th>
-                                    <th style="width: 10%;">Aksi</th>
+                                    <!-- <th style="width: 10%;">Aksi</th> -->
                                 </tr>
                             </thead>
                             <tbody>
@@ -100,7 +100,7 @@ $bahan_baku = query($sql);
                                             <td><?= htmlspecialchars($bahan['satuan']); ?></td>
                                             <td class="text-end"><?= number_format($bahan['jumlah_meter']); ?></td>
                                             <td class="text-end"><?= formatRupiah($bahan['harga_per_satuan']); ?></td>
-                                            <td class="text-center">
+                                            <!-- <td class="text-center">
                                                 <a href="edit.php?id=<?= $bahan['id_bahan']; ?>" class="btn btn-primary btn-sm">
                                                     <i class="ti ti-pencil"></i>
                                                 </a>
@@ -109,7 +109,7 @@ $bahan_baku = query($sql);
                                                     data-id="<?= $bahan['id_bahan']; ?>">
                                                     <i class="ti ti-trash"></i>
                                                 </a>
-                                            </td>
+                                            </td> -->
                                         </tr>
                                     <?php endforeach; ?>
                                 <?php endif; ?>

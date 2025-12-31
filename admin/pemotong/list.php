@@ -38,14 +38,11 @@ $pemotong = query($sql);
 
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h2>Data Pemotong</h2>
-                    <div>
-                        <!-- <a href="biaya_upah_pemotong.php" class="btn btn-warning">
-                            <i class="ti ti-report-money"></i> Upah Pemotong
-                        </a> -->
+                    <!-- <div>
                         <a href="add.php" class="btn btn-success">
                             <i class="ti ti-circle-plus"></i> Tambah Pemotong
                         </a>
-                    </div>
+                    </div> -->
                 </div>
 
 
@@ -76,7 +73,7 @@ $pemotong = query($sql);
                                     <th style="width: 30%;">Nama Pemotong</th>
                                     <th style="width: 20%;">Kontak</th>
                                     <th style="width: 35%;">Alamat</th>
-                                    <th style="width: 10%;">Aksi</th>
+                                    <!-- <th style="width: 10%;">Aksi</th> -->
                                 </tr>
                             </thead>
                             <tbody>
@@ -92,7 +89,7 @@ $pemotong = query($sql);
                                             <td><?= htmlspecialchars($ptg['nama_pemotong']); ?></td>
                                             <td><?= htmlspecialchars($ptg['kontak']); ?></td>
                                             <td><?= htmlspecialchars($ptg['alamat']); ?></td>
-                                            <td class="text-center">
+                                            <!-- <td class="text-center">
                                                 <a href="edit.php?id=<?= $ptg['id_pemotong']; ?>" class="btn btn-sm btn-primary">
                                                     <i class="ti ti-pencil"></i>
                                                 </a>
@@ -101,7 +98,7 @@ $pemotong = query($sql);
                                                     data-id="<?= $ptg['id_pemotong']; ?>">
                                                     <i class="ti ti-trash"></i>
                                                 </a>
-                                            </td>
+                                            </td> -->
                                         </tr>
                                     <?php endforeach; ?>
                                 <?php endif; ?>

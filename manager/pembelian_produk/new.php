@@ -2,8 +2,7 @@
 require_once '../includes/header.php';
 require_once '../../config/database.php';
 require_once '../../config/functions.php';
-// redirectIfNotLoggedIn();
-// checkRole('admin');
+
 
 $produk = query("SELECT * FROM produk ORDER BY nama_produk");
 $supplier = query("SELECT * FROM supplier ORDER BY nama_supplier");

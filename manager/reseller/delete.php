@@ -1,8 +1,7 @@
 <?php
 require_once '../../config/database.php';
 require_once '../../config/functions.php';
-// redirectIfNotLoggedIn();
-// checkRole('admin');
+
 
 $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 

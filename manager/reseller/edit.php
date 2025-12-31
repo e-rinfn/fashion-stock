@@ -1,8 +1,7 @@
 <?php
 require_once '../../config/database.php';
 require_once '../../config/functions.php';
-// redirectIfNotLoggedIn();
-// checkRole('admin');
+
 
 require_once '../includes/header.php';
 

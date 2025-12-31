@@ -2,8 +2,7 @@
 require_once '../includes/header.php';
 require_once '../../config/database.php';
 require_once '../../config/functions.php';
-// redirectIfNotLoggedIn();
-// checkRole('admin');
+
 
 $bahan = query("SELECT *, COALESCE(jumlah_meter, 0) as jumlah_meter, COALESCE(meter_per_roll, 0) as meter_per_roll FROM bahan_baku WHERE jumlah_stok > 0 ORDER BY nama_bahan");
 $reseller = query("SELECT * FROM reseller ORDER BY nama_reseller");

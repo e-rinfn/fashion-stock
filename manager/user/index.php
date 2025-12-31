@@ -3,12 +3,6 @@ require_once '../includes/header.php';
 // require_once '../config/functions.php';
 
 
-// Cek role admin
-if ($_SESSION['role'] != 'admin') {
-    header("Location: ../../index.php");
-    exit();
-}
-
 // Query semua users
 $users = query("SELECT * FROM users ORDER BY role, username");
 ?>

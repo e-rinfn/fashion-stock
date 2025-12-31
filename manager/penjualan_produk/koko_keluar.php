@@ -2,8 +2,7 @@
 require_once '../includes/header.php';
 require_once '../../config/database.php';
 require_once '../../config/functions.php';
-// redirectIfNotLoggedIn();
-// checkRole('admin');
+
 
 $koko = query("SELECT * FROM koko WHERE stok > 0 ORDER BY nama_koko");
 $petugas_finishing = query("SELECT * FROM petugas_finishing ORDER BY nama_petugas");

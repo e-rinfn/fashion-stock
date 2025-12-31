@@ -46,8 +46,12 @@ if (isset($_POST['login'])) {
       // Redirect berdasarkan role
       if ($user['role'] == 'admin') {
         header("Location: ../admin/index.php");
-      } else {
+      } elseif ($user['role'] == 'owner') {
         header("Location: ../owner/index.php");
+      } elseif ($user['role'] == 'manager') {
+        header("Location: ../manager/index.php");
+      } else {
+        header("Location: ../user/index.php");
       }
       exit();
     } else {

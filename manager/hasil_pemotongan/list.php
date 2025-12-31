@@ -786,9 +786,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     // Validasi khusus ATK
                     if ($tipe_produk == 'mukena') {
                         if (empty($atk_nama[0])) { // minimal 1
-                             // Rollback jika gagal validasi
-                             $conn->query("UPDATE hasil_potong_fix SET id_penjahit = NULL, tanggal_kirim_jahit = NULL, status_potong = 'bordir' WHERE id_hasil_potong_fix = $id_hasil_potong_fix");
-                             throw new Exception("Minimal satu ATK finishing harus diisi untuk produk mukena!");
+                            // Rollback jika gagal validasi
+                            $conn->query("UPDATE hasil_potong_fix SET id_penjahit = NULL, tanggal_kirim_jahit = NULL, status_potong = 'bordir' WHERE id_hasil_potong_fix = $id_hasil_potong_fix");
+                            throw new Exception("Minimal satu ATK finishing harus diisi untuk produk mukena!");
                         }
 
                         $atk_data = [];
@@ -804,18 +804,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                         // Simpan ATK finishing ke database
                         foreach ($atk_data as $atk) {
-                             $sql_atk = "INSERT INTO atk_finishing (id_hasil_potong_fix, nama_atk, jumlah, satuan, created_at) 
+                            $sql_atk = "INSERT INTO atk_finishing (id_hasil_potong_fix, nama_atk, jumlah, satuan, created_at) 
                                          VALUES (?, ?, ?, ?, NOW())";
-                             $stmt_atk = $conn->prepare($sql_atk);
-                             $stmt_atk->bind_param("isis", $id_hasil_potong_fix, $atk['nama'], $atk['jumlah'], $atk['satuan']);
-                             if (!$stmt_atk->execute()) {
-                                 // Rollback manual (hapus yang sudah masuk) - idealnya pakai transaction tapi ini di luar try-catch transaction blok atas
-                                 // karena logic existing tidak pakai transaction full di sini.
-                                 // Tapi demi keamanan kita delete atk yang sudah masuk dan rollback status
-                                 $conn->query("DELETE FROM atk_finishing WHERE id_hasil_potong_fix = $id_hasil_potong_fix");
-                                 $conn->query("UPDATE hasil_potong_fix SET id_penjahit = NULL, tanggal_kirim_jahit = NULL, status_potong = 'bordir' WHERE id_hasil_potong_fix = $id_hasil_potong_fix");
-                                 throw new Exception("Gagal menyimpan ATK finishing: " . $stmt_atk->error);
-                             }
+                            $stmt_atk = $conn->prepare($sql_atk);
+                            $stmt_atk->bind_param("isis", $id_hasil_potong_fix, $atk['nama'], $atk['jumlah'], $atk['satuan']);
+                            if (!$stmt_atk->execute()) {
+                                // Rollback manual (hapus yang sudah masuk) - idealnya pakai transaction tapi ini di luar try-catch transaction blok atas
+                                // karena logic existing tidak pakai transaction full di sini.
+                                // Tapi demi keamanan kita delete atk yang sudah masuk dan rollback status
+                                $conn->query("DELETE FROM atk_finishing WHERE id_hasil_potong_fix = $id_hasil_potong_fix");
+                                $conn->query("UPDATE hasil_potong_fix SET id_penjahit = NULL, tanggal_kirim_jahit = NULL, status_potong = 'bordir' WHERE id_hasil_potong_fix = $id_hasil_potong_fix");
+                                throw new Exception("Gagal menyimpan ATK finishing: " . $stmt_atk->error);
+                            }
                         }
                     }
 
@@ -2100,7 +2100,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     <!-- Modal Input Tanggal Kirim Jahit -->
     <div class="modal fade" id="modalTanggalPenjahitan" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Input Tanggal Kirim Penjahitan</h5>
@@ -2520,7 +2520,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     const seri = button.getAttribute('data-seri');
                     const totalPotong = button.getAttribute('data-total-potong');
                     const totalBordir = button.getAttribute('data-total-bordir') || 0;
-                    
+
                     // AMBIL TIPE PRODUK dari tombol
                     const tipeProduk = button.getAttribute('data-tipe-produk');
 
@@ -2904,7 +2904,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <div class="input-group">
                     <input type="number" name="atk_jumlah[]" class="form-control atk-jumlah"
                         min="1" value="1" required>
-                    <span class="input-group-text">Pcs</span>
                 </div>
             </div>
             <div class="col-md-3">

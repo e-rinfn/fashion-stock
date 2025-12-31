@@ -653,7 +653,7 @@ switch ($produksi['status_potong']) {
                         </div>
                         <div class="col-md-6">
                             <!-- ATK Finishing yang Digunakan -->
-                            <?php if ($has_atk_finishing && in_array($produksi['status_potong'], ['selesai'])): ?>
+                            <?php if ($has_atk_finishing && in_array($produksi['status_potong'], ['penjahitan', 'selesai'])): ?>
                                 <div class="row mb-3">
                                     <div class="col-lg-12">
                                         <div class="card shadow-sm">
@@ -712,7 +712,7 @@ switch ($produksi['status_potong']) {
                                         </div>
                                     </div>
                                 </div>
-                            <?php elseif (in_array($produksi['status_potong'], ['penjahitan'])): ?>
+                            <?php elseif (in_array($produksi['status_potong'], ['penjahitan']) && !$has_atk_finishing): ?>
                                 <!-- Status Penjahitan (belum ada ATK) -->
                                 <div class="row g-3 mb-3">
                                     <div class="col-lg-12">

@@ -153,7 +153,12 @@ function isActive($path)
                     <label>LAOPORAN</label>
                     <i class="ti ti-dashboard"></i>
                 </li>
-
+                <li class="pc-item <?= isActive('/hpp') ?>">
+                    <a href="<?= $base_url ?>/manager/hpp/hpp_calculation.php" class="pc-link">
+                        <span class="pc-micon"><i class="ti ti-calculator"></i></span>
+                        <span class="pc-mtext">HPP Penjualan Produk</span>
+                    </a>
+                </li>
                 <li class="pc-item <?= isActive('/kas') ?>">
                     <a href="<?= $base_url ?>/manager/kas/kas.php" class="pc-link">
                         <span class="pc-micon"><i class="ti ti-zoom-money"></i></span>

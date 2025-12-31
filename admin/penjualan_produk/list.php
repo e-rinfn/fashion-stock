@@ -286,9 +286,6 @@ $chart_data = json_encode($penjualan_per_bulan);
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h2>DATA PENJUALAN PRODUK</h2>
                         <div>
-                            <a href="hpp_calculation.php" class="btn btn-info">
-                                <i class="ti ti-file"></i> HPP
-                            </a>
                             <a href="new.php" class="btn btn-success">
                                 <i class="ti ti-file-plus"></i> Tambah Pesanan
                             </a>

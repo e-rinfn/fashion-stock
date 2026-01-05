@@ -1297,7 +1297,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <!-- Baris 1: Filter Dropdown -->
                             <div class="row g-3 mb-3">
                                 <div class="col-md-3">
-                                    <label class="form-label">Filter Produk</label>
+                                    <label class="form-label">Produk</label>
                                     <select name="id_produk" class="form-select">
                                         <option value="0">Semua Produk</option>
                                         <?php foreach ($produk as $p): ?>
@@ -1309,7 +1309,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 </div>
 
                                 <div class="col-md-2">
-                                    <label class="form-label">Filter Pemotong</label>
+                                    <label class="form-label">Pemotong</label>
                                     <select name="id_pemotong" class="form-select">
                                         <option value="0">Semua Pemotong</option>
                                         <?php foreach ($pemotong as $pm): ?>
@@ -1321,7 +1321,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 </div>
 
                                 <div class="col-md-2">
-                                    <label class="form-label">Filter Bordir</label>
+                                    <label class="form-label">Bordir</label>
                                     <select name="id_bordir" class="form-select">
                                         <option value="0">Semua Bordir</option>
                                         <?php foreach ($bordir as $br): ?>
@@ -1333,7 +1333,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 </div>
 
                                 <div class="col-md-2">
-                                    <label class="form-label">Filter Penjahit</label>
+                                    <label class="form-label">Penjahit</label>
                                     <select name="id_penjahit" class="form-select">
                                         <option value="0">Semua Penjahit</option>
                                         <?php foreach ($penjahit as $pj): ?>
@@ -1345,7 +1345,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 </div>
 
                                 <div class="col-md-3">
-                                    <label class="form-label">Filter Status</label>
+                                    <label class="form-label">Status</label>
                                     <select name="status" class="form-select">
                                         <option value="all" <?= ($status == 'all') ? 'selected' : '' ?>>Semua Status</option>
                                         <option value="diproses" <?= ($status == 'diproses') ? 'selected' : '' ?>>Potong</option>

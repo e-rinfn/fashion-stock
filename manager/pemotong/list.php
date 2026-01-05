@@ -39,9 +39,9 @@ $pemotong = query($sql);
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h2>Data Pemotong</h2>
                     <div>
-                        <!-- <a href="biaya_upah_pemotong.php" class="btn btn-warning">
-                            <i class="ti ti-report-money"></i> Upah Pemotong
-                        </a> -->
+                        <a href="<?= $base_url ?>/manager/master_data.php" class="btn btn-secondary">
+                            <i class="ti ti-arrow-left"></i> Kembali
+                        </a>
                         <a href="add.php" class="btn btn-success">
                             <i class="ti ti-circle-plus"></i> Tambah Pemotong
                         </a>

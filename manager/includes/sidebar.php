@@ -12,7 +12,7 @@ function isActive($path)
 
 <!-- [ Sidebar Menu ] start -->
 <nav class="pc-sidebar">
-    <div class="navbar-wrapper">
+    <div class="navbar-wrapper mb-5">
         <div class="p-3">
             <a href="<?= $base_url ?>/manager/index.php"
                 class="b-brand text-primary d-inline-flex align-items-center gap-2 text-decoration-none">
@@ -28,7 +28,7 @@ function isActive($path)
                 <span class="fw-bold fs-5 text-dark">IPENK LEGEND <br>INVENTORY STOCK</span>
             </a>
         </div>
-        <hr>
+
         <div class="navbar-content">
             <ul class="pc-navbar <?= isActive('/manager/index.php') ?>">
                 <li class="pc-item">
@@ -38,7 +38,7 @@ function isActive($path)
                     </a>
                 </li>
 
-                <li class="pc-item pc-caption">
+                <!-- <li class="pc-item pc-caption">
                     <label>MASTER DATA</label>
                     <i class="ti ti-dashboard"></i>
                 </li>
@@ -70,14 +70,12 @@ function isActive($path)
                         <li class="pc-item <?= isActive('/manager/supplier') ?>">
                             <a class="pc-link" href="<?= $base_url ?>/manager/supplier/list.php">Supplier</a>
                         </li>
-                        <!-- <li class="pc-item <?= isActive('/manager/upah') ?>">
-                            <a class="pc-link" href="<?= $base_url ?>/manager/upah/index.php">Tarif Upah</a>
-                        </li> -->
+
                         <li class="pc-item <?= isActive('/manager/upah') ?>">
                             <a class="pc-link" href="<?= $base_url ?>/manager/upah/upah_settings.php">Tarif Upah</a>
                         </li>
                     </ul>
-                </li>
+                </li> -->
 
                 <li class="pc-item pc-hasmenu">
                     <a href="#!" class="pc-link"><span class="pc-micon"><i class="ti ti-layout-2"></i></span><span class="pc-mtext">Stok</span><span class="pc-arrow"><i data-feather="chevron-right"></i></span></a>
@@ -94,6 +92,13 @@ function isActive($path)
                     </ul>
                 </li>
 
+                <!-- <li class="pc-item <?= isActive('/stok') ?>">
+                    <a href="<?= $base_url ?>/manager/stok.php" class="pc-link">
+                        <span class="pc-micon"><i class="ti ti-layout-2"></i></span>
+                        <span class="pc-mtext">Stok</span>
+                    </a>
+                </li> -->
+
                 <li class="pc-item pc-caption">
                     <label>PRODUKSI</label>
                     <i class="ti ti-dashboard"></i>
@@ -108,7 +113,7 @@ function isActive($path)
 
                 <li class="pc-item <?= isActive('/finishing_koko') ?>">
                     <a href="<?= $base_url ?>/manager/finishing_koko/finishing.php" class="pc-link">
-                        <span class="pc-micon"><i class="ti ti-settings"></i></span>
+                        <span class="pc-micon"><i class="ti ti-shirt"></i></span>
                         <span class="pc-mtext">Finishing Koko</span>
                     </a>
                 </li>
@@ -153,12 +158,12 @@ function isActive($path)
                     <label>LAOPORAN</label>
                     <i class="ti ti-dashboard"></i>
                 </li>
-                <li class="pc-item <?= isActive('/hpp') ?>">
+                <!-- <li class="pc-item <?= isActive('/hpp') ?>">
                     <a href="<?= $base_url ?>/manager/hpp/hpp_calculation.php" class="pc-link">
                         <span class="pc-micon"><i class="ti ti-calculator"></i></span>
                         <span class="pc-mtext">HPP Penjualan Produk</span>
                     </a>
-                </li>
+                </li> -->
                 <li class="pc-item <?= isActive('/kas') ?>">
                     <a href="<?= $base_url ?>/manager/kas/kas.php" class="pc-link">
                         <span class="pc-micon"><i class="ti ti-zoom-money"></i></span>

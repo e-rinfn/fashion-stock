@@ -44,11 +44,7 @@ require_once './includes/header.php';
                                     $total_bahan = $result[0]['total'];
                                     ?>
                                     <h3 class="card-title mb-2"><?= $total_bahan ?></h3>
-                                    <div class="d-flex justify-content-end">
-                                        <a href="bahan_baku/list.php" class="btn btn-sm btn-outline-primary">
-                                            <i class="bx bx-show-alt me-1"></i> Lihat
-                                        </a>
-                                    </div>
+
                                 </div>
 
                             </div>
@@ -68,11 +64,7 @@ require_once './includes/header.php';
                                     $total_produk = $result[0]['total'];
                                     ?>
                                     <h3 class="card-title text-nowrap mb-2"><?= $total_produk ?></h3>
-                                    <div class="d-flex justify-content-end">
-                                        <a href="produk/list.php" class="btn btn-sm btn-outline-success">
-                                            <i class="bx bx-show-alt me-1"></i> Lihat
-                                        </a>
-                                    </div>
+
                                 </div>
 
                             </div>

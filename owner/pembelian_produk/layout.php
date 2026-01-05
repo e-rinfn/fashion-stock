@@ -616,11 +616,12 @@ if (!empty($detail_pembelian)) {
                                                     <tr class="table-active">
                                                         <td>
                                                             <div class="fw-bold"><?= dateIndo($item['tanggal_pembelian']) ?></div>
-                                                            <small class="text-muted">ID Transaksi: <?= $item['id_pembelian'] ?></small>
-
                                                         </td>
                                                         <td colspan="2">
                                                             <div class="fw-bold"><?= htmlspecialchars($item['nama_supplier']) ?></div>
+                                                            <?php if (!empty($item['metode_pembayaran'])): ?>
+                                                                <small class="text-muted"><?= ucfirst($item['metode_pembayaran']) ?></small>
+                                                            <?php endif; ?>
                                                         </td>
                                                         <td colspan="2"></td>
                                                         <td></td>

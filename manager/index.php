@@ -84,14 +84,17 @@ require_once './includes/header.php';
                         <div class="d-flex align-items-end row">
                             <div class="col-sm-12">
                                 <div class="card-body">
-                                    <h5 class="card-title text-primary">Selamat Datang, Manager</h5>
+                                    <h5 class="card-title text-danger">Selamat Datang, Manager</h5>
                                     <p class="mb-4" style="text-align: justify;">
-                                        Selamat datang di dashboard aplikasi. Melalui halaman ini, Anda dapat mengelola data, memantau
-                                        aktivitas, dan mengatur berbagai fitur. Silakan gunakan menu yang tersedia untuk mengakses informasi
-                                        dalam melakukan pengelolaan sistem secara efisien.
+                                        Selamat datang di dashboard sistem manajemen produksi Mukena dan Koko.
+                                        Melalui halaman ini, Anda dapat memantau proses produksi, mengelola data
+                                        pembelian bahan, penjualan produk, serta mengawasi arus kas dan laporan
+                                        keuangan. Gunakan menu yang tersedia untuk memastikan setiap aktivitas
+                                        operasional berjalan secara terkontrol, efisien, dan terdokumentasi dengan baik.
                                     </p>
                                 </div>
                             </div>
+
                             <!-- <div class="col-sm-3 text-center text-sm-left">
                                             <div class="card-body pb-0 px-0 px-md-4">
                                                 <img

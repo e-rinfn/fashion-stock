@@ -262,7 +262,13 @@ if ($periode_id > 0) {
             <div class="row">
                 <div class="col-12">
                     <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h2>Perhitungan HPP (Harga Pokok Produksi)</h2>
+                        <h2>PERHITUNGAN HPP (HARGA POKOK PRODUKSI)</h2>
+                        <div>
+                            <a href="list.php" class="btn btn-secondary">
+                                <i class="ti ti-arrow-back"></i> Kembali
+                            </a>
+
+                        </div>
                     </div>
 
                     <!-- Period Selector -->
@@ -479,7 +485,7 @@ if ($periode_id > 0) {
                                         <div class="card-body">
                                             <table class="table table-bordered mb-0">
                                                 <tr>
-                                                    <td width="70%"><strong>Total Penjualan Produk</strong></td>
+                                                    <td width="70%"><strong>Total Penjualan</strong></td>
                                                     <td class="text-end"><?= formatRupiah($total_penjualan) ?></td>
                                                 </tr>
                                                 <tr>

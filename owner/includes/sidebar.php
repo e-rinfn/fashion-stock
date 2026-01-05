@@ -94,8 +94,14 @@ function isActive($path)
                 </li>
 
                 <li class="pc-item pc-caption">
-                    <label>LAPORAN</label>
+                    <label>LAOPORAN</label>
                     <i class="ti ti-dashboard"></i>
+                </li>
+                <li class="pc-item <?= isActive('/hpp') ?>">
+                    <a href="<?= $base_url ?>/owner/hpp/hpp_calculation.php" class="pc-link">
+                        <span class="pc-micon"><i class="ti ti-calculator"></i></span>
+                        <span class="pc-mtext">HPP Penjualan Produk</span>
+                    </a>
                 </li>
 
                 <li class="pc-item <?= isActive('/upah') ?>">

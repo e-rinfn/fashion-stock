@@ -299,29 +299,7 @@ while ($row = $result_detail->fetch_assoc()) {
     <?php include_once '../includes/sidebar.php'; ?>
     <!-- Sidebar End -->
 
-    <!-- [ Header Topbar ] start -->
-    <header class="pc-header">
-        <div class="header-wrapper">
-            <!-- [Mobile Media Block] start -->
-            <div class="me-auto pc-mob-drp">
-                <ul class="list-unstyled">
-                    <!-- ======= Menu collapse Icon ===== -->
-                    <li class="pc-h-item pc-sidebar-collapse">
-                        <a href="#" class="pc-head-link ms-0" id="sidebar-hide">
-                            <i class="ti ti-menu-2"></i>
-                        </a>
-                    </li>
-                    <li class="pc-h-item pc-sidebar-popup">
-                        <a href="#" class="pc-head-link ms-0" id="mobile-collapse">
-                            <i class="ti ti-menu-2"></i>
-                        </a>
-                    </li>
-                </ul>
-            </div>
-            <!-- [Mobile Media Block end] -->
-        </div>
-    </header>
-    <!-- [ Header ] end -->
+    <?php include_once '../includes/navbar.php'; ?>
 
     <!-- [ Main Content ] start -->
     <div class="pc-container">
@@ -812,7 +790,7 @@ while ($row = $result_detail->fetch_assoc()) {
     <?php include '../includes/footer.php'; ?>
 
     <!-- Bootstrap 5 JS Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script> -->
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- SweetAlert2 -->

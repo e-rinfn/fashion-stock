@@ -281,6 +281,9 @@ $total_cicilan_info = $cicilan_info['total'] ?? 0;
                                 <div class="card-header">
                                     <div class="d-flex justify-content-between">
                                         <h3>Daftar Produk</h3>
+                                        <a href="nota.php?id=<?= $id_penjualan ?>" class="btn btn-danger" target="_blank">
+                                            <i class="bx bx-printer"></i> Cetak Nota
+                                        </a>
                                     </div>
                                 </div>
 
@@ -291,7 +294,7 @@ $total_cicilan_info = $cicilan_info['total'] ?? 0;
                                                 <th>No</th>
                                                 <th>Produk</th>
                                                 <th>Harga Satuan</th>
-                                                <th>Pcs</th>
+                                                <th>Qty</th>
                                                 <th>Subtotal</th>
                                             </tr>
                                         </thead>
@@ -317,8 +320,58 @@ $total_cicilan_info = $cicilan_info['total'] ?? 0;
                             </div>
                         </div>
                         <hr>
+                        <div class="col-md-5">
+                            <div class="card">
+                                <div class="card-header text-center">
+                                    <h3>Tambah Pembayaran</h3>
+                                    <hr>
+                                </div>
+                                <div class="card-body">
+                                    <form method="post" enctype="multipart/form-data">
+                                        <div class="form-group">
+                                            <label>Jumlah Dibayarkan</label>
+                                            <input type="text" name="jumlah" class="form-control money"
+                                                placeholder="Masukkan jumlah" required
+                                                value="0"
+                                                data-sisa-hutang="<?= $sisa_hutang ?>"
+                                                max="<?= $sisa_hutang ?>">
+                                            <small class="text-muted">Sisa hutang: <?= formatRupiah($sisa_hutang) ?></small>
+                                            <div class="invalid-feedback" id="jumlah-error">
+                                                Jumlah tidak boleh melebihi sisa hutang <?= formatRupiah($sisa_hutang) ?>
+                                            </div>
+                                        </div>
+                                        <div class="form-group mt-3">
+                                            <label>Tanggal Pembayaran <span class="text-danger">(Bulan/Tanggal/Tahun)</span></label>
+                                            <input type="date" name="tanggal" class="form-control"
+                                                value="<?= date('Y-m-d') ?>" required>
+                                        </div>
+                                        <div class="form-group mt-3">
+                                            <label>Metode Pembayaran</label>
+                                            <select name="metode" class="form-control" required>
+                                                <option value="transfer">Transfer Bank</option>
+                                                <option value="tunai">Tunai</option>
+                                                <option value="e-wallet">E-Wallet</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group mt-3">
+                                            <label>Bukti Pembayaran <br> (jpg, png, pdf max 2MB)</label>
+                                            <input type="file" name="bukti_pembayaran" class="form-control" accept=".jpg,.jpeg,.png,.pdf">
+                                        </div>
 
-                        <div class="col-md-12">
+                                        <div class="d-flex justify-content-between align-items-center mb-3 mt-3">
+
+                                            <a href="list.php" class="btn btn-secondary">
+                                                <i class="bx bx-arrow-back"></i> Kembali
+                                            </a>
+                                            <button type="submit" name="tambah_cicilan" class="btn btn-primary">
+                                                Simpan Pembayaran
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-7">
                             <div class="card">
                                 <div class="card-header text-center">
                                     <h3>Riwayat Pembayaran</h3>

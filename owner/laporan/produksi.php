@@ -1233,26 +1233,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <?php include_once '../includes/sidebar.php'; ?>
     <!-- Sidebar End -->
 
-    <!-- [ Header Topbar ] start -->
-    <header class="pc-header">
-        <div class="header-wrapper">
-            <div class="me-auto pc-mob-drp">
-                <ul class="list-unstyled">
-                    <li class="pc-h-item pc-sidebar-collapse">
-                        <a href="#" class="pc-head-link ms-0" id="sidebar-hide">
-                            <i class="ti ti-menu-2"></i>
-                        </a>
-                    </li>
-                    <li class="pc-h-item pc-sidebar-popup">
-                        <a href="#" class="pc-head-link ms-0" id="mobile-collapse">
-                            <i class="ti ti-menu-2"></i>
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </header>
-    <!-- [ Header ] end -->
+    <?php include_once '../includes/navbar.php'; ?>
 
     <!-- [ Main Content ] start -->
     <div class="pc-container">
@@ -2025,7 +2006,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script> -->
 
     <script>
         function toggleFilter() {

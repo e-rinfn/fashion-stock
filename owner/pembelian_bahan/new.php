@@ -255,7 +255,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_pembelian_bahan
                                             <thead>
                                                 <tr class="text-center">
                                                     <th>Bahan</th>
-                                                    <th>Harga per Meter</th>
+                                                    <th>Harga/M (Rp)</th>
                                                     <th>Stok</th>
                                                     <th>Roll/Yard</th>
                                                     <th>Meter</th>
@@ -362,7 +362,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_pembelian_bahan
             </td>
             <td>
                 <div class="input-group">
-                    <span class="input-group-text">Rp</span>
                     <input type="number" name="items[${rowId}][harga]" class="form-control harga-input" min="1" required>
                 </div>
             </td>
@@ -373,14 +372,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_pembelian_bahan
             <td class="w-15">
                 <div class="input-group">
                     <input type="number" name="items[${rowId}][qty]" class="form-control qty" min="1" value="1" required>
-                    <span class="input-group-text">Roll/Yard</span>
                 </div>
             </td>
             <td class="w-15">
                 <div class="input-group">
                     <input type="number" name="items[${rowId}][meter]" class="form-control meter-input" 
                            step="1" min="1" value="0" required>
-                    <span class="input-group-text">Meter</span>
                 </div>
             </td>
             <td class="total-meter">0 m</td>

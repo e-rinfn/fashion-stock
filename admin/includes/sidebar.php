@@ -28,7 +28,7 @@ function isActive($path)
                 <span class="fw-bold fs-5 text-dark">IPENK LEGEND <br>INVENTORY STOCK</span>
             </a>
         </div>
-        <hr>
+
         <div class="navbar-content">
             <ul class="pc-navbar <?= isActive('/admin/index.php') ?>">
                 <li class="pc-item">
@@ -38,7 +38,7 @@ function isActive($path)
                     </a>
                 </li>
 
-                <li class="pc-item pc-caption">
+                <!-- <li class="pc-item pc-caption">
                     <label>MASTER DATA</label>
                     <i class="ti ti-dashboard"></i>
                 </li>
@@ -70,14 +70,11 @@ function isActive($path)
                         <li class="pc-item <?= isActive('/admin/supplier') ?>">
                             <a class="pc-link" href="<?= $base_url ?>/admin/supplier/list.php">Supplier</a>
                         </li>
-                        <!-- <li class="pc-item <?= isActive('/admin/upah') ?>">
-                            <a class="pc-link" href="<?= $base_url ?>/admin/upah/index.php">Tarif Upah</a>
-                        </li> -->
                         <li class="pc-item <?= isActive('/admin/upah') ?>">
                             <a class="pc-link" href="<?= $base_url ?>/admin/upah/upah_settings.php">Tarif Upah</a>
                         </li>
                     </ul>
-                </li>
+                </li> -->
 
                 <li class="pc-item pc-hasmenu">
                     <a href="#!" class="pc-link"><span class="pc-micon"><i class="ti ti-layout-2"></i></span><span class="pc-mtext">Stok</span><span class="pc-arrow"><i data-feather="chevron-right"></i></span></a>
@@ -108,7 +105,7 @@ function isActive($path)
 
                 <li class="pc-item <?= isActive('/finishing_koko') ?>">
                     <a href="<?= $base_url ?>/admin/finishing_koko/finishing.php" class="pc-link">
-                        <span class="pc-micon"><i class="ti ti-settings"></i></span>
+                        <span class="pc-micon"><i class="ti ti-shirt"></i></span>
                         <span class="pc-mtext">Finishing Koko</span>
                     </a>
                 </li>

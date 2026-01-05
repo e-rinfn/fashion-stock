@@ -810,7 +810,7 @@ $total_upah_filtered = $total_hasil_finishing_filtered * $tarif_standar;
                     <div class="col-md-8">
                         <form method="GET" class="row g-3 mb-3">
                             <div class="col-md-3">
-                                <label class="form-label">Filter Petugas Finishing</label>
+                                <label class="form-label">Petugas Finishing</label>
                                 <select name="id_petugas_finishing" class="form-select">
                                     <option value="0">Semua Petugas</option>
                                     <?php foreach ($petugas_finishing as $p): ?>
@@ -821,7 +821,7 @@ $total_upah_filtered = $total_hasil_finishing_filtered * $tarif_standar;
                                 </select>
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label">Filter Status</label>
+                                <label class="form-label">Status</label>
                                 <select name="status" class="form-select">
                                     <option value="all" <?= ($status == 'all') ? 'selected' : '' ?>>Semua Status</option>
                                     <option value="pengiriman" <?= ($status == 'pengiriman') ? 'selected' : '' ?>>Pengiriman</option>

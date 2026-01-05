@@ -150,7 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_pembelian'])) {
             <div class="row">
 
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2>PESANAN PEMBELIAN BAHAN BAKU</h2>
+                    <h2>PESANAN PEMBELIAN PRODUK</h2>
                 </div>
 
 
@@ -234,7 +234,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_pembelian'])) {
                                             <thead>
                                                 <tr class="text-center">
                                                     <th>Produk</th>
-                                                    <th>Harga Per Pcs</th>
+                                                    <th>Harga/Pcs (Rp)</th>
                                                     <th>Stok</th>
                                                     <th>Qty</th>
                                                     <th>Subtotal</th>
@@ -252,17 +252,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_pembelian'])) {
                                         </table>
 
                                         <button type="button" class="btn btn-secondary mt-3" id="tambahProduk">
-                                            <i class="bx bx-plus"></i> Tambah Produk
+                                            <i class="ti ti-plus"></i> Tambah Produk
                                         </button>
                                     </div>
                                 </div>
 
                                 <div class="mt-3">
                                     <button type="submit" name="simpan_pembelian" class="btn btn-primary">
-                                        <i class="bx bx-save"></i> Simpan Pembelian
+                                        <i class="ti ti-file"></i> Simpan Pembelian
                                     </button>
                                     <a href="list.php" class="btn btn-danger">
-                                        <i class="bx bx-x"></i> Batal
+                                        <i class="ti ti-x"></i> Batal
                                     </a>
                                 </div>
                             </form>

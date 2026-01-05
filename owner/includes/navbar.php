@@ -83,6 +83,11 @@
                                         <span>Lihat Profil</span>
                                     </a>
 
+                                    <a href="<?= $base_url ?>/owner/hpp/hpp_calculation.php" class="dropdown-item">
+                                        <i class="ti ti-calculator"></i>
+                                        <span>HPP Penjualan Produk</span>
+                                    </a>
+
                                     <a href="<?= $base_url ?>/auth/logout.php" class="dropdown-item text-danger">
                                         <i class="ti ti-power"></i>
                                         <span>Logout</span>

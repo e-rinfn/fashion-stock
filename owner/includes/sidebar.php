@@ -62,7 +62,12 @@ function isActive($path)
                         <span class="pc-mtext">Produksi Koko</span>
                     </a>
                 </li> -->
-
+                <li class="pc-item <?= isActive('/owner/stok') ?>">
+                    <a href="<?= $base_url ?>/owner/laporan/stok.php" class="pc-link">
+                        <span class="pc-micon"><i class="ti ti-layout-2"></i></span>
+                        <span class="pc-mtext">Stok</span>
+                    </a>
+                </li>
                 <li class="pc-item pc-hasmenu">
                     <a href="#!" class="pc-link"><span class="pc-micon"><i class="ti ti-settings"></i></span><span class="pc-mtext">Produksi</span><span class="pc-arrow"><i data-feather="chevron-right"></i></span></a>
                     <ul class="pc-submenu">
@@ -97,24 +102,10 @@ function isActive($path)
                     <label>LAOPORAN</label>
                     <i class="ti ti-dashboard"></i>
                 </li>
-                <li class="pc-item <?= isActive('/hpp') ?>">
-                    <a href="<?= $base_url ?>/owner/hpp/hpp_calculation.php" class="pc-link">
-                        <span class="pc-micon"><i class="ti ti-calculator"></i></span>
-                        <span class="pc-mtext">HPP Penjualan Produk</span>
-                    </a>
-                </li>
-
-                <li class="pc-item <?= isActive('/upah') ?>">
-                    <a href="<?= $base_url ?>/owner/laporan/upah.php" class="pc-link">
-                        <span class="pc-micon"><i class="ti ti-receipt"></i></span>
-                        <span class="pc-mtext">Upah</span>
-                    </a>
-                </li>
-
                 <li class="pc-item <?= isActive('/keuangan') ?>">
                     <a href="<?= $base_url ?>/owner/laporan/keuangan.php" class="pc-link">
                         <span class="pc-micon"><i class="ti ti-report-money"></i></span>
-                        <span class="pc-mtext">Keuangan</span>
+                        <span class="pc-mtext">Laporan</span>
                     </a>
                 </li>
 

@@ -1078,7 +1078,11 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
                                         </thead>
                                         <tbody>
                                             <tr>
-                                                <th class="bg-light w-50">Tanggal Finishing</th>
+                                                <th class="bg-light">Tanggal Kirim</th>
+                                                <td><?= dateIndo($main_data['tanggal_kirim_finishing']) ?></td>
+                                            </tr>
+                                            <tr>
+                                                <th class="bg-light w-50">Tanggal Selesai</th>
                                                 <td>
                                                     <?= dateIndo($finishing_data[0]['tanggal_finishing']) ?>
                                                 </td>
@@ -1315,7 +1319,7 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
                                         <thead>
                                             <tr class="table-light">
                                                 <th colspan="2" class="text-center">
-                                                    <h5 class="mb-0"><i class="ti ti-users"></i> Informasi Pengiriman</h5>
+                                                    <h5 class="mb-0">Informasi Pengiriman Koko</h5>
                                                 </th>
                                             </tr>
                                         </thead>
@@ -1341,7 +1345,7 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
                                             </tr>
                                             <tr>
                                                 <th class="bg-light">Tanggal Kirim</th>
-                                                <td><?= date('d/m/Y', strtotime($main_data['tanggal_kirim_finishing'])) ?></td>
+                                                <td><?= dateIndo($main_data['tanggal_kirim_finishing']) ?></td>
                                             </tr>
                                             <tr>
                                                 <th class="bg-light">Total Kirim</th>

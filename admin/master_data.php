@@ -600,9 +600,6 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                     <div class="card">
                         <div class="card-header card-header-simple d-flex justify-content-between align-items-center">
                             <h6 class="mb-0">Data Tarif Upah</h6>
-                            <a href="<?= $base_url ?>/manager/upah/upah_settings.php" class="btn btn-primary btn-sm">
-                                <i class="ti ti-settings"></i> Kelola
-                            </a>
                         </div>
                         <div class="card-body">
                             <div class="table-responsive table-container">
@@ -628,7 +625,16 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                                                 <tr>
                                                     <td class="text-center"><?= $no++ ?></td>
                                                     <td>
-                                                        <span class="badge bg-<?= $tu['jenis_tarif'] == 'pemotongan' ? 'info' : ($tu['jenis_tarif'] == 'penjahitan' ? 'danger' : 'warning') ?>">
+                                                        <?php
+                                                        $badgeColor = match ($tu['jenis_tarif']) {
+                                                            'pemotongan' => 'info',
+                                                            'bordir' => 'primary',
+                                                            'penjahitan' => 'danger',
+                                                            'finishing' => 'success',
+                                                            default => 'warning'
+                                                        };
+                                                        ?>
+                                                        <span class="badge bg-<?= $badgeColor ?>">
                                                             <?= ucfirst($tu['jenis_tarif']) ?>
                                                         </span>
                                                     </td>

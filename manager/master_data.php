@@ -76,10 +76,6 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
         margin-left: 4px;
     }
 
-    .table-container {
-        max-height: 450px;
-        overflow-y: auto;
-    }
 
     .card-header-simple {
         background-color: #f8f9fa;
@@ -196,12 +192,12 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                             <div class="table-responsive table-container">
                                 <table class="table table-striped table-hover table-bordered" id="tableBahan">
                                     <thead class="table-light sticky-top">
-                                        <tr>
+                                        <tr class="text-center">
                                             <th style="width: 5%">No</th>
                                             <th>Nama Bahan</th>
                                             <th>Stok (Roll)</th>
-                                            <th>Stok (Meter)</th>
-                                            <th>Harga/Roll</th>
+                                            <th>Total (Meter)</th>
+                                            <th>Harga/Meter</th>
                                             <th style="width: 10%">Aksi</th>
                                         </tr>
                                     </thead>
@@ -217,8 +213,8 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                                                     <td class="text-center"><?= $no++ ?></td>
                                                     <td><?= htmlspecialchars($b['nama_bahan']) ?></td>
                                                     <td class="text-center"><?= number_format($b['jumlah_stok'] ?? 0) ?></td>
-                                                    <td class="text-center"><?= number_format($b['jumlah_meter'] ?? 0, 2) ?></td>
-                                                    <td class="text-end"><?= formatRupiah($b['harga_per_roll'] ?? 0) ?></td>
+                                                    <td class="text-end"><?= number_format($b['jumlah_meter'] ?? 0) ?></td>
+                                                    <td class="text-end"><?= formatRupiah($b['harga_per_satuan'] ?? 0) ?></td>
                                                     <td class="text-center">
                                                         <a href="<?= $base_url ?>/manager/bahan_baku/edit.php?id=<?= $b['id_bahan'] ?>" class="btn btn-warning btn-sm" title="Edit">
                                                             <i class="ti ti-pencil"></i>
@@ -254,10 +250,10 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                             <div class="table-responsive table-container">
                                 <table class="table table-striped table-hover table-bordered" id="tableProduk">
                                     <thead class="table-light sticky-top">
-                                        <tr>
+                                        <tr class="text-center">
                                             <th style="width: 5%">No</th>
                                             <th>Nama Produk</th>
-                                            <th>Tipe</th>
+                                            <th>Tipe Produk</th>
                                             <th>Stok</th>
                                             <th>Harga/Pcs</th>
                                             <th style="width: 10%">Aksi</th>
@@ -275,8 +271,8 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                                                     <td class="text-center"><?= $no++ ?></td>
                                                     <td><?= htmlspecialchars($p['nama_produk']) ?></td>
                                                     <td class="text-center"><?= ucfirst($p['tipe_produk'] ?? '-') ?></td>
-                                                    <td class="text-center"><?= number_format($p['stok'] ?? 0) ?></td>
-                                                    <td class="text-end"><?= formatRupiah($p['harga_per_pcs'] ?? 0) ?></td>
+                                                    <td class="text-end"><?= number_format($p['stok'] ?? 0) ?></td>
+                                                    <td class="text-end"><?= formatRupiah($p['harga_jual'] ?? 0) ?></td>
                                                     <td class="text-center">
                                                         <a href="<?= $base_url ?>/manager/produk/edit.php?id=<?= $p['id_produk'] ?>" class="btn btn-warning btn-sm" title="Edit">
                                                             <i class="ti ti-pencil"></i>
@@ -312,7 +308,7 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                             <div class="table-responsive table-container">
                                 <table class="table table-striped table-hover table-bordered" id="tablePemotong">
                                     <thead class="table-light sticky-top">
-                                        <tr>
+                                        <tr class="text-center">
                                             <th style="width: 5%">No</th>
                                             <th>Nama Pemotong</th>
                                             <th>Kontak</th>
@@ -368,7 +364,7 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                             <div class="table-responsive table-container">
                                 <table class="table table-striped table-hover table-bordered" id="tableBordir">
                                     <thead class="table-light sticky-top">
-                                        <tr>
+                                        <tr class="text-center">
                                             <th style="width: 5%">No</th>
                                             <th>Nama Bordir</th>
                                             <th>Kontak</th>
@@ -424,7 +420,7 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                             <div class="table-responsive table-container">
                                 <table class="table table-striped table-hover table-bordered" id="tablePenjahit">
                                     <thead class="table-light sticky-top">
-                                        <tr>
+                                        <tr class="text-center">
                                             <th style="width: 5%">No</th>
                                             <th>Nama Penjahit</th>
                                             <th>Kontak</th>
@@ -480,7 +476,7 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                             <div class="table-responsive table-container">
                                 <table class="table table-striped table-hover table-bordered" id="tableFinishing">
                                     <thead class="table-light sticky-top">
-                                        <tr>
+                                        <tr class="text-center">
                                             <th style="width: 5%">No</th>
                                             <th>Nama Petugas</th>
                                             <th>Kontak</th>
@@ -536,7 +532,7 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                             <div class="table-responsive table-container">
                                 <table class="table table-striped table-hover table-bordered" id="tableReseller">
                                     <thead class="table-light sticky-top">
-                                        <tr>
+                                        <tr class="text-center">
                                             <th style="width: 5%">No</th>
                                             <th>Nama Reseller</th>
                                             <th>Kontak</th>
@@ -592,7 +588,7 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                             <div class="table-responsive table-container">
                                 <table class="table table-striped table-hover table-bordered" id="tableSupplier">
                                     <thead class="table-light sticky-top">
-                                        <tr>
+                                        <tr class="text-center">
                                             <th style="width: 5%">No</th>
                                             <th>Nama Supplier</th>
                                             <th>Kontak</th>
@@ -648,7 +644,7 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                             <div class="table-responsive table-container">
                                 <table class="table table-striped table-hover table-bordered" id="tableTarif">
                                     <thead class="table-light sticky-top">
-                                        <tr>
+                                        <tr class="text-center">
                                             <th style="width: 5%">No</th>
                                             <th>Jenis Tarif</th>
                                             <th>Tarif/Unit</th>

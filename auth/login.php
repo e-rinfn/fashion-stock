@@ -1,6 +1,31 @@
 <?php
 // Pastikan session_start() dipanggil di paling atas
+
+// ==========================================
+// PENGATURAN SESSION TIMEOUT
+// ==========================================
+// Set session lifetime menjadi 30 hari (dalam detik)
+$session_lifetime = 60 * 60 * 24 * 30; // 30 hari
+
+// Set session cookie parameters
+ini_set('session.gc_maxlifetime', $session_lifetime);
+ini_set('session.cookie_lifetime', $session_lifetime);
+
+// Set cookie params sebelum session_start
+session_set_cookie_params([
+    'lifetime' => $session_lifetime,
+    'path' => '/',
+    'secure' => false,    // Set true jika menggunakan HTTPS
+    'httponly' => true,   // Mencegah akses cookie via JavaScript
+    'samesite' => 'Lax'   // Proteksi CSRF
+]);
+
 session_start();
+
+// Perpanjang session setiap kali ada aktivitas
+if (isset($_SESSION['user_id'])) {
+    setcookie(session_name(), session_id(), time() + $session_lifetime, '/');
+}
 
 require_once '../config/database.php';
 require_once '../config/functions.php';

@@ -356,7 +356,7 @@ if (!empty($detail_pembelian)) {
                             <div class="card text-center shadow-sm border-0">
                                 <div class="card-body py-3">
                                     <h4 class="fw-bold mb-1">
-                                        <?= number_format($summary_manual['total_meter_all'], 1, ',', '.') ?> m
+                                        <?= number_format($summary_manual['total_meter_all'], 0, ',', '.') ?> m
                                     </h4>
                                     <small class="text-muted">Total Meter Pembelian</small>
                                 </div>

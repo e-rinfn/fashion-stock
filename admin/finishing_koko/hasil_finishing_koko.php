@@ -974,29 +974,8 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
     <?php include_once '../includes/sidebar.php'; ?>
     <!-- Sidebar End -->
 
-    <!-- [ Header Topbar ] start -->
-    <header class="pc-header">
-        <div class="header-wrapper">
-            <!-- [Mobile Media Block] start -->
-            <div class="me-auto pc-mob-drp">
-                <ul class="list-unstyled">
-                    <!-- ======= Menu collapse Icon ===== -->
-                    <li class="pc-h-item pc-sidebar-collapse">
-                        <a href="#" class="pc-head-link ms-0" id="sidebar-hide">
-                            <i class="ti ti-menu-2"></i>
-                        </a>
-                    </li>
-                    <li class="pc-h-item pc-sidebar-popup">
-                        <a href="#" class="pc-head-link ms-0" id="mobile-collapse">
-                            <i class="ti ti-menu-2"></i>
-                        </a>
-                    </li>
-                </ul>
-            </div>
-            <!-- [Mobile Media Block end] -->
-        </div>
-    </header>
-    <!-- [ Header ] end -->
+    <?php include_once '../includes/navbar.php'; ?>
+
 
     <!-- [ Main Content ] start -->
     <div class="pc-container">
@@ -1149,30 +1128,6 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
                                                     </span>
                                                 </td>
                                             </tr>
-                                            <tr>
-                                                <th class="bg-light">Keterangan</th>
-                                                <td>
-                                                    <div id="keterangan-display">
-                                                        <?php if (!empty($main_data['keterangan'])): ?>
-                                                            <span id="keterangan-text"><?= htmlspecialchars($main_data['keterangan']) ?></span>
-                                                        <?php else: ?>
-                                                            <span id="keterangan-text" class="text-muted">-</span>
-                                                        <?php endif; ?>
-                                                        <button type="button" class="btn btn-sm btn-outline-primary ms-2" onclick="editKeterangan()">
-                                                            <i class="ti ti-pencil"></i>
-                                                        </button>
-                                                    </div>
-                                                    <div id="keterangan-edit" style="display: none;">
-                                                        <textarea id="keterangan-input" class="form-control form-control-sm mb-2" rows="2" placeholder="Masukkan keterangan..."><?= htmlspecialchars($main_data['keterangan'] ?? '') ?></textarea>
-                                                        <button type="button" class="btn btn-sm btn-success" onclick="simpanKeterangan()">
-                                                            <i class="ti ti-check"></i> Simpan
-                                                        </button>
-                                                        <button type="button" class="btn btn-sm btn-secondary" onclick="batalEditKeterangan()">
-                                                            <i class="ti ti-x"></i> Batal
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
                                         </tbody>
                                     </table>
 
@@ -1237,6 +1192,32 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
                                         </tr>
                                     </tfoot>
                                 </table>
+
+                                <!-- Keterangan Section -->
+                                <div class="card mt-3 border">
+                                    <div class="card-body">
+                                        <h6 class="mb-3"><i class="ti ti-notes"></i> Keterangan</h6>
+                                        <div id="keterangan-display">
+                                            <?php if (!empty($main_data['keterangan'])): ?>
+                                                <p id="keterangan-text" class="mb-2"><?= htmlspecialchars($main_data['keterangan']) ?></p>
+                                            <?php else: ?>
+                                                <p id="keterangan-text" class="text-muted mb-2">Belum ada keterangan</p>
+                                            <?php endif; ?>
+                                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="editKeterangan()">
+                                                <i class="ti ti-pencil"></i> Edit Keterangan
+                                            </button>
+                                        </div>
+                                        <div id="keterangan-edit" style="display: none;">
+                                            <textarea id="keterangan-input" class="form-control mb-2" rows="3" placeholder="Masukkan keterangan..."><?= htmlspecialchars($main_data['keterangan'] ?? '') ?></textarea>
+                                            <button type="button" class="btn btn-sm btn-success" onclick="simpanKeterangan()">
+                                                <i class="ti ti-check"></i> Simpan
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-secondary" onclick="batalEditKeterangan()">
+                                                <i class="ti ti-x"></i> Batal
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- Informasi Produk -->
@@ -1327,19 +1308,25 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
                         </div>
                     <?php else: ?>
                         <!-- Info Penjahit dan Keterangan jika belum ada finishing -->
-                        <div class="row px-4">
-                            <div class="col-md-6">
-                                <div class="card border">
-                                    <div class="card-body">
-                                        <h6 class="mb-3"><i class="ti ti-users"></i> Informasi Pengiriman</h6>
-                                        <table class="table table-sm table-borderless mb-0">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-sm mb-0">
+                                        <thead>
+                                            <tr class="table-light">
+                                                <th colspan="2" class="text-center">
+                                                    <h5 class="mb-0"><i class="ti ti-users"></i> Informasi Pengiriman</h5>
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
                                             <tr>
-                                                <th width="35%">Petugas Finishing</th>
-                                                <td>: <?= htmlspecialchars($main_data['nama_petugas']) ?></td>
+                                                <th class="bg-light w-50">Petugas Finishing</th>
+                                                <td><?= htmlspecialchars($main_data['nama_petugas']) ?></td>
                                             </tr>
                                             <tr>
-                                                <th>Penjahit</th>
-                                                <td>:
+                                                <th class="bg-light">Penjahit</th>
+                                                <td>
                                                     <?php if (!empty($main_data['nama_penjahit'])): ?>
                                                         <?php
                                                         $penjahit_list = explode(', ', $main_data['nama_penjahit']);
@@ -1353,24 +1340,26 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
                                                 </td>
                                             </tr>
                                             <tr>
-                                                <th>Tanggal Kirim</th>
-                                                <td>: <?= date('d/m/Y', strtotime($main_data['tanggal_kirim_finishing'])) ?></td>
+                                                <th class="bg-light">Tanggal Kirim</th>
+                                                <td><?= date('d/m/Y', strtotime($main_data['tanggal_kirim_finishing'])) ?></td>
                                             </tr>
                                             <tr>
-                                                <th>Total Kirim</th>
-                                                <td>: <?= $main_data['total_kirim'] ?> pcs</td>
+                                                <th class="bg-light">Total Kirim</th>
+                                                <td class="fw-bold"><?= $main_data['total_kirim'] ?> pcs</td>
                                             </tr>
                                             <tr>
-                                                <th>Status</th>
-                                                <td>: <span class="badge bg-<?= $main_data['status_finishing'] == 'selesai' ? 'success' : ($main_data['status_finishing'] == 'diproses' ? 'warning' : 'secondary') ?>">
+                                                <th class="bg-light">Status</th>
+                                                <td>
+                                                    <span class="badge bg-<?= $main_data['status_finishing'] == 'selesai' ? 'success' : ($main_data['status_finishing'] == 'diproses' ? 'warning' : 'secondary') ?> px-3 py-2">
                                                         <?= ucfirst($main_data['status_finishing']) ?>
-                                                    </span></td>
+                                                    </span>
+                                                </td>
                                             </tr>
-                                        </table>
-                                    </div>
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-8">
                                 <div class="card border">
                                     <div class="card-body">
                                         <h6 class="mb-3"><i class="ti ti-notes"></i> Keterangan</h6>
@@ -1660,7 +1649,7 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script> -->
 <script>
     // Fungsi untuk validasi total per baris
     function validateTotal(id_detail) {

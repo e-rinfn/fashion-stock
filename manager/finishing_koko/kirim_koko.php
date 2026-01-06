@@ -30,6 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_kirim_fin
         $status_finishing = $conn->real_escape_string($_POST['status_finishing']);
         $items = $_POST['items'];
         $tanggal_kirim_finishing = $conn->real_escape_string($_POST['tanggal_kirim_finishing']);
+        $keterangan = isset($_POST['keterangan']) ? $conn->real_escape_string($_POST['keterangan']) : '';
 
         // Ambil nilai total_kirim dari form (jumlah total pcs yang dikirim)
         if (isset($_POST['total_kirim']) && !empty($_POST['total_kirim'])) {
@@ -91,14 +92,28 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_kirim_fin
                         $table_check = $conn->query("SHOW COLUMNS FROM hasil_kirim_finishing LIKE '%penjahit%'");
                         $has_penjahit_column = $table_check->num_rows > 0;
 
+                        // Cek apakah tabel punya kolom keterangan
+                        $table_check_ket = $conn->query("SHOW COLUMNS FROM hasil_kirim_finishing LIKE 'keterangan'");
+                        $has_keterangan_column = $table_check_ket->num_rows > 0;
+
                         // Insert hasil kirim finishing utama - sesuaikan dengan struktur tabel
-                        if ($has_penjahit_column) {
-                            // Jika tabel punya kolom untuk penjahit
+                        if ($has_penjahit_column && $has_keterangan_column) {
+                            // Jika tabel punya kolom penjahit DAN keterangan
+                            $sql_insert = "INSERT INTO hasil_kirim_finishing 
+                                (id_petugas_finishing, id_produk, tanggal_kirim_finishing, total_kirim, status_finishing, nama_penjahit, keterangan) 
+                                VALUES ($id_petugas_finishing, $main_id_produk, '$tanggal_kirim_finishing', $total_kirim, '$status_finishing', '$nama_penjahit', '$keterangan')";
+                        } elseif ($has_penjahit_column) {
+                            // Jika tabel punya kolom penjahit SAJA
                             $sql_insert = "INSERT INTO hasil_kirim_finishing 
                                 (id_petugas_finishing, id_produk, tanggal_kirim_finishing, total_kirim, status_finishing, nama_penjahit) 
                                 VALUES ($id_petugas_finishing, $main_id_produk, '$tanggal_kirim_finishing', $total_kirim, '$status_finishing', '$nama_penjahit')";
+                        } elseif ($has_keterangan_column) {
+                            // Jika tabel punya kolom keterangan SAJA
+                            $sql_insert = "INSERT INTO hasil_kirim_finishing 
+                                (id_petugas_finishing, id_produk, tanggal_kirim_finishing, total_kirim, status_finishing, keterangan) 
+                                VALUES ($id_petugas_finishing, $main_id_produk, '$tanggal_kirim_finishing', $total_kirim, '$status_finishing', '$keterangan')";
                         } else {
-                            // Jika tabel TIDAK punya kolom untuk penjahit
+                            // Jika tabel TIDAK punya kedua kolom
                             $sql_insert = "INSERT INTO hasil_kirim_finishing 
                                 (id_petugas_finishing, id_produk, tanggal_kirim_finishing, total_kirim, status_finishing) 
                                 VALUES ($id_petugas_finishing, $main_id_produk, '$tanggal_kirim_finishing', $total_kirim, '$status_finishing')";
@@ -350,6 +365,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_kirim_fin
                                                 <div class="produk-info" id="produkPreview">
                                                     Pilih koko terlebih dahulu
                                                 </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="row mt-3 g-3">
+                                            <div class="col-md-12">
+                                                <label class="form-label">Keterangan</label>
+                                                <textarea name="keterangan" class="form-control" rows="3" placeholder="Masukkan keterangan (opsional)"><?= isset($_POST['keterangan']) ? htmlspecialchars($_POST['keterangan']) : '' ?></textarea>
                                             </div>
                                         </div>
                                     </div>

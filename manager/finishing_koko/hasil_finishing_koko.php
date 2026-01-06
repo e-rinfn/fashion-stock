@@ -218,6 +218,21 @@ function batalkanHasilFinishingKoko($id_hasil_kirim_finishing)
     }
 }
 
+// Proses update keterangan via AJAX
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_keterangan'])) {
+    $keterangan_baru = $conn->real_escape_string($_POST['keterangan']);
+    $id_update = intval($_POST['id_hasil_kirim_finishing']);
+
+    $sql_update_ket = "UPDATE hasil_kirim_finishing SET keterangan = '$keterangan_baru' WHERE id_hasil_kirim_finishing = $id_update";
+
+    if ($conn->query($sql_update_ket)) {
+        echo json_encode(['success' => true, 'message' => 'Keterangan berhasil diperbarui']);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Gagal memperbarui keterangan: ' . $conn->error]);
+    }
+    exit();
+}
+
 // Ambil data utama pengiriman finishing
 $sql_main = "SELECT 
     hk.*,
@@ -229,7 +244,8 @@ $sql_main = "SELECT
     hk.status_finishing,
     hk.total_kirim,
     hk.tanggal_hasil_finishing,
-    hk.nama_penjahit
+    hk.nama_penjahit,
+    hk.keterangan
 FROM hasil_kirim_finishing hk
 LEFT JOIN produk p ON hk.id_produk = p.id_produk 
 LEFT JOIN petugas_finishing pet ON hk.id_petugas_finishing = pet.id_petugas_finishing 
@@ -1133,6 +1149,30 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
                                                     </span>
                                                 </td>
                                             </tr>
+                                            <tr>
+                                                <th class="bg-light">Keterangan</th>
+                                                <td>
+                                                    <div id="keterangan-display">
+                                                        <?php if (!empty($main_data['keterangan'])): ?>
+                                                            <span id="keterangan-text"><?= htmlspecialchars($main_data['keterangan']) ?></span>
+                                                        <?php else: ?>
+                                                            <span id="keterangan-text" class="text-muted">-</span>
+                                                        <?php endif; ?>
+                                                        <button type="button" class="btn btn-sm btn-outline-primary ms-2" onclick="editKeterangan()">
+                                                            <i class="ti ti-pencil"></i>
+                                                        </button>
+                                                    </div>
+                                                    <div id="keterangan-edit" style="display: none;">
+                                                        <textarea id="keterangan-input" class="form-control form-control-sm mb-2" rows="2" placeholder="Masukkan keterangan..."><?= htmlspecialchars($main_data['keterangan'] ?? '') ?></textarea>
+                                                        <button type="button" class="btn btn-sm btn-success" onclick="simpanKeterangan()">
+                                                            <i class="ti ti-check"></i> Simpan
+                                                        </button>
+                                                        <button type="button" class="btn btn-sm btn-secondary" onclick="batalEditKeterangan()">
+                                                            <i class="ti ti-x"></i> Batal
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
                                         </tbody>
                                     </table>
 
@@ -1286,12 +1326,77 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
                             </div>
                         </div>
                     <?php else: ?>
-                        <!-- Warning jika belum ada finishing -->
-                        <!-- <div class="warning-box">
-                            <h5><i class="ti ti-info-circle"></i> Informasi</h5>
-                            <p class="mb-2">Hasil finishing untuk pengiriman ini belum diinput.</p>
-                            <p class="mb-0"><strong>Perhatian:</strong> Input hasil finishing hanya bisa dilakukan sekali! Pastikan semua data sudah benar sebelum disimpan.</p>
-                        </div> -->
+                        <!-- Info Penjahit dan Keterangan jika belum ada finishing -->
+                        <div class="row px-4">
+                            <div class="col-md-6">
+                                <div class="card border">
+                                    <div class="card-body">
+                                        <h6 class="mb-3"><i class="ti ti-users"></i> Informasi Pengiriman</h6>
+                                        <table class="table table-sm table-borderless mb-0">
+                                            <tr>
+                                                <th width="35%">Petugas Finishing</th>
+                                                <td>: <?= htmlspecialchars($main_data['nama_petugas']) ?></td>
+                                            </tr>
+                                            <tr>
+                                                <th>Penjahit</th>
+                                                <td>:
+                                                    <?php if (!empty($main_data['nama_penjahit'])): ?>
+                                                        <?php
+                                                        $penjahit_list = explode(', ', $main_data['nama_penjahit']);
+                                                        foreach ($penjahit_list as $penjahit):
+                                                        ?>
+                                                            <span class="badge bg-info me-1 mb-1"><?= htmlspecialchars($penjahit) ?></span>
+                                                        <?php endforeach; ?>
+                                                    <?php else: ?>
+                                                        <span class="text-muted">-</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <th>Tanggal Kirim</th>
+                                                <td>: <?= date('d/m/Y', strtotime($main_data['tanggal_kirim_finishing'])) ?></td>
+                                            </tr>
+                                            <tr>
+                                                <th>Total Kirim</th>
+                                                <td>: <?= $main_data['total_kirim'] ?> pcs</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Status</th>
+                                                <td>: <span class="badge bg-<?= $main_data['status_finishing'] == 'selesai' ? 'success' : ($main_data['status_finishing'] == 'diproses' ? 'warning' : 'secondary') ?>">
+                                                        <?= ucfirst($main_data['status_finishing']) ?>
+                                                    </span></td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card border">
+                                    <div class="card-body">
+                                        <h6 class="mb-3"><i class="ti ti-notes"></i> Keterangan</h6>
+                                        <div id="keterangan-display">
+                                            <?php if (!empty($main_data['keterangan'])): ?>
+                                                <p id="keterangan-text" class="mb-2"><?= htmlspecialchars($main_data['keterangan']) ?></p>
+                                            <?php else: ?>
+                                                <p id="keterangan-text" class="text-muted mb-2">Belum ada keterangan</p>
+                                            <?php endif; ?>
+                                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="editKeterangan()">
+                                                <i class="ti ti-pencil"></i> Edit Keterangan
+                                            </button>
+                                        </div>
+                                        <div id="keterangan-edit" style="display: none;">
+                                            <textarea id="keterangan-input" class="form-control mb-2" rows="3" placeholder="Masukkan keterangan..."><?= htmlspecialchars($main_data['keterangan'] ?? '') ?></textarea>
+                                            <button type="button" class="btn btn-sm btn-success" onclick="simpanKeterangan()">
+                                                <i class="ti ti-check"></i> Simpan
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-secondary" onclick="batalEditKeterangan()">
+                                                <i class="ti ti-x"></i> Batal
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     <?php endif; ?>
 
                 </div>
@@ -1981,6 +2086,93 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
             atkCounter = 1;
         });
     });
+</script>
+
+<script>
+    // ====================
+    // FUNGSI UNTUK EDIT KETERANGAN
+    // ====================
+    function editKeterangan() {
+        document.getElementById('keterangan-display').style.display = 'none';
+        document.getElementById('keterangan-edit').style.display = 'block';
+        document.getElementById('keterangan-input').focus();
+    }
+
+    function batalEditKeterangan() {
+        document.getElementById('keterangan-display').style.display = 'block';
+        document.getElementById('keterangan-edit').style.display = 'none';
+        // Reset value ke original
+        document.getElementById('keterangan-input').value = document.getElementById('keterangan-text').innerText === '-' ? '' : document.getElementById('keterangan-text').innerText;
+    }
+
+    function simpanKeterangan() {
+        const keterangan = document.getElementById('keterangan-input').value.trim();
+        const idHasilKirimFinishing = <?= $id_hasil_kirim_finishing ?>;
+
+        // Disable buttons while saving
+        const btnSimpan = document.querySelector('#keterangan-edit .btn-success');
+        const btnBatal = document.querySelector('#keterangan-edit .btn-secondary');
+        btnSimpan.disabled = true;
+        btnBatal.disabled = true;
+        btnSimpan.innerHTML = '<i class="ti ti-loader"></i> Menyimpan...';
+
+        // Send AJAX request
+        $.ajax({
+            url: 'hasil_finishing_koko.php?id=' + idHasilKirimFinishing,
+            type: 'POST',
+            data: {
+                update_keterangan: 1,
+                id_hasil_kirim_finishing: idHasilKirimFinishing,
+                keterangan: keterangan
+            },
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    // Update display
+                    const keteranganText = document.getElementById('keterangan-text');
+                    if (keterangan) {
+                        keteranganText.innerText = keterangan;
+                        keteranganText.classList.remove('text-muted');
+                    } else {
+                        keteranganText.innerText = '-';
+                        keteranganText.classList.add('text-muted');
+                    }
+
+                    // Switch back to display mode
+                    document.getElementById('keterangan-display').style.display = 'block';
+                    document.getElementById('keterangan-edit').style.display = 'none';
+
+                    // Show success message
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil!',
+                        text: response.message,
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal!',
+                        text: response.message
+                    });
+                }
+            },
+            error: function(xhr, status, error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: 'Terjadi kesalahan saat menyimpan keterangan'
+                });
+            },
+            complete: function() {
+                // Re-enable buttons
+                btnSimpan.disabled = false;
+                btnBatal.disabled = false;
+                btnSimpan.innerHTML = '<i class="ti ti-check"></i> Simpan';
+            }
+        });
+    }
 </script>
 
 </html>

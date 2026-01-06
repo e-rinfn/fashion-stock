@@ -14,7 +14,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_set_cookie_params([
         'lifetime' => $session_lifetime,
         'path' => '/',
-        'secure' => true,    // Set true jika menggunakan HTTPS
+        'secure' => false,    // Set true jika menggunakan HTTPS
         'httponly' => true,
         'samesite' => 'Lax'
     ]);

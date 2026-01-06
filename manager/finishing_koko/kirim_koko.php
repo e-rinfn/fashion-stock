@@ -18,15 +18,22 @@ $penjahit = query("SELECT * FROM penjahit ORDER BY nama_penjahit");
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_kirim_finishing'])) {
 
     // VALIDASI INPUT WAJIB
-    if (empty($_POST['id_petugas_finishing']) || empty($_POST['nama_penjahit']) || !is_array($_POST['nama_penjahit'])) {
-        $error = "Petugas Finishing dan Nama Penjahit wajib diisi!";
+    if (empty($_POST['id_petugas_finishing'])) {
+        $error = "Petugas Finishing wajib diisi!";
     } else {
         $id_petugas_finishing = intval($_POST['id_petugas_finishing']);
-        // Handle multiple penjahit - gabungkan dengan koma
-        $nama_penjahit_array = array_map(function ($name) use ($conn) {
-            return $conn->real_escape_string($name);
-        }, $_POST['nama_penjahit']);
-        $nama_penjahit = implode(', ', $nama_penjahit_array); // Gabung dengan koma
+        // Handle multiple penjahit - gabungkan dengan koma (opsional)
+        if (isset($_POST['nama_penjahit']) && is_array($_POST['nama_penjahit']) && !empty($_POST['nama_penjahit']) && $_POST['nama_penjahit'][0] !== '-') {
+            $nama_penjahit_array = array_filter($_POST['nama_penjahit'], function ($name) {
+                return $name !== '-' && !empty($name);
+            });
+            $nama_penjahit_array = array_map(function ($name) use ($conn) {
+                return $conn->real_escape_string($name);
+            }, $nama_penjahit_array);
+            $nama_penjahit = !empty($nama_penjahit_array) ? implode(', ', $nama_penjahit_array) : '-';
+        } else {
+            $nama_penjahit = '-'; // Default jika tidak ada penjahit yang dipilih
+        }
         $status_finishing = $conn->real_escape_string($_POST['status_finishing']);
         $items = $_POST['items'];
         $tanggal_kirim_finishing = $conn->real_escape_string($_POST['tanggal_kirim_finishing']);
@@ -316,8 +323,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_kirim_fin
                                             </div>
 
                                             <div class="col-md-4">
-                                                <label class="form-label">Nama Penjahit <span class="text-danger">*</span></label>
-                                                <select name="nama_penjahit[]" id="selectPenjahit" class="form-control" multiple="multiple" required>
+                                                <label class="form-label">Nama Penjahit</label>
+                                                <select name="nama_penjahit[]" id="selectPenjahit" class="form-control" multiple="multiple">
+                                                    <option value="-">- (Tidak Ada Penjahit)</option>
                                                     <?php foreach ($penjahit as $j): ?>
                                                         <option value="<?= htmlspecialchars($j['nama_penjahit']) ?>"
                                                             <?php
@@ -329,7 +337,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_kirim_fin
                                                         </option>
                                                     <?php endforeach; ?>
                                                 </select>
-                                                <small class="text-muted">Bisa pilih lebih dari satu penjahit</small>
+                                                <small class="text-muted">Opsional - bisa pilih lebih dari satu atau kosongkan</small>
                                             </div>
 
                                             <div class="col-md-4">
@@ -682,22 +690,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_kirim_fin
 
     // Validasi form sebelum submit
     document.getElementById('formPenjualanBahan').addEventListener('submit', function(e) {
-        const penjahitSelect = document.getElementById('selectPenjahit');
-        const selectedPenjahit = Array.from(penjahitSelect.selectedOptions);
         const rows = document.querySelectorAll('#bahanContainer tr');
-
-        // Validasi penjahit (multiple)
-        if (selectedPenjahit.length === 0) {
-            e.preventDefault();
-            Swal.fire({
-                icon: 'error',
-                title: 'Penjahit Belum Dipilih',
-                text: 'Silakan pilih minimal satu penjahit',
-                confirmButtonText: 'Oke'
-            });
-            penjahitSelect.focus();
-            return;
-        }
 
         // Validasi minimal satu koko
         if (rows.length === 0) {
@@ -746,7 +739,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_kirim_fin
         // Inisialisasi Select2 untuk multi-select penjahit
         $('#selectPenjahit').select2({
             theme: 'bootstrap-5',
-            placeholder: '-- Pilih Penjahit (bisa lebih dari satu) --',
+            placeholder: '-- Pilih Penjahit (opsional) --',
             allowClear: true,
             width: '100%',
             closeOnSelect: false

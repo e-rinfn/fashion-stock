@@ -1147,16 +1147,7 @@ $total_upah_filtered = $total_hasil_finishing_filtered * $tarif_standar;
                                                 </span>
                                             </td>
                                             <td>
-                                                <?php if (!empty($data['nama_penjahit'])): ?>
-                                                    <?php
-                                                    $penjahit_list = explode(', ', $data['nama_penjahit']);
-                                                    foreach ($penjahit_list as $penjahit):
-                                                    ?>
-                                                        <span class="badge bg-info me-1"><?= htmlspecialchars($penjahit) ?></span>
-                                                    <?php endforeach; ?>
-                                                <?php else: ?>
-                                                    -
-                                                <?php endif; ?>
+                                                <?= !empty($data['nama_penjahit']) ? htmlspecialchars($data['nama_penjahit']) : '-' ?>
                                             </td>
 
                                             <td><?= htmlspecialchars($data['nama_petugas']) ?></td>

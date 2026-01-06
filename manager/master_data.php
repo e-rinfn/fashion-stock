@@ -668,7 +668,16 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                                                 <tr>
                                                     <td class="text-center"><?= $no++ ?></td>
                                                     <td>
-                                                        <span class="badge bg-<?= $tu['jenis_tarif'] == 'pemotongan' ? 'info' : ($tu['jenis_tarif'] == 'penjahitan' ? 'danger' : 'warning') ?>">
+                                                        <?php
+                                                        $badgeColor = match ($tu['jenis_tarif']) {
+                                                            'pemotongan' => 'info',
+                                                            'bordir' => 'primary',
+                                                            'penjahitan' => 'danger',
+                                                            'finishing' => 'success',
+                                                            default => 'warning'
+                                                        };
+                                                        ?>
+                                                        <span class="badge bg-<?= $badgeColor ?>">
                                                             <?= ucfirst($tu['jenis_tarif']) ?>
                                                         </span>
                                                     </td>

@@ -1098,7 +1098,7 @@ $total_upah_filtered = $total_hasil_finishing_filtered * $tarif_standar;
                                     <th class="bg-warning text-white align-middle">Petugas Finishing</th>
                                     <th class="bg-warning text-white align-middle">Tgl Kirim</th>
                                     <th class="bg-warning text-white align-middle">Total Kirim</th>
-                                    <th class="bg-warning text-white align-middle">Jenis Bahan</th>
+                                    <!-- <th class="bg-warning text-white align-middle">Jenis Bahan</th> -->
                                     <th class="bg-warning text-white align-middle">Jml Jenis</th>
                                     <th class="bg-info text-white align-middle">Tgl Selesai Finishing</th>
                                     <th class="bg-info text-white align-middle">Hasil Finishing (Pcs)</th>
@@ -1113,6 +1113,11 @@ $total_upah_filtered = $total_hasil_finishing_filtered * $tarif_standar;
                                         <td colspan="10" class="text-center">Tidak ada data kirim finishing</td>
                                     </tr>
                                 <?php else: ?>
+                                    <?php
+                                    $total_kirim_tabel = 0;
+                                    $total_jenis_tabel = 0;
+                                    $total_hasil_tabel = 0;
+                                    ?>
                                     <?php foreach ($data_finishing as $data): ?>
                                         <?php
                                         $status_badge = [
@@ -1129,6 +1134,11 @@ $total_upah_filtered = $total_hasil_finishing_filtered * $tarif_standar;
                                         // 1. Status bukan 'selesai' 
                                         // 2. Belum ada hasil finishing sama sekali
                                         $can_delete = ($data['status_finishing'] != 'selesai' && !$has_results);
+
+                                        // Hitung total
+                                        $total_kirim_tabel += $data['total_kirim'] ?? 0;
+                                        $total_jenis_tabel += $data['jumlah_jenis_bahan'] ?? 0;
+                                        $total_hasil_tabel += $data['total_hasil_finishing'] ?? 0;
                                         ?>
                                         <tr>
                                             <td class="text-center">
@@ -1136,18 +1146,29 @@ $total_upah_filtered = $total_hasil_finishing_filtered * $tarif_standar;
                                                     <?= ucfirst($data['status_finishing']) ?>
                                                 </span>
                                             </td>
-                                            <td><?= htmlspecialchars($data['nama_penjahit']) ?></td>
+                                            <td>
+                                                <?php if (!empty($data['nama_penjahit'])): ?>
+                                                    <?php
+                                                    $penjahit_list = explode(', ', $data['nama_penjahit']);
+                                                    foreach ($penjahit_list as $penjahit):
+                                                    ?>
+                                                        <span class="badge bg-info me-1"><?= htmlspecialchars($penjahit) ?></span>
+                                                    <?php endforeach; ?>
+                                                <?php else: ?>
+                                                    -
+                                                <?php endif; ?>
+                                            </td>
 
                                             <td><?= htmlspecialchars($data['nama_petugas']) ?></td>
                                             <td><?= formatDateIndo($data['tanggal_kirim_finishing']) ?></td>
                                             <td class="text-center"><?= $data['total_kirim'] ?></td>
-                                            <td>
+                                            <!-- <td>
                                                 <?php if (!empty($data['jenis_bahan'])): ?>
                                                     <small><?= htmlspecialchars($data['jenis_bahan']) ?></small>
                                                 <?php else: ?>
                                                     -
                                                 <?php endif; ?>
-                                            </td>
+                                            </td> -->
                                             <td class="text-center">
                                                 <?= $data['jumlah_jenis_bahan'] ?? 0 ?>
                                             </td>
@@ -1220,6 +1241,19 @@ $total_upah_filtered = $total_hasil_finishing_filtered * $tarif_standar;
                                     <?php endforeach; ?>
                                 <?php endif; ?>
                             </tbody>
+                            <?php if (!empty($data_finishing)): ?>
+                                <tfoot class="table-light">
+                                    <tr class="fw-bold">
+                                        <td colspan="4" class="text-end">TOTAL:</td>
+                                        <td class="text-center"><?= number_format($total_kirim_tabel) ?> Pcs</td>
+                                        <!-- <td class="text-center"><?= number_format($total_jenis_tabel) ?></td> -->
+                                        <td class="text-center">-</td>
+                                        <td class="text-center">-</td>
+                                        <td class="text-center"><?= number_format($total_hasil_tabel) ?> Pcs</td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            <?php endif; ?>
                         </table>
                     </div>
                 </div>

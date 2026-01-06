@@ -1600,7 +1600,6 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
                                                     <div class="input-group">
                                                         <input type="number" name="atk_jumlah[]" class="form-control atk-jumlah"
                                                             min="1" value="1" required>
-                                                        <span class="input-group-text">Pcs</span>
                                                     </div>
                                                 </div>
                                                 <div class="col-md-3">

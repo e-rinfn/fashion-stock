@@ -767,7 +767,59 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                           WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
 
                 if ($conn->query($sql_update)) {
-                    $_SESSION['success'] = "Data tanggal kirim jahit berhasil disimpan. Status berubah menjadi 'Penjahitan'.";
+                    // SIMPAN ATK FINISHING (HANYA UNTUK MUKENA)
+                    // Ambil Tipe Produk
+                    $produksi_data = query("SELECT 
+                        hp.id_produk, 
+                        p.tipe_produk
+                    FROM hasil_potong_fix hp
+                    JOIN produk p ON hp.id_produk = p.id_produk
+                    WHERE hp.id_hasil_potong_fix = $id_hasil_potong_fix")[0] ?? [];
+
+                    $tipe_produk = $produksi_data['tipe_produk'] ?? '';
+
+                    // Ambil data ATK finishing
+                    $atk_nama = $_POST['atk_nama'] ?? [];
+                    $atk_jumlah = $_POST['atk_jumlah'] ?? [];
+                    $atk_satuan = $_POST['atk_satuan'] ?? [];
+
+                    // Validasi khusus ATK
+                    if ($tipe_produk == 'mukena') {
+                        if (empty($atk_nama[0])) { // minimal 1
+                            // Rollback jika gagal validasi
+                            $conn->query("UPDATE hasil_potong_fix SET id_penjahit = NULL, tanggal_kirim_jahit = NULL, status_potong = 'bordir' WHERE id_hasil_potong_fix = $id_hasil_potong_fix");
+                            throw new Exception("Minimal satu ATK finishing harus diisi untuk produk mukena!");
+                        }
+
+                        $atk_data = [];
+                        foreach ($atk_nama as $index => $nama) {
+                            if (!empty($nama) && isset($atk_jumlah[$index]) && isset($atk_satuan[$index])) {
+                                $atk_data[] = [
+                                    'nama' => $conn->real_escape_string($nama),
+                                    'jumlah' => intval($atk_jumlah[$index]),
+                                    'satuan' => $conn->real_escape_string($atk_satuan[$index])
+                                ];
+                            }
+                        }
+
+                        // Simpan ATK finishing ke database
+                        foreach ($atk_data as $atk) {
+                            $sql_atk = "INSERT INTO atk_finishing (id_hasil_potong_fix, nama_atk, jumlah, satuan, created_at) 
+                                         VALUES (?, ?, ?, ?, NOW())";
+                            $stmt_atk = $conn->prepare($sql_atk);
+                            $stmt_atk->bind_param("isis", $id_hasil_potong_fix, $atk['nama'], $atk['jumlah'], $atk['satuan']);
+                            if (!$stmt_atk->execute()) {
+                                // Rollback manual (hapus yang sudah masuk) - idealnya pakai transaction tapi ini di luar try-catch transaction blok atas
+                                // karena logic existing tidak pakai transaction full di sini.
+                                // Tapi demi keamanan kita delete atk yang sudah masuk dan rollback status
+                                $conn->query("DELETE FROM atk_finishing WHERE id_hasil_potong_fix = $id_hasil_potong_fix");
+                                $conn->query("UPDATE hasil_potong_fix SET id_penjahit = NULL, tanggal_kirim_jahit = NULL, status_potong = 'bordir' WHERE id_hasil_potong_fix = $id_hasil_potong_fix");
+                                throw new Exception("Gagal menyimpan ATK finishing: " . $stmt_atk->error);
+                            }
+                        }
+                    }
+
+                    $_SESSION['success'] = "Data tanggal kirim jahit dan ATK berhasil disimpan. Status berubah menjadi 'Penjahitan'.";
                     header("Location: list.php");
                     exit();
                 } else {
@@ -793,11 +845,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $upah_per_potongan = floatval($_POST['upah_per_potongan_penjahit']);
         $total_upah = floatval($_POST['total_upah_penjahit']);
 
-        // Ambil data ATK finishing
-        $atk_nama = $_POST['atk_nama'] ?? [];
-        $atk_jumlah = $_POST['atk_jumlah'] ?? [];
-        $atk_satuan = $_POST['atk_satuan'] ?? [];
-
         // Validasi
         $error_modal = null;
 
@@ -809,7 +856,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $error_modal = "Total upah harus lebih dari 0!";
         }
 
-        // AMBIL DATA TIPE PRODUK SEBELUM VALIDASI
+        // AMBIL DATA TIPE PRODUK SEBELUM UPDATE STOK
         $produksi_data = query("SELECT 
         hp.id_produk, 
         p.tipe_produk
@@ -818,13 +865,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     WHERE hp.id_hasil_potong_fix = $id_hasil_potong_fix")[0] ?? [];
 
         $tipe_produk = $produksi_data['tipe_produk'] ?? '';
-
-        // Validasi ATK hanya untuk mukena
-        if ($tipe_produk == 'mukena') {
-            if (empty($atk_nama[0]) || empty($atk_nama[0])) { // Validasi minimal 1 ATK hanya untuk mukena
-                $error_modal = "Minimal satu ATK finishing harus diisi untuk produk mukena!";
-            }
-        }
 
         if (!$error_modal) {
             $conn->autocommit(FALSE);
@@ -855,30 +895,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     }
                 }
 
-                // 3. SIMPAN ATK FINISHING (HANYA UNTUK MUKENA)
-                if ($tipe_produk == 'mukena') {
-                    $atk_data = [];
-                    foreach ($atk_nama as $index => $nama) {
-                        if (!empty($nama) && isset($atk_jumlah[$index]) && isset($atk_satuan[$index])) {
-                            $atk_data[] = [
-                                'nama' => $conn->real_escape_string($nama),
-                                'jumlah' => intval($atk_jumlah[$index]),
-                                'satuan' => $conn->real_escape_string($atk_satuan[$index])
-                            ];
-                        }
-                    }
+                // 3. SIMPAN ATK FINISHING (DIHAPUS DARI SINI, PINDAH KE KIRIM JAHIT)
 
-                    // Simpan ATK finishing ke database
-                    foreach ($atk_data as $atk) {
-                        $sql_atk = "INSERT INTO atk_finishing (id_hasil_potong_fix, nama_atk, jumlah, satuan, created_at) 
-                    VALUES (?, ?, ?, ?, NOW())";
-                        $stmt_atk = $conn->prepare($sql_atk);
-                        $stmt_atk->bind_param("isis", $id_hasil_potong_fix, $atk['nama'], $atk['jumlah'], $atk['satuan']);
-                        if (!$stmt_atk->execute()) {
-                            throw new Exception("Gagal menyimpan ATK finishing: " . $stmt_atk->error);
-                        }
-                    }
-                }
 
                 // 4. Update stok berdasarkan tipe produk
                 if (!empty($produksi_data)) {
@@ -1016,13 +1034,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         }
                     }
 
-                    // HAPUS ATK FINISHING (jika ada)
-                    if ($tipe_produk == 'mukena') {
-                        $sql_delete_atk = "DELETE FROM atk_finishing WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
-                        if (!$conn->query($sql_delete_atk)) {
-                            throw new Exception("Gagal menghapus ATK finishing: " . $conn->error);
-                        }
-                    }
+
 
                     $success_msg = "Hasil jahit berhasil dibatalkan. Status kembali ke 'Penjahitan'";
                     break;
@@ -1034,6 +1046,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 tanggal_kirim_jahit = NULL,
                 status_potong = 'bordir'
             WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
+
+                    if (!$conn->query($sql_update)) {
+                        throw new Exception("Gagal membatalkan tanggal kirim jahit");
+                    }
+
+                    // HAPUS ATK FINISHING (jika ada) - Dipindahkan dari hasil_jahit
+                    if ($tipe_produk == 'mukena') {
+                        $sql_delete_atk = "DELETE FROM atk_finishing WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
+                        if (!$conn->query($sql_delete_atk)) {
+                            throw new Exception("Gagal menghapus ATK finishing: " . $conn->error);
+                        }
+                    }
 
                     if (!$conn->query($sql_update)) {
                         throw new Exception("Gagal membatalkan tanggal kirim jahit");
@@ -1249,33 +1273,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <?php include_once '../includes/sidebar.php'; ?>
     <!-- Sidebar End -->
 
-    <!-- [ Header Topbar ] start -->
-    <header class="pc-header">
-        <div class="header-wrapper">
-            <div class="me-auto pc-mob-drp">
-                <ul class="list-unstyled">
-                    <li class="pc-h-item pc-sidebar-collapse">
-                        <a href="#" class="pc-head-link ms-0" id="sidebar-hide">
-                            <i class="ti ti-menu-2"></i>
-                        </a>
-                    </li>
-                    <li class="pc-h-item pc-sidebar-popup">
-                        <a href="#" class="pc-head-link ms-0" id="mobile-collapse">
-                            <i class="ti ti-menu-2"></i>
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </header>
-    <!-- [ Header ] end -->
+    <?php include_once '../includes/navbar.php'; ?>
 
     <!-- [ Main Content ] start -->
     <div class="pc-container">
         <div class="pc-content">
             <div class="row">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2>Data Produksi</h2>
+                    <h2>Data Produksi (Pemotongan sampai Penjahitan)</h2>
                     <div class="btn-group">
                         <div>
                             <a href="new.php" class="btn btn-warning">
@@ -1787,7 +1792,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                                                     <?php if ($is_diproses): ?>
                                                         <!-- Status: Diproses -->
-                                                        <button class="btn btn-sm btn-primary btn-input-tanggal-bordir"
+                                                        <button class="btn btn-sm btn-info btn-input-tanggal-bordir"
                                                             data-id="<?= $data['id'] ?>"
                                                             data-produk="<?= htmlspecialchars($data['produk']) ?>"
                                                             data-seri="<?= htmlspecialchars($data['seri']) ?>"
@@ -1822,6 +1827,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                                                 data-id="<?= $data['id'] ?>"
                                                                 data-produk="<?= htmlspecialchars($data['produk']) ?>"
                                                                 data-seri="<?= htmlspecialchars($data['seri']) ?>"
+                                                                data-tipe-produk="<?= $data['tipe_produk'] ?>"
                                                                 data-total-potong="<?= $data['total_hasil'] ?>"
                                                                 data-total-bordir="<?= $data['total_hasil_bordir'] ?? 0 ?>"
                                                                 data-tanggal-potong="<?= $data['tanggal'] ?>"
@@ -2016,7 +2022,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col-md-6">
-                                        <label class="form-label">Upah per Potongan <span class="text-danger">*</span></label>
+                                        <label class="form-label">Upah per Hasil Bordir <span class="text-danger">*</span></label>
                                         <div class="input-group mb-2">
                                             <span class="input-group-text">Rp</span>
                                             <input type="number" name="upah_per_potongan_bordir_manual"
@@ -2075,7 +2081,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     <!-- Modal Input Tanggal Kirim Jahit -->
     <div class="modal fade" id="modalTanggalPenjahitan" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Input Tanggal Kirim Penjahitan</h5>
@@ -2116,6 +2122,55 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <label class="form-label">Tanggal Kirim Jahit <span class="text-danger">*</span></label>
                             <input type="date" name="tanggal_kirim_jahit" class="form-control"
                                 id="modal_tanggal_kirim_jahit" required value="<?= date('Y-m-d') ?>">
+                        </div>
+
+                        <!-- Input ATK Finishing (Hanya untuk produk mukena) -->
+                        <div class="card mb-3" id="atk-card">
+                            <div class="card-header bg-light">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0">ATK Finishing yang Digunakan</h6>
+                                    <button type="button" class="btn btn-sm btn-primary" id="btnTambahAtk">
+                                        <i class="ti ti-plus"></i> Tambah ATK
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body" id="atk-container-wrapper">
+                                <!-- Container untuk ATK items -->
+                                <div id="atk-container">
+                                    <div class="atk-item row mb-3">
+                                        <div class="col-md-5">
+                                            <label class="form-label">Nama ATK Finishing <span class="text-danger">*</span></label>
+                                            <input type="text" name="atk_nama[]" class="form-control atk-nama"
+                                                placeholder="Contoh: Renda, Kancing, Tali, Label, dll." required>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Jumlah <span class="text-danger">*</span></label>
+                                            <div class="input-group">
+                                                <input type="number" name="atk_jumlah[]" class="form-control atk-jumlah"
+                                                    min="1" value="1" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Satuan</label>
+                                            <select name="atk_satuan[]" class="form-control atk-satuan">
+                                                <option value="meter">Meter</option>
+                                                <option value="buah" selected>Buah</option>
+                                                <option value="set">Set</option>
+                                                <option value="roll">Roll</option>
+                                                <option value="lbr">Lembar</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-1 d-flex align-items-end">
+                                            <button type="button" class="btn btn-sm btn-danger btn-hapus-atk" style="display: none;">
+                                                <i class="ti ti-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <small class="text-muted">
+                                    <i class="ti ti-info-circle"></i> ATK Finishing adalah bahan pendukung seperti renda, kancing, tali, label, dll.
+                                </small>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -2180,54 +2235,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                         <div class="row">
                             <div class="col-md-6">
-                                <!-- Input ATK Finishing (Hanya untuk produk mukena) -->
-                                <div class="card mb-3" id="atk-card">
-                                    <div class="card-header bg-light">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <h6 class="mb-0">ATK Finishing yang Digunakan</h6>
-                                            <button type="button" class="btn btn-sm btn-primary" id="btnTambahAtk">
-                                                <i class="ti ti-plus"></i> Tambah ATK
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div class="card-body" id="atk-container-wrapper">
-                                        <!-- Container untuk ATK items -->
-                                        <div id="atk-container">
-                                            <div class="atk-item row mb-3">
-                                                <div class="col-md-5">
-                                                    <label class="form-label">Nama ATK Finishing <span class="text-danger">*</span></label>
-                                                    <input type="text" name="atk_nama[]" class="form-control atk-nama"
-                                                        placeholder="Contoh: Renda, Kancing, Tali, Label, dll." required>
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <label class="form-label">Jumlah <span class="text-danger">*</span></label>
-                                                    <div class="input-group">
-                                                        <input type="number" name="atk_jumlah[]" class="form-control atk-jumlah"
-                                                            min="1" value="1" required>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <label class="form-label">Satuan</label>
-                                                    <select name="atk_satuan[]" class="form-control atk-satuan">
-                                                        <option value="meter">Meter</option>
-                                                        <option value="buah" selected>Buah</option>
-                                                        <option value="set">Set</option>
-                                                        <option value="roll">Roll</option>
-                                                        <option value="lbr">Lembar</option>
-                                                    </select>
-                                                </div>
-                                                <div class="col-md-1 d-flex align-items-end">
-                                                    <button type="button" class="btn btn-sm btn-danger btn-hapus-atk" style="display: none;">
-                                                        <i class="ti ti-trash"></i>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <small class="text-muted">
-                                            <i class="ti ti-info-circle"></i> ATK Finishing adalah bahan pendukung seperti renda, kancing, tali, label, dll.
-                                        </small>
-                                    </div>
-                                </div>
+
                             </div>
 
                             <div class="col-md-6">
@@ -2317,7 +2325,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script> -->
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -2494,6 +2502,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     const totalPotong = button.getAttribute('data-total-potong');
                     const totalBordir = button.getAttribute('data-total-bordir') || 0;
 
+                    // AMBIL TIPE PRODUK dari tombol
+                    const tipeProduk = button.getAttribute('data-tipe-produk');
+
                     document.getElementById('modal_tanggal_id_hasil_potong').value = id;
                     document.getElementById('modal_tanggal_produk').value = produk;
                     document.getElementById('modal_tanggal_seri').value = seri;
@@ -2510,58 +2521,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     document.getElementById('modal_tanggal_total_potong').value = infoText;
                     document.getElementById('modal_tanggal_kirim_jahit').value = '<?= date('Y-m-d') ?>';
                     document.getElementById('modal_tanggal_penjahit').selectedIndex = 0;
-
-                    modalTanggalPenjahitan.show();
-                }
-
-                // Tombol Input Hasil Jahit
-                if (e.target.closest('.btn-input-hasil-penjahitan')) {
-                    e.preventDefault();
-                    const button = e.target.closest('.btn-input-hasil-penjahitan');
-                    const id = button.getAttribute('data-id');
-                    const produk = button.getAttribute('data-produk');
-                    const seri = button.getAttribute('data-seri');
-                    const totalPotong = button.getAttribute('data-total-potong');
-                    const totalBordir = parseInt(button.getAttribute('data-total-bordir')) || 0;
-                    const penjahit = button.getAttribute('data-penjahit');
-                    const namaPenjahit = button.getAttribute('data-nama-penjahit');
-
-                    // AMBIL TIPE PRODUK dari tombol
-                    const tipeProduk = button.getAttribute('data-tipe-produk');
-
-                    document.getElementById('modal_hasil_id_hasil_potong').value = id;
-                    document.getElementById('modal_hasil_produk').value = produk;
-                    document.getElementById('modal_hasil_seri').value = seri;
-
-                    // Tampilkan total hasil potong
-                    document.getElementById('modal_hasil_total_potong').value = totalPotong + ' Pcs';
-
-                    // Jika ada hasil bordir, tampilkan juga
-                    if (totalBordir > 0) {
-                        document.getElementById('modal_hasil_total_potong').value =
-                            totalPotong + ' Pcs (Potong) | ' + totalBordir + ' Pcs (Bordir)';
-                    }
-
-                    document.getElementById('modal_hasil_nama_penjahit').value = namaPenjahit || '-';
-
-                    // Set maksimal berdasarkan hasil bordir jika ada, jika tidak gunakan hasil potong
-                    const maxJahit = totalBordir > 0 ? totalBordir : totalPotong;
-
-                    document.getElementById('modal_hasil_total_jahit').value = maxJahit;
-                    document.getElementById('modal_hasil_total_jahit').max = maxJahit;
-
-                    // Tampilkan informasi sumber maksimal
-                    let sourceInfo = totalBordir > 0 ? 'berdasarkan hasil bordir' : 'berdasarkan hasil potong (tanpa bordir)';
-                    document.getElementById('modal_hasil_max_total').textContent = maxJahit + ' Pcs ' + sourceInfo;
-
-                    document.getElementById('modal_hasil_tanggal_jahit').value = '<?= date('Y-m-d') ?>';
-
-                    // Reset input upah penjahit
-                    document.getElementById('upah_per_potongan_manual').value = '';
-                    document.getElementById('tarif_penjahit_dropdown').selectedIndex = 0;
-                    document.getElementById('total_upah_penjahit_display').value = '';
-                    document.getElementById('total_upah_penjahit_hidden').value = '';
-                    document.getElementById('upah_per_potongan_penjahit_hidden').value = '';
 
                     // Toggle ATK section berdasarkan tipe produk
                     const atkCard = document.getElementById('atk-card');
@@ -2609,6 +2568,55 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             deleteBtn.style.display = 'none';
                         }
                     }
+
+                    modalTanggalPenjahitan.show();
+                }
+
+                // Tombol Input Hasil Jahit
+                if (e.target.closest('.btn-input-hasil-penjahitan')) {
+                    e.preventDefault();
+                    const button = e.target.closest('.btn-input-hasil-penjahitan');
+                    const id = button.getAttribute('data-id');
+                    const produk = button.getAttribute('data-produk');
+                    const seri = button.getAttribute('data-seri');
+                    const totalPotong = button.getAttribute('data-total-potong');
+                    const totalBordir = parseInt(button.getAttribute('data-total-bordir')) || 0;
+                    const penjahit = button.getAttribute('data-penjahit');
+                    const namaPenjahit = button.getAttribute('data-nama-penjahit');
+
+                    document.getElementById('modal_hasil_id_hasil_potong').value = id;
+                    document.getElementById('modal_hasil_produk').value = produk;
+                    document.getElementById('modal_hasil_seri').value = seri;
+
+                    // Tampilkan total hasil potong
+                    document.getElementById('modal_hasil_total_potong').value = totalPotong + ' Pcs';
+
+                    // Jika ada hasil bordir, tampilkan juga
+                    if (totalBordir > 0) {
+                        document.getElementById('modal_hasil_total_potong').value =
+                            totalPotong + ' Pcs (Potong) | ' + totalBordir + ' Pcs (Bordir)';
+                    }
+
+                    document.getElementById('modal_hasil_nama_penjahit').value = namaPenjahit || '-';
+
+                    // Set maksimal berdasarkan hasil bordir jika ada, jika tidak gunakan hasil potong
+                    const maxJahit = totalBordir > 0 ? totalBordir : totalPotong;
+
+                    document.getElementById('modal_hasil_total_jahit').value = maxJahit;
+                    document.getElementById('modal_hasil_total_jahit').max = maxJahit;
+
+                    // Tampilkan informasi sumber maksimal
+                    let sourceInfo = totalBordir > 0 ? 'berdasarkan hasil bordir' : 'berdasarkan hasil potong (tanpa bordir)';
+                    document.getElementById('modal_hasil_max_total').textContent = maxJahit + ' Pcs ' + sourceInfo;
+
+                    document.getElementById('modal_hasil_tanggal_jahit').value = '<?= date('Y-m-d') ?>';
+
+                    // Reset input upah penjahit
+                    document.getElementById('upah_per_potongan_manual').value = '';
+                    document.getElementById('tarif_penjahit_dropdown').selectedIndex = 0;
+                    document.getElementById('total_upah_penjahit_display').value = '';
+                    document.getElementById('total_upah_penjahit_hidden').value = '';
+                    document.getElementById('upah_per_potongan_penjahit_hidden').value = '';
 
                     modalHasilPenjahitan.show();
                 }
@@ -2676,7 +2684,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <strong>Keterangan:</strong><br>
             1. Tanggal kirim jahit akan dihapus<br>
             2. Data penjahit akan dihapus<br>
-            3. Status akan kembali ke "Bordir"`;
+            3. Data ATK Finishing akan dihapus (jika ada)<br>
+            4. Status akan kembali ke "Bordir"`;
                             break;
 
                         case 'hasil_bordir':
@@ -2876,7 +2885,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <div class="input-group">
                     <input type="number" name="atk_jumlah[]" class="form-control atk-jumlah"
                         min="1" value="1" required>
-                    <span class="input-group-text">Pcs</span>
                 </div>
             </div>
             <div class="col-md-3">
@@ -2933,7 +2941,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             });
 
             // Reset ATK container saat modal ditutup
-            document.getElementById('modalHasilPenjahitan')?.addEventListener('hidden.bs.modal', function() {
+            document.getElementById('modalTanggalPenjahitan')?.addEventListener('hidden.bs.modal', function() {
                 // Reset ATK container ke 1 item
                 const firstAtkItem = document.querySelector('.atk-item:first-child');
 

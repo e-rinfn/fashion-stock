@@ -18,11 +18,15 @@ $penjahit = query("SELECT * FROM penjahit ORDER BY nama_penjahit");
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_kirim_finishing'])) {
 
     // VALIDASI INPUT WAJIB
-    if (empty($_POST['id_petugas_finishing']) || empty($_POST['nama_penjahit'])) {
+    if (empty($_POST['id_petugas_finishing']) || empty($_POST['nama_penjahit']) || !is_array($_POST['nama_penjahit'])) {
         $error = "Petugas Finishing dan Nama Penjahit wajib diisi!";
     } else {
         $id_petugas_finishing = intval($_POST['id_petugas_finishing']);
-        $nama_penjahit = $conn->real_escape_string($_POST['nama_penjahit']); // Sekarang nama langsung
+        // Handle multiple penjahit - gabungkan dengan koma
+        $nama_penjahit_array = array_map(function ($name) use ($conn) {
+            return $conn->real_escape_string($name);
+        }, $_POST['nama_penjahit']);
+        $nama_penjahit = implode(', ', $nama_penjahit_array); // Gabung dengan koma
         $status_finishing = $conn->real_escape_string($_POST['status_finishing']);
         $items = $_POST['items'];
         $tanggal_kirim_finishing = $conn->real_escape_string($_POST['tanggal_kirim_finishing']);
@@ -164,10 +168,36 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_kirim_fin
 }
 ?>
 
+<!-- Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+
 <style>
     /* Paksa SweetAlert berada di atas segalanya */
     .swal2-container {
         z-index: 99999 !important;
+    }
+
+    /* Styling untuk Select2 multi-select */
+    .select2-container--bootstrap-5 .select2-selection--multiple {
+        min-height: 38px;
+    }
+
+    .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice {
+        /* background-color: #0d6efd; */
+        color: white;
+        border: none;
+        padding: 2px 8px;
+        margin: 3px;
+    }
+
+    .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice__remove {
+        color: white;
+        margin-right: 5px;
+    }
+
+    .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice__remove:hover {
+        color: #ff6b6b;
     }
 
     .error {
@@ -272,14 +302,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_kirim_fin
 
                                             <div class="col-md-4">
                                                 <label class="form-label">Nama Penjahit <span class="text-danger">*</span></label>
-                                                <select name="nama_penjahit" class="form-control" required>
-                                                    <option value="">-- Pilih Penjahit --</option>
+                                                <select name="nama_penjahit[]" id="selectPenjahit" class="form-control" multiple="multiple" required>
                                                     <?php foreach ($penjahit as $j): ?>
-                                                        <option value="<?= htmlspecialchars($j['nama_penjahit']) ?>" <?= isset($_POST['nama_penjahit']) && $_POST['nama_penjahit'] == $j['nama_penjahit'] ? 'selected' : '' ?>>
+                                                        <option value="<?= htmlspecialchars($j['nama_penjahit']) ?>"
+                                                            <?php
+                                                            if (isset($_POST['nama_penjahit']) && is_array($_POST['nama_penjahit'])) {
+                                                                echo in_array($j['nama_penjahit'], $_POST['nama_penjahit']) ? 'selected' : '';
+                                                            }
+                                                            ?>>
                                                             <?= htmlspecialchars($j['nama_penjahit']) ?>
                                                         </option>
                                                     <?php endforeach; ?>
                                                 </select>
+                                                <small class="text-muted">Bisa pilih lebih dari satu penjahit</small>
                                             </div>
 
                                             <div class="col-md-4">
@@ -625,16 +660,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_kirim_fin
 
     // Validasi form sebelum submit
     document.getElementById('formPenjualanBahan').addEventListener('submit', function(e) {
-        const penjahitSelect = document.querySelector('select[name="nama_penjahit"]');
+        const penjahitSelect = document.getElementById('selectPenjahit');
+        const selectedPenjahit = Array.from(penjahitSelect.selectedOptions);
         const rows = document.querySelectorAll('#bahanContainer tr');
 
-        // Validasi penjahit
-        if (!penjahitSelect.value) {
+        // Validasi penjahit (multiple)
+        if (selectedPenjahit.length === 0) {
             e.preventDefault();
             Swal.fire({
                 icon: 'error',
                 title: 'Penjahit Belum Dipilih',
-                text: 'Silakan pilih penjahit terlebih dahulu',
+                text: 'Silakan pilih minimal satu penjahit',
                 confirmButtonText: 'Oke'
             });
             penjahitSelect.focus();
@@ -684,7 +720,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_kirim_fin
     // Tambahkan satu koko secara default saat halaman dimuat
     document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('tambahBahan').click();
+
+        // Inisialisasi Select2 untuk multi-select penjahit
+        $('#selectPenjahit').select2({
+            theme: 'bootstrap-5',
+            placeholder: '-- Pilih Penjahit (bisa lebih dari satu) --',
+            allowClear: true,
+            width: '100%',
+            closeOnSelect: false
+        });
     });
 </script>
+
+<!-- Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 </html>

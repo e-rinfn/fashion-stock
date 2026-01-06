@@ -105,7 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="row">
                             <div class="col-md-4 mb-3">
                                 <label for="jumlah_stok" class="form-label">Jumlah Stok</label>
-                                <input type="number" step="1" id="jumlah_stok" name="jumlah_stok" class="form-control" value="<?= number_format($bahan['jumlah_stok']); ?>" required>
+                                <input type="number" step="1" id="jumlah_stok" name="jumlah_stok" class="form-control" value="<?= $bahan['jumlah_stok']; ?>" required>
                             </div>
 
                             <div class="col-md-2 mb-3">
@@ -116,7 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <div class="col-md-3 mb-3">
                                 <label for="jumlah_meter" class="form-label">Jumlah Meter</label>
                                 <div class="input-group">
-                                    <input type="number" step="1" id="jumlah_meter" name="jumlah_meter" class="form-control" value="<?= number_format($bahan['jumlah_meter']); ?>" required>
+                                    <input type="number" step="1" id="jumlah_meter" name="jumlah_meter" class="form-control" value="<?= $bahan['jumlah_meter']; ?>" required>
                                     <span class="input-group-text">Meter</span>
                                 </div>
                             </div>

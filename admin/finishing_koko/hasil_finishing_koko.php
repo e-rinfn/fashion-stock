@@ -228,7 +228,8 @@ $sql_main = "SELECT
     hk.tanggal_kirim_finishing,
     hk.status_finishing,
     hk.total_kirim,
-    hk.tanggal_hasil_finishing
+    hk.tanggal_hasil_finishing,
+    hk.nama_penjahit
 FROM hasil_kirim_finishing hk
 LEFT JOIN produk p ON hk.id_produk = p.id_produk 
 LEFT JOIN petugas_finishing pet ON hk.id_petugas_finishing = pet.id_petugas_finishing 
@@ -1027,6 +1028,21 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
                                     <span class="info-value petugas-fixed"><?= htmlspecialchars($main_data['nama_petugas']) ?></span>
                                     <small class="petugas-note">(Tetap sesuai pengiriman)</small>
                                 </div>
+                                <div class="info-item">
+                                    <span class="info-label">Nama Penjahit:</span>
+                                    <span class="info-value">
+                                        <?php if (!empty($main_data['nama_penjahit'])): ?>
+                                            <?php
+                                            $penjahit_list = explode(', ', $main_data['nama_penjahit']);
+                                            foreach ($penjahit_list as $index => $penjahit):
+                                            ?>
+                                                <span class="badge bg-info me-1"><?= htmlspecialchars($penjahit) ?></span>
+                                            <?php endforeach; ?>
+                                        <?php else: ?>
+                                            <span class="text-muted">-</span>
+                                        <?php endif; ?>
+                                    </span>
+                                </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="info-item">
@@ -1075,6 +1091,21 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
                                             <tr>
                                                 <th class="bg-light">Petugas</th>
                                                 <td><?= htmlspecialchars($main_data['nama_petugas']) ?></td>
+                                            </tr>
+                                            <tr>
+                                                <th class="bg-light">Penjahit</th>
+                                                <td>
+                                                    <?php if (!empty($main_data['nama_penjahit'])): ?>
+                                                        <?php
+                                                        $penjahit_list = explode(', ', $main_data['nama_penjahit']);
+                                                        foreach ($penjahit_list as $penjahit):
+                                                        ?>
+                                                            <span class="badge bg-info me-1 mb-1"><?= htmlspecialchars($penjahit) ?></span>
+                                                        <?php endforeach; ?>
+                                                    <?php else: ?>
+                                                        <span class="text-muted">-</span>
+                                                    <?php endif; ?>
+                                                </td>
                                             </tr>
                                             <tr>
                                                 <th class="bg-light">Total Selesai</th>

@@ -293,6 +293,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <select name="jenis_karyawan" class="form-select" id="jenisKaryawanSelect">
                                 <option value="all">Semua Jenis</option>
                                 <option value="pemotong" <?= $jenis_karyawan == 'pemotong' ? 'selected' : '' ?>>Pemotong</option>
+                                <option value="bordir" <?= $jenis_karyawan == 'bordir' ? 'selected' : '' ?>>Bordir</option>
                                 <option value="penjahit" <?= $jenis_karyawan == 'penjahit' ? 'selected' : '' ?>>Penjahit</option>
                                 <option value="finishing" <?= $jenis_karyawan == 'finishing' || $jenis_karyawan == 'petugas_finishing' ? 'selected' : '' ?>>Finishing</option>
                             </select>
@@ -531,6 +532,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         nama: "<?= htmlspecialchars($p['nama_pemotong']) ?>",
                         jenis: "pemotong",
                         display: "<?= htmlspecialchars($p['nama_pemotong']) ?> (Pemotong)"
+                    },
+                <?php endforeach; ?>
+            <?php endif; ?>
+            <?php if ($jenis_karyawan == 'bordir' || $jenis_karyawan == 'all'): ?>
+                <?php foreach ($bordir as $b): ?> {
+                        id: <?= $b['id_bordir'] ?>,
+                        nama: "<?= htmlspecialchars($b['nama_bordir']) ?>",
+                        jenis: "bordir",
+                        display: "<?= htmlspecialchars($b['nama_bordir']) ?> (Bordir)"
                     },
                 <?php endforeach; ?>
             <?php endif; ?>

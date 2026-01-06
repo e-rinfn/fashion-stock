@@ -6,7 +6,28 @@ ini_set('display_errors', 1);
 
 
 require_once '../config/functions.php';
+require_once '../config/database.php';
 require_once './includes/header.php';
+
+// Handle tambah tarif upah
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tambah_tarif'])) {
+    $jenis_tarif = $conn->real_escape_string($_POST['jenis_tarif']);
+    $tarif_per_unit = floatval($_POST['tarif_per_unit']);
+    $berlaku_sejak = $conn->real_escape_string($_POST['berlaku_sejak']);
+    $keterangan = $conn->real_escape_string($_POST['keterangan'] ?? '');
+
+    $sql = "INSERT INTO tarif_upah (jenis_tarif, tarif_per_unit, berlaku_sejak, keterangan) 
+            VALUES ('$jenis_tarif', $tarif_per_unit, '$berlaku_sejak', '$keterangan')";
+
+    if ($conn->query($sql)) {
+        $_SESSION['success'] = "Tarif upah berhasil ditambahkan!";
+    } else {
+        $_SESSION['error'] = "Gagal menambahkan tarif upah: " . $conn->error;
+    }
+
+    header("Location: master_data.php");
+    exit();
+}
 
 // Query semua data master
 $bahan_baku = query("SELECT * FROM bahan_baku ORDER BY nama_bahan");
@@ -90,6 +111,25 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2>Master Data</h2>
             </div>
+
+            <!-- Messages -->
+            <?php if (isset($_SESSION['success'])): ?>
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="ti ti-check me-2"></i>
+                    <?= htmlspecialchars($_SESSION['success']) ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                <?php unset($_SESSION['success']); ?>
+            <?php endif; ?>
+
+            <?php if (isset($_SESSION['error'])): ?>
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="ti ti-alert-circle me-2"></i>
+                    <?= htmlspecialchars($_SESSION['error']) ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                <?php unset($_SESSION['error']); ?>
+            <?php endif; ?>
 
             <!-- Tab Navigation -->
             <ul class="nav nav-tabs-custom mb-4" id="masterDataTab" role="tablist">
@@ -600,9 +640,9 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                     <div class="card">
                         <div class="card-header card-header-simple d-flex justify-content-between align-items-center">
                             <h6 class="mb-0">Data Tarif Upah</h6>
-                            <a href="<?= $base_url ?>/manager/upah/upah_settings.php" class="btn btn-primary btn-sm">
-                                <i class="ti ti-settings"></i> Kelola
-                            </a>
+                            <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalTambahTarif">
+                                <i class="ti ti-plus"></i> Tambah
+                            </button>
                         </div>
                         <div class="card-body">
                             <div class="table-responsive table-container">
@@ -663,6 +703,51 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
     <!-- [ Main Content ] end -->
 
     <?php include_once './includes/footer.php'; ?>
+
+    <!-- Modal Tambah Tarif Upah -->
+    <div class="modal fade" id="modalTambahTarif" tabindex="-1" aria-labelledby="modalTambahTarifLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTambahTarifLabel">Tambah Tarif Upah Baru</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="POST" action="">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="jenis_tarif" class="form-label">Jenis Tarif <span class="text-danger">*</span></label>
+                            <select class="form-select" id="jenis_tarif" name="jenis_tarif" required>
+                                <option value="">-- Pilih Jenis Tarif --</option>
+                                <option value="pemotongan">Pemotongan</option>
+                                <option value="bordir">Bordir</option>
+                                <option value="penjahitan">Penjahitan</option>
+                                <option value="finishing">Finishing</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="tarif_per_unit" class="form-label">Tarif per Unit (Rp) <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="tarif_per_unit" name="tarif_per_unit"
+                                placeholder="Masukkan tarif per unit" min="0" step="100" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="berlaku_sejak" class="form-label">Berlaku Sejak <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="berlaku_sejak" name="berlaku_sejak"
+                                value="<?= date('Y-m-d') ?>" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="keterangan" class="form-label">Keterangan</label>
+                            <textarea class="form-control" id="keterangan" name="keterangan" rows="2"
+                                placeholder="Masukkan keterangan (opsional)"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" name="tambah_tarif" class="btn btn-primary">Simpan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
     <script>
         // Simpan tab aktif ke localStorage

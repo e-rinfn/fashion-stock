@@ -13,23 +13,76 @@ ini_set('session.cookie_lifetime', $session_lifetime);
 
 // Set cookie params sebelum session_start
 session_set_cookie_params([
-    'lifetime' => $session_lifetime,
-    'path' => '/',
-    'secure' => false,    // Set true jika menggunakan HTTPS
-    'httponly' => true,   // Mencegah akses cookie via JavaScript
-    'samesite' => 'Lax'   // Proteksi CSRF
+  'lifetime' => $session_lifetime,
+  'path' => '/',
+  'secure' => false,    // Set true jika menggunakan HTTPS
+  'httponly' => true,   // Mencegah akses cookie via JavaScript
+  'samesite' => 'Lax'   // Proteksi CSRF
 ]);
 
 session_start();
 
 // Perpanjang session setiap kali ada aktivitas
 if (isset($_SESSION['user_id'])) {
-    setcookie(session_name(), session_id(), time() + $session_lifetime, '/');
+  setcookie(session_name(), session_id(), time() + $session_lifetime, '/');
 }
 
 require_once '../config/database.php';
 require_once '../config/functions.php';
 include_once '../config/config.php';
+
+// ==========================================
+// AUTO LOGIN VIA REMEMBER ME COOKIE
+// ==========================================
+// Cek jika user belum login tapi punya remember me cookie
+if (!isset($_SESSION['user_id']) && isset($_COOKIE['remember_token'])) {
+  $token = $conn->real_escape_string($_COOKIE['remember_token']);
+
+  // Cari user dengan token ini
+  $sql = "SELECT * FROM users WHERE remember_token = '$token' AND token_expiry > NOW() LIMIT 1";
+  $result = $conn->query($sql);
+
+  if ($result && $result->num_rows > 0) {
+    $user = $result->fetch_assoc();
+
+    // Set session
+    $_SESSION['user_id'] = $user['id_user'];
+    $_SESSION['username'] = $user['username'];
+    $_SESSION['role'] = $user['role'];
+    $_SESSION['nama'] = $user['nama_lengkap'];
+    $_SESSION['nama_lengkap'] = $user['nama_lengkap'];
+
+    // Redirect berdasarkan role
+    if ($user['role'] == 'admin') {
+      header("Location: ../admin/index.php");
+    } elseif ($user['role'] == 'owner') {
+      header("Location: ../owner/index.php");
+    } elseif ($user['role'] == 'manager') {
+      header("Location: ../manager/index.php");
+    } else {
+      header("Location: ../user/index.php");
+    }
+    exit();
+  } else {
+    // Token tidak valid, hapus cookie
+    setcookie('remember_token', '', time() - 3600, '/');
+  }
+}
+
+// Jika sudah login, redirect ke halaman sesuai role
+if (isset($_SESSION['user_id'])) {
+  $role = $_SESSION['role'] ?? '';
+  if ($role == 'admin') {
+    header("Location: ../admin/index.php");
+  } elseif ($role == 'owner') {
+    header("Location: ../owner/index.php");
+  } elseif ($role == 'manager') {
+    header("Location: ../manager/index.php");
+  } else {
+    header("Location: ../user/index.php");
+  }
+  exit();
+}
 
 // Inisialisasi variabel error
 $error = '';
@@ -64,6 +117,26 @@ if (isset($_POST['login'])) {
       $_SESSION['username'] = $user['username'];
       $_SESSION['role'] = $user['role'];
       $_SESSION['nama'] = $user['nama_lengkap'];
+      $_SESSION['nama_lengkap'] = $user['nama_lengkap'];
+
+      // ==========================================
+      // SET REMEMBER ME TOKEN (AUTO - ALWAYS ON FOR PWA)
+      // ==========================================
+      $token = bin2hex(random_bytes(32)); // Generate secure token
+      $expiry = date('Y-m-d H:i:s', strtotime('+30 days'));
+
+      // Simpan token ke database
+      $update_sql = "UPDATE users SET remember_token = ?, token_expiry = ? WHERE id_user = ?";
+      $stmt = $conn->prepare($update_sql);
+      $stmt->bind_param("ssi", $token, $expiry, $user['id_user']);
+      $result_update = $stmt->execute();
+
+      // Debug: Cek hasil update
+      error_log("Token update result: " . ($result_update ? "SUCCESS" : "FAILED - " . $conn->error));
+      error_log("Token: $token, Expiry: $expiry, User ID: " . $user['id_user']);
+
+      // Set cookie untuk 30 hari
+      setcookie('remember_token', $token, time() + (86400 * 30), '/', '', false, true);
 
       // Debug: Session values
       error_log("Session set: " . print_r($_SESSION, true));

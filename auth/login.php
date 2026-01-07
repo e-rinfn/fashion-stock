@@ -111,6 +111,13 @@ if (isset($_POST['login'])) {
 
   <!-- [Favicon] icon -->
   <link rel="icon" type="image/x-icon" href="<?= $base_url ?>/assets/img/Logo-Ipenk.png" />
+  <!-- [PWA] -->
+  <link rel="manifest" href="<?= $base_url ?>/manifest.json">
+  <meta name="theme-color" content="#000000">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Ipenk Legend">
+  <link rel="apple-touch-icon" href="<?= $base_url ?>/icons/Logo-Ipenk.png">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&display=swap" id="main-font-link">
   <!-- [Tabler Icons] https://tablericons.com -->
   <link rel="stylesheet" href="../assets/fonts/tabler-icons.min.css">
@@ -241,7 +248,20 @@ if (isset($_POST['login'])) {
     font_change("Public-Sans");
   </script>
 
-
+  <!-- [PWA Service Worker Registration] -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('<?= $base_url ?>/sw.js')
+          .then((registration) => {
+            console.log('ServiceWorker registered: ', registration.scope);
+          })
+          .catch((error) => {
+            console.log('ServiceWorker registration failed: ', error);
+          });
+      });
+    }
+  </script>
 
 </body>
 <!-- [Body] end -->

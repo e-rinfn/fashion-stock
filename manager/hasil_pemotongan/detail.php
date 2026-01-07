@@ -1,4 +1,7 @@
 <?php
+
+$page_title = "DETAIL PRODUKSI";
+
 require_once '../includes/header.php';
 require_once '../../config/functions.php';
 
@@ -253,29 +256,7 @@ switch ($produksi['status_potong']) {
     <?php include_once '../includes/sidebar.php'; ?>
     <!-- Sidebar End -->
 
-    <!-- [ Header Topbar ] start -->
-    <header class="pc-header">
-        <div class="header-wrapper">
-            <!-- [Mobile Media Block] start -->
-            <div class="me-auto pc-mob-drp">
-                <ul class="list-unstyled">
-                    <!-- ======= Menu collapse Icon ===== -->
-                    <li class="pc-h-item pc-sidebar-collapse">
-                        <a href="#" class="pc-head-link ms-0" id="sidebar-hide">
-                            <i class="ti ti-menu-2"></i>
-                        </a>
-                    </li>
-                    <li class="pc-h-item pc-sidebar-popup">
-                        <a href="#" class="pc-head-link ms-0" id="mobile-collapse">
-                            <i class="ti ti-menu-2"></i>
-                        </a>
-                    </li>
-                </ul>
-            </div>
-            <!-- [Mobile Media Block end] -->
-        </div>
-    </header>
-    <!-- [ Header ] end -->
+    <?php include_once '../includes/navbar.php'; ?>
 
     <!-- [ Main Content ] start -->
     <div class="pc-container">
@@ -283,7 +264,6 @@ switch ($produksi['status_potong']) {
             <!-- [ Main Content ] start -->
             <div class="row">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2>Detail Produksi</h2>
                     <div>
                         <a href="list.php" class="btn btn-secondary m-1">
                             <i class="ti ti-arrow-back"></i> Kembali ke Daftar
@@ -932,7 +912,7 @@ switch ($produksi['status_potong']) {
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script> -->
 
 <script>
     // Sertakan script modal dari list.php jika diperlukan

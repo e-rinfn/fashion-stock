@@ -4,6 +4,8 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
+$page_title = "KIRIM FINISHING KOKO";
+
 require_once '../includes/header.php';
 require_once '../../config/database.php';
 require_once '../../config/functions.php';
@@ -277,10 +279,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_kirim_fin
 
             <!-- [ Main Content ] start -->
             <div class="row">
-
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2>Tambah Kirim Finishing Koko</h2>
-                </div>
 
                 <div class="card">
                     <!-- Tampilkan pesan error atau success -->

@@ -1,4 +1,7 @@
 <?php
+
+$page_title = "UBAH DATA SUPPLIER";
+
 require_once '../../config/database.php';
 require_once '../../config/functions.php';
 
@@ -62,11 +65,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
             <!-- [ Main Content ] start -->
             <div class="row">
-
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2>Edit Data Supplier</h2>
-                </div>
-
 
                 <div class="card p-4 shadow-sm">
 

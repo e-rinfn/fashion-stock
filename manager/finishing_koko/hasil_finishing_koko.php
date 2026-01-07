@@ -4,6 +4,8 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
+$page_title = "HASIL FINISHING KOKO";
+
 require_once '../includes/header.php';
 require_once '../../config/database.php';
 require_once '../../config/functions.php';
@@ -983,7 +985,6 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
             <!-- [ Main Content ] start -->
             <div class="row">
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h2>Input Hasil Finishing Koko</h2>
                     <div>
                         <a href="finishing.php" class="btn btn-secondary">
                             <i class="ti ti-arrow-left"></i> Kembali ke Daftar

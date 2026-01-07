@@ -1,4 +1,7 @@
 <?php
+
+$page_title = "TAMBAH PENGGUNA BARU";
+
 require_once '../includes/header.php';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -58,10 +61,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
             <!-- [ Main Content ] start -->
             <div class="row">
-
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2>Tambah User Baru</h2>
-                </div>
 
                 <div class="card p-3">
                     <!-- Tampilkan pesan error atau success -->

@@ -1,4 +1,6 @@
 <?php
+$page_title = "STOK PRODUK";
+
 require_once '../includes/header.php';
 
 // Ambil parameter filter
@@ -54,10 +56,6 @@ $produk = query($sql);
 
             <!-- [ Main Content ] start -->
             <div class="row">
-
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2>Stok Produk</h2>
-                </div>
 
                 <!-- Filter -->
                 <form method="GET" class="row g-3 mb-3">

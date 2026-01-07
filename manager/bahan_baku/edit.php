@@ -1,5 +1,7 @@
 <?php
 
+$page_title = "UBAH DATA BAHAN BAKU";
+
 include_once __DIR__ . '/../../config/config.php';
 require_once '../includes/header.php';
 
@@ -84,11 +86,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <!-- [ Main Content ] start -->
             <div class="row">
-
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2>Ubah Data Bahan Baku</h2>
-                </div>
-
 
                 <div class="card p-4 shadow-sm">
 

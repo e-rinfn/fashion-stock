@@ -1,4 +1,7 @@
 <?php
+
+$page_title = "PENJUALAN PRODUK";
+
 require_once '../includes/header.php';
 require_once '../../config/database.php';
 require_once '../../config/functions.php';
@@ -167,11 +170,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_penjualan'])) {
 
             <!-- [ Main Content ] start -->
             <div class="row">
-
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2>PESANAN PENJUALAN PRODUK</h2>
-                </div>
-
 
                 <div class="card">
                     <div class="card-body">

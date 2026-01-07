@@ -4,6 +4,8 @@
 error_reporting(error_level: E_ALL);
 ini_set('display_errors', 1);
 
+$page_title = "DATA PRODUKSI";
+
 require_once '../includes/header.php';
 require_once '../../config/functions.php';
 
@@ -1249,33 +1251,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <?php include_once '../includes/sidebar.php'; ?>
     <!-- Sidebar End -->
 
-    <!-- [ Header Topbar ] start -->
-    <header class="pc-header">
-        <div class="header-wrapper">
-            <div class="me-auto pc-mob-drp">
-                <ul class="list-unstyled">
-                    <li class="pc-h-item pc-sidebar-collapse">
-                        <a href="#" class="pc-head-link ms-0" id="sidebar-hide">
-                            <i class="ti ti-menu-2"></i>
-                        </a>
-                    </li>
-                    <li class="pc-h-item pc-sidebar-popup">
-                        <a href="#" class="pc-head-link ms-0" id="mobile-collapse">
-                            <i class="ti ti-menu-2"></i>
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </header>
-    <!-- [ Header ] end -->
+    <?php include_once '../includes/navbar.php'; ?>
+
 
     <!-- [ Main Content ] start -->
     <div class="pc-container">
         <div class="pc-content">
             <div class="row">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2>Data Produksi</h2>
                     <div class="btn-group">
                         <div>
                             <a href="new.php" class="btn btn-warning">
@@ -2317,7 +2300,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script> -->
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {

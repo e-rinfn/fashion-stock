@@ -1,4 +1,7 @@
 <?php
+
+$page_title = "TAMBAH DATA BORDIR";
+
 require_once '../includes/header.php';
 require_once '../../config/database.php';
 require_once '../../config/functions.php';
@@ -51,10 +54,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
             <!-- [ Main Content ] start -->
             <div class="row">
-
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2>Tambah Data Bordir</h2>
-                </div>
 
                 <!-- Tampilkan pesan error -->
                 <?php if (isset($error)): ?>

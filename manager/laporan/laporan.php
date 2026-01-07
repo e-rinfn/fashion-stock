@@ -1,11 +1,14 @@
 <?php
-require_once '../includes/header.php';
-require_once '../../config/functions.php';
-
 // Aktifkan error reporting
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
+
+$page_title = "LAPORAN KAS";
+
+require_once '../includes/header.php';
+require_once '../../config/functions.php';
+
 
 // Cek session
 if (session_status() === PHP_SESSION_NONE) {
@@ -304,13 +307,6 @@ while ($row = $result_detail->fetch_assoc()) {
     <!-- [ Main Content ] start -->
     <div class="pc-container">
         <div class="pc-content">
-            <!-- [ Main Content ] start -->
-            <div class="row">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2>Laporan</h2>
-
-                </div>
-            </div>
 
             <!-- Alert Messages -->
             <?php if (isset($_SESSION['error'])): ?>

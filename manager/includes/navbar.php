@@ -17,6 +17,7 @@
                     </li>
                 </ul>
             </div>
+            <h3 class="mb-0 d-flex align-items-center fw-bold"><?= $page_title ?? 'Dashboard' ?></h3>
             <!-- [Mobile Media Block end] -->
             <div class="ms-auto">
                 <ul class="list-unstyled">

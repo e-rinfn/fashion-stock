@@ -1,4 +1,7 @@
 <?php
+
+$page_title = "DAFTAR PENGGUNA";
+
 require_once '../includes/header.php';
 // require_once '../config/functions.php';
 
@@ -39,8 +42,8 @@ $users = query("SELECT * FROM users ORDER BY role, username");
             <!-- [ Main Content ] start -->
             <div class="row">
 
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2>Profile</h2>
+                <div class="d-flex justify-content-end align-items-center mb-3">
+
                     <a href="add.php" class="btn btn-success">
                         <i class="ti ti-circle-plus"></i> Tambah User
                     </a>

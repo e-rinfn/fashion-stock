@@ -1,4 +1,7 @@
 <?php
+
+$page_title = "DASHBOARD";
+
 require_once '../config/functions.php';
 require_once './includes/header.php';
 ?>
@@ -199,7 +202,7 @@ require_once './includes/header.php';
 
                                                             (SELECT 'hasil_jahit_mukena' as type, hpf.tanggal_hasil_jahit as waktu, 
                                                                 CONCAT('Hasil Jahit Mukena: ', p.nama_produk) as aktivitas, 
-                                                                CONCAT(hpf.total_hasil_jahit, ' pcs dari ', hpf.total_hasil, ' pcs potong (Seri: ', hpf.seri, ')') as detail
+                                                                CONCAT(hpf.total_hasil_jahit, ' pcs selesai dari ', hpf.total_hasil, ' pcs potong (Seri: ', hpf.seri, ')') as detail
                                                             FROM hasil_potong_fix hpf 
                                                             JOIN produk p ON hpf.id_produk = p.id_produk 
                                                             WHERE p.tipe_produk = 'mukena' 

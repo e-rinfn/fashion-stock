@@ -4,6 +4,8 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
+$page_title = "DATA FINISHING KOKO";
+
 require_once '../includes/header.php';
 require_once '../../config/database.php';
 require_once '../../config/functions.php';
@@ -790,13 +792,6 @@ $total_upah_filtered = $total_hasil_finishing_filtered * $tarif_standar;
             <!-- [ Main Content ] start -->
             <div class="row">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2>Data Finishing Koko</h2>
-                    <div hidden>
-                        <a href="hasil_finishing.php" class="btn btn-success">
-                            <i class="ti ti-circle-plus"></i> Hasil Finishing
-                        </a>
-                    </div>
-
                     <div>
                         <a href="kirim_koko.php" class="btn btn-warning">
                             <i class="ti ti-circle-plus"></i> Kirim Koko

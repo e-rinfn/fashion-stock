@@ -3,6 +3,8 @@
 error_reporting(error_level: E_ALL);
 ini_set('display_errors', 1);
 
+$page_title = "HPP PENJUALAN PRODUK";
+
 require_once '../includes/header.php';
 require_once '../../config/database.php';
 require_once '../../config/functions.php';
@@ -261,9 +263,6 @@ if ($periode_id > 0) {
             <!-- [ Main Content ] start -->
             <div class="row">
                 <div class="col-12">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h2>Perhitungan HPP (Harga Pokok Produksi)</h2>
-                    </div>
 
                     <!-- Period Selector -->
                     <div class="card shadow-sm mb-4">

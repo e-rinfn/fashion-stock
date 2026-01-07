@@ -1,4 +1,7 @@
 <?php
+
+$page_title = "STOK KOKO UNTUK FINISHING";
+
 require_once '../includes/header.php';
 
 // Ambil parameter filter
@@ -54,10 +57,6 @@ $koko = query($sql);
 
             <!-- [ Main Content ] start -->
             <div class="row">
-
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2>Stok Untuk Finishing Koko</h2>
-                </div>
 
                 <!-- Filter -->
                 <form method="GET" class="row g-3 mb-3">

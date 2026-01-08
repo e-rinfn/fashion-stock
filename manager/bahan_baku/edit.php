@@ -17,7 +17,7 @@ if ($_SESSION['role'] !== 'manager') {
 }
 
 if (!isset($_GET['id'])) {
-    header("Location: list.php");
+    header("Location: {$base_url}/manager/master_data.php");
     exit();
 }
 
@@ -27,7 +27,7 @@ $result = $conn->query($sql);
 $bahan = $result->fetch_assoc();
 
 if (!$bahan) {
-    header("Location: list.php");
+    header("Location: {$base_url}/manager/master_data.php");
     exit();
 }
 
@@ -48,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($conn->query($sql)) {
         $_SESSION['success'] = "Bahan baku berhasil diperbarui";
-        header("Location: list.php");
+        header("Location: {$base_url}/manager/master_data.php");
         exit();
     } else {
         $error = "Gagal memperbarui bahan baku: " . $conn->error;

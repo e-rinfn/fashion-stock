@@ -127,11 +127,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['batal_pembayaran'])) {
                                 </tr>
                                 <tr>
                                     <th>Nama Karyawan</th>
-                                    <td><?= htmlspecialchars($detail['nama_karyawan']) ?></td>
+                                    <td><?= htmlspecialchars($detail['nama_karyawan'] ?? '-') ?></td>
                                 </tr>
                                 <tr>
                                     <th>Jenis</th>
-                                    <td><?= ucfirst($detail['jenis_karyawan']) ?></td>
+                                    <td><?= ucfirst($detail['jenis_karyawan'] ?? '-') ?></td>
                                 </tr>
                                 <tr>
                                     <th>Total Upah</th>

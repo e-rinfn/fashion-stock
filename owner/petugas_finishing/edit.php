@@ -13,7 +13,7 @@ $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 $sql = "SELECT * FROM petugas_finishing WHERE id_petugas_finishing = $id";
 $petugas_finishing = query($sql);
 if (empty($petugas_finishing)) {
-    header("Location: list.php");
+    header("Location: {$base_url}/owner/master_data.php");
     exit();
 }
 $petugas_finishing = $petugas_finishing[0];
@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     if ($conn->query($sql)) {
         $_SESSION['success'] = "Data petugas finishing berhasil diupdate";
-        header("Location: list.php");
+        header("Location: {$base_url}/owner/master_data.php");
         exit();
     } else {
         $error = "Gagal update data: " . $conn->error;

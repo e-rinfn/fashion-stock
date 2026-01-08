@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($conn->query($sql)) {
         $_SESSION['success'] = "Bahan baku berhasil ditambahkan";
-        header("Location: list.php");
+        header("Location: {$base_url}/owner/master_data.php");
         exit();
     } else {
         $error = "Gagal menambahkan bahan baku: " . $conn->error;

@@ -1,8 +1,10 @@
 <?php
 require_once '../includes/header.php';
+require_once '../../config/database.php';
+require_once '../../config/functions.php';
 
 if (!isset($_GET['id'])) {
-    header("Location: list.php");
+    header("Location: {$base_url}/manager/master_data.php");
     exit();
 }
 
@@ -15,7 +17,7 @@ $checkData = $checkResult->fetch_assoc();
 
 if ($checkData['total'] > 0) {
     $_SESSION['error'] = "Produk tidak dapat dihapus karena sudah ada dalam transaksi penjualan";
-    header("Location: list.php");
+    header("Location: {$base_url}/manager/master_data.php");
     exit();
 }
 
@@ -27,5 +29,5 @@ if ($conn->query($sql)) {
     $_SESSION['error'] = "Gagal menghapus produk: " . $conn->error;
 }
 
-header("Location: list.php");
+header("Location: {$base_url}/manager/master_data.php");
 exit();

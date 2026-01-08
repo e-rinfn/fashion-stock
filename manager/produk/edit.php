@@ -6,7 +6,7 @@ require_once '../includes/header.php';
 
 // Cek apakah parameter ID ada
 if (!isset($_GET['id'])) {
-    header("Location: list.php");
+    header("Location: {$base_url}/manager/master_data.php");
     exit;
 }
 
@@ -18,7 +18,7 @@ $result = $conn->query($sql);
 $produk = $result->fetch_assoc();
 
 if (!$produk) {
-    header("Location: list.php");
+    header("Location: {$base_url}/manager/master_data.php");
     exit;
 }
 
@@ -46,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     if ($conn->query($sql)) {
         $_SESSION['success'] = "Produk berhasil diperbarui";
-        header("Location: list.php");
+        header("Location: {$base_url}/manager/master_data.php");
         exit();
     } else {
         $error = "Gagal memperbarui produk: " . $conn->error;

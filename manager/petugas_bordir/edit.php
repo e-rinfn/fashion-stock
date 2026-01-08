@@ -13,7 +13,8 @@ $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 $sql = "SELECT * FROM bordir WHERE id_bordir = $id";
 $bordir = query($sql);
 if (empty($bordir)) {
-    header("Location: list.php");
+    header("Location: {$base_url}/manager/master_data.php");
+
     exit();
 }
 $bordir = $bordir[0];
@@ -33,7 +34,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     if ($conn->query($sql)) {
         $_SESSION['success'] = "Data bordir berhasil diupdate";
-        header("Location: list.php");
+        header("Location: {$base_url}/manager/master_data.php");
+
         exit();
     } else {
         $error = "Gagal update data bordir: " . $conn->error;

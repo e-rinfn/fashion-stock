@@ -387,22 +387,33 @@ function getDetailHutang($id_hutang)
     // - Mengambil semua kolom dari tabel hutang_upah (alias h)
     // - CASE digunakan untuk menentukan nama karyawan:
     //       Jika jenis_karyawan = 'pemotong' → ambil dari tabel pemotong
+    //       Jika jenis_karyawan = 'bordir' → ambil dari tabel bordir
     //       Jika jenis_karyawan = 'penjahit' → ambil dari tabel penjahit
+    //       Jika jenis_karyawan = 'finishing' → ambil dari tabel petugas_finishing
     // - LEFT JOIN digunakan agar data tetap muncul meskipun tidak ada relasi pembayaran
     // - COUNT menghitung jumlah pembayaran yang sudah dilakukan terhadap hutang tersebut
     $sql = "SELECT h.*, 
                    CASE 
-                       WHEN h.jenis_karyawan = 'pemotong' THEN p.nama_pemotong 
-                       ELSE j.nama_penjahit 
+                       WHEN h.jenis_karyawan = 'pemotong' THEN p.nama_pemotong
+                       WHEN h.jenis_karyawan = 'bordir' THEN b.nama_bordir
+                       WHEN h.jenis_karyawan = 'penjahit' THEN j.nama_penjahit
+                       WHEN h.jenis_karyawan = 'finishing' THEN pf.nama_petugas
+                       ELSE '-'
                    END as nama_karyawan,
                    COUNT(pb.id_pembayaran) as jumlah_pembayaran
             FROM hutang_upah h
             LEFT JOIN pemotong p 
                    ON h.jenis_karyawan = 'pemotong' 
                   AND h.id_karyawan = p.id_pemotong
+            LEFT JOIN bordir b 
+                   ON h.jenis_karyawan = 'bordir' 
+                  AND h.id_karyawan = b.id_bordir
             LEFT JOIN penjahit j 
                    ON h.jenis_karyawan = 'penjahit' 
                   AND h.id_karyawan = j.id_penjahit
+            LEFT JOIN petugas_finishing pf 
+                   ON h.jenis_karyawan = 'finishing' 
+                  AND h.id_karyawan = pf.id_petugas_finishing
             LEFT JOIN pembayaran_upah_2 pb 
                    ON h.id_hutang = pb.id_hutang
             WHERE h.id_hutang = ?

@@ -751,6 +751,11 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
         </div>
     </div>
 
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <script>
         // Simpan tab aktif ke localStorage
         document.querySelectorAll('button[data-bs-toggle="pill"]').forEach(button => {

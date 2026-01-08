@@ -14,7 +14,7 @@ $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 $sql = "SELECT * FROM reseller WHERE id_reseller = $id";
 $reseller = query($sql);
 if (empty($reseller)) {
-    header("Location: list.php");
+    header("Location: {$base_url}/owner/master_data.php");
     exit();
 }
 $reseller = $reseller[0];
@@ -34,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     if ($conn->query($sql)) {
         $_SESSION['success'] = "Data reseller berhasil diupdate";
-        header("Location: list.php");
+        header("Location: {$base_url}/owner/master_data.php");
         exit();
     } else {
         $error = "Gagal update data: " . $conn->error;

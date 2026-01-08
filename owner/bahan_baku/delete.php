@@ -12,7 +12,8 @@ if (!isLoggedIn()) {
 // Validasi ID
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
     $_SESSION['error'] = "ID bahan tidak valid";
-    header("Location: list.php");
+    header("Location: {$base_url}/owner/master_data.php");
+
     exit();
 }
 
@@ -22,12 +23,15 @@ $id_bahan = intval($_GET['id']);
 $bahan = query("SELECT * FROM bahan_baku WHERE id_bahan = $id_bahan");
 if (empty($bahan)) {
     $_SESSION['error'] = "Bahan baku tidak ditemukan";
-    header("Location: list.php");
+    header("Location: {$base_url}/owner/master_data.php");
+
     exit();
 }
 
 // Cek relasi dengan tabel lain
-$cek_pengiriman = query("SELECT id_pengiriman_potong FROM pengiriman_pemotong WHERE id_bahan = $id_bahan LIMIT 1");
+$cek_pengiriman = query("SELECT 1 FROM pengiriman_pemotong WHERE id_bahan = $id_bahan LIMIT 1");
+$cek_pembelian = query("SELECT 1 FROM detail_pembelian_bahan WHERE id_bahan = $id_bahan LIMIT 1");
+$cek_penjualan = query("SELECT 1 FROM detail_penjualan_bahan WHERE id_bahan = $id_bahan LIMIT 1");
 
 if ($cek_pengiriman || $cek_pembelian || $cek_penjualan) {
     $error_msg = "Bahan baku tidak dapat dihapus karena masih digunakan dalam: ";
@@ -38,7 +42,8 @@ if ($cek_pengiriman || $cek_pembelian || $cek_penjualan) {
     if ($cek_penjualan) $reasons[] = "penjualan bahan";
 
     $_SESSION['error'] = $error_msg . implode(", ", $reasons);
-    header("Location: list.php");
+    header("Location: {$base_url}/owner/master_data.php");
+
     exit();
 }
 
@@ -61,5 +66,5 @@ try {
     $_SESSION['error'] = $e->getMessage();
 }
 
-header("Location: list.php");
+header("Location: {$base_url}/owner/master_data.php");
 exit();

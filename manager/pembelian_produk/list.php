@@ -640,7 +640,7 @@ if (!empty($detail_pembelian)) {
                                                                         title="Batalkan Pembelian">
                                                                         <i class="ti ti-x"></i>
                                                                     </button>
-                                                                    <?php if ($item['status_pembayaran'] == 'cicilan'): ?>
+                                                                    <?php if ($item['status_pembayaran'] == 'cicilan' || $item['status_pembayaran'] == 'lunas'): ?>
                                                                         <a href="cicilan.php?id=<?= $item['id_pembelian'] ?>"
                                                                             class="btn btn-warning"
                                                                             title="Pembayaran Cicilan">

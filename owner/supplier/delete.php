@@ -11,7 +11,7 @@ if (!isLoggedIn()) {
 
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
     $_SESSION['error'] = "ID supplier tidak valid";
-    header("Location: list.php");
+    header("Location: {$base_url}/owner/master_data.php");
     exit();
 }
 
@@ -21,15 +21,23 @@ $id_supplier = intval($_GET['id']);
 $supplier = query("SELECT * FROM supplier WHERE id_supplier = $id_supplier");
 if (empty($supplier)) {
     $_SESSION['error'] = "Supplier tidak ditemukan";
-    header("Location: list.php");
+    header("Location: {$base_url}/owner/master_data.php");
     exit();
 }
 
 // Check relations
-$check_pembelian = query("SELECT 1 FROM pembelian WHERE id_supplier = $id_supplier LIMIT 1");
-if ($check_pembelian) {
-    $_SESSION['error'] = "Supplier tidak dapat dihapus karena memiliki data pembelian";
-    header("Location: list.php");
+$cek_pembelian = query("SELECT 1 FROM pembelian WHERE id_supplier = $id_supplier LIMIT 1");
+$cek_pembelian_bahan = query("SELECT 1 FROM pembelian_bahan WHERE id_supplier = $id_supplier LIMIT 1");
+
+if ($cek_pembelian || $cek_pembelian_bahan) {
+    $error_msg = "Supplier tidak dapat dihapus karena masih digunakan dalam: ";
+    $reasons = [];
+
+    if ($cek_pembelian) $reasons[] = "pembelian produk";
+    if ($cek_pembelian_bahan) $reasons[] = "pembelian bahan";
+
+    $_SESSION['error'] = $error_msg . implode(", ", $reasons);
+    header("Location: {$base_url}/owner/master_data.php");
     exit();
 }
 
@@ -40,5 +48,5 @@ if ($conn->query("DELETE FROM supplier WHERE id_supplier = $id_supplier")) {
     $_SESSION['error'] = "Gagal menghapus supplier: " . $conn->error;
 }
 
-header("Location: list.php");
+header("Location: {$base_url}/owner/master_data.php");
 exit();

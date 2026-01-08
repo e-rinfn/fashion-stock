@@ -5,7 +5,7 @@ $page_title = "UBAH DATA PENJAHIT";
 require_once '../includes/header.php';
 
 if (!isset($_GET['id'])) {
-    header("Location: list.php");
+    header("Location: {$base_url}/owner/master_data.php");
     exit();
 }
 
@@ -15,7 +15,7 @@ $result = $conn->query($sql);
 $penjahit = $result->fetch_assoc();
 
 if (!$penjahit) {
-    header("Location: list.php");
+    header("Location: {$base_url}/owner/master_data.php");
     exit();
 }
 
@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     if ($conn->query($sql)) {
         $_SESSION['success'] = "Data penjahit berhasil diupdate";
-        header("Location: list.php");
+        header("Location: {$base_url}/owner/master_data.php");
         exit();
     } else {
         $error = "Gagal update data: " . $conn->error;

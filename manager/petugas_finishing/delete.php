@@ -17,7 +17,7 @@ if (!isLoggedIn()) {
 // Check parameter ID
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
     $_SESSION['error'] = "ID petugas finishing tidak valid";
-    header("Location: list.php");
+    header("Location: {$base_url}/manager/master_data.php");
     exit();
 }
 
@@ -33,7 +33,7 @@ try {
 
     if ($result_check->num_rows === 0) {
         $_SESSION['error'] = "Petugas finishing tidak ditemukan";
-        header("Location: list.php");
+        header("Location: {$base_url}/manager/master_data.php");
         exit();
     }
     $stmt_check->close();
@@ -44,13 +44,29 @@ try {
     $stmt_relation->bind_param("i", $id_petugas_finishing);
     $stmt_relation->execute();
     $result_relation = $stmt_relation->get_result();
+    $cek_hasil_kirim = $result_relation->num_rows > 0;
+    $stmt_relation->close();
 
-    if ($result_relation->num_rows > 0) {
-        $_SESSION['error'] = "Petugas finishing tidak dapat dihapus karena masih memiliki data hasil kirim finishing";
-        header("Location: list.php");
+    // Check relations with hutang_upah
+    $sql_check_hutang = "SELECT 1 FROM hutang_upah WHERE jenis_karyawan = 'finishing' AND id_karyawan = ? LIMIT 1";
+    $stmt_hutang = $conn->prepare($sql_check_hutang);
+    $stmt_hutang->bind_param("i", $id_petugas_finishing);
+    $stmt_hutang->execute();
+    $result_hutang = $stmt_hutang->get_result();
+    $cek_hutang_upah = $result_hutang->num_rows > 0;
+    $stmt_hutang->close();
+
+    if ($cek_hasil_kirim || $cek_hutang_upah) {
+        $error_msg = "Petugas finishing tidak dapat dihapus karena masih digunakan dalam: ";
+        $reasons = [];
+
+        if ($cek_hasil_kirim) $reasons[] = "hasil kirim finishing";
+        if ($cek_hutang_upah) $reasons[] = "hutang upah";
+
+        $_SESSION['error'] = $error_msg . implode(", ", $reasons);
+        header("Location: {$base_url}/manager/master_data.php");
         exit();
     }
-    $stmt_relation->close();
 
     // Delete petugas finishing
     $sql_delete = "DELETE FROM petugas_finishing WHERE id_petugas_finishing = ?";
@@ -68,5 +84,5 @@ try {
     $_SESSION['error'] = "Terjadi kesalahan: " . $e->getMessage();
 }
 
-header("Location: list.php");
+header("Location: {$base_url}/manager/master_data.php");
 exit();

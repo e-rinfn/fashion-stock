@@ -172,18 +172,6 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                                                     <td class="text-center"><?= number_format($b['jumlah_stok'] ?? 0) ?></td>
                                                     <td class="text-end"><?= number_format($b['jumlah_meter'] ?? 0) ?></td>
                                                     <td class="text-end"><?= formatRupiah($b['harga_per_satuan'] ?? 0) ?></td>
-                                                    <!-- <td class="text-center">
-                                                        <a href="<?= $base_url ?>/manager/bahan_baku/edit.php?id=<?= $b['id_bahan'] ?>" class="btn btn-warning btn-sm" title="Edit">
-                                                            <i class="ti ti-pencil"></i>
-                                                        </a>
-                                                        <button type="button" class="btn btn-danger btn-sm btn-delete"
-                                                            data-id="<?= $b['id_bahan'] ?>"
-                                                            data-nama="<?= htmlspecialchars($b['nama_bahan']) ?>"
-                                                            data-url="<?= $base_url ?>/manager/bahan_baku/delete.php"
-                                                            title="Hapus">
-                                                            <i class="ti ti-trash"></i>
-                                                        </button>
-                                                    </td> -->
                                                 </tr>
                                             <?php endforeach; ?>
                                         <?php endif; ?>
@@ -199,9 +187,6 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                     <div class="card">
                         <div class="card-header card-header-simple d-flex justify-content-between align-items-center">
                             <h6 class="mb-0">Data Produk</h6>
-                            <!-- <a href="<?= $base_url ?>/manager/produk/add.php" class="btn btn-success btn-sm">
-                                <i class="ti ti-plus"></i> Tambah
-                            </a> -->
                         </div>
                         <div class="card-body">
                             <div class="table-responsive table-container">
@@ -230,18 +215,6 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                                                     <td class="text-center"><?= ucfirst($p['tipe_produk'] ?? '-') ?></td>
                                                     <td class="text-end"><?= number_format($p['stok'] ?? 0) ?></td>
                                                     <td class="text-end"><?= formatRupiah($p['harga_jual'] ?? 0) ?></td>
-                                                    <!-- <td class="text-center">
-                                                        <a href="<?= $base_url ?>/manager/produk/edit.php?id=<?= $p['id_produk'] ?>" class="btn btn-warning btn-sm" title="Edit">
-                                                            <i class="ti ti-pencil"></i>
-                                                        </a>
-                                                        <button type="button" class="btn btn-danger btn-sm btn-delete"
-                                                            data-id="<?= $p['id_produk'] ?>"
-                                                            data-nama="<?= htmlspecialchars($p['nama_produk']) ?>"
-                                                            data-url="<?= $base_url ?>/manager/produk/delete.php"
-                                                            title="Hapus">
-                                                            <i class="ti ti-trash"></i>
-                                                        </button>
-                                                    </td> -->
                                                 </tr>
                                             <?php endforeach; ?>
                                         <?php endif; ?>

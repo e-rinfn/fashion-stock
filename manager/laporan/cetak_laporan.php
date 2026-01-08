@@ -107,12 +107,32 @@ $pdf->AddPage();
 // Font
 $pdf->SetFont('helvetica', '', 10);
 
-// Header
+// Logo (kiri)
+$logoPath = __DIR__ . '/Logo-Ipenk.png';
+$pdf->Image($logoPath, 10, 10, 22); // x=10 (kiri), y=10, width=22
+
+// Posisi teks header (kanan logo)
+$pdf->SetXY(10, 15);
+
+$pdf->SetFont('helvetica', 'B', 12);
+$pdf->Cell(0, 6, 'IPENK LEGEND', 0, 1, 'C');
+
+$pdf->SetFont('helvetica', '', 9);
+$pdf->Cell(0, 5, 'Jl. Contoh No. 123, Kota Tasikmalaya', 0, 1, 'C');
+$pdf->Cell(0, 5, 'Telp: 0812-3456-7890', 0, 1, 'C');
+
+// Spasi ke bawah
+$pdf->Ln(10);
+
+// Garis pemisah
+$y = $pdf->GetY();
+$pdf->Line(0, $y, 200, $y);
+$pdf->Ln(2);
+
+// Judul Laporan
 $pdf->SetFont('helvetica', 'B', 14);
-$pdf->Cell(0, 10, 'LAPORAN PENGELUARAN KAS', 0, 1, 'C');
-$pdf->SetFont('helvetica', '', 11);
-$pdf->Cell(0, 6, 'Sistem Manajemen Kas', 0, 1, 'C');
-$pdf->Ln(5);
+$pdf->Cell(0, 8, 'LAPORAN PENGELUARAN KAS', 0, 1, 'C');
+$pdf->Ln(3);
 
 // Informasi Filter
 $pdf->SetFont('helvetica', 'B', 10);

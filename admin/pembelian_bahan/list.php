@@ -568,7 +568,7 @@ if (!empty($detail_pembelian)) {
                                                             </td>
                                                             <td class="text-center"><?= htmlspecialchars($bahan['satuan']) ?></td>
                                                             <td class="text-end"><?= number_format($bahan['total_jumlah'], 0, ',', '.') ?></td>
-                                                            <td class="text-end"><?= number_format($bahan['total_meter'], 2, ',', '.') ?> m</td>
+                                                            <td class="text-end"><?= number_format($bahan['total_meter'], 0, ',', '.') ?> m</td>
                                                             <!-- <td class="text-end text-money">
                                                                 <?= formatRupiah($harga_rata_rata) ?>/m
                                                             </td> -->
@@ -580,7 +580,7 @@ if (!empty($detail_pembelian)) {
                                                     <tr class="table-light">
                                                         <th colspan="3" class="text-end">TOTAL</th>
                                                         <th class="text-end"><?= number_format($total_jumlah_summary, 0, ',', '.') ?></th>
-                                                        <th class="text-end"><?= number_format($total_meter_summary, 2, ',', '.') ?> m</th>
+                                                        <th class="text-end"><?= number_format($total_meter_summary, 0, ',', '.') ?> m</th>
                                                         <!-- <th class="text-end">-</th> -->
                                                         <th class="text-end text-primary"><?= formatRupiah($total_nilai_summary) ?></th>
                                                     </tr>

@@ -201,109 +201,88 @@ $top_produk_json = json_encode($top_produk);
             <!-- [ Main Content ] start -->
             <div class="row">
                 <div class="col-12">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <div>
-                            <a href="list.php" class="btn btn-secondary">
-                                <i class="ti ti-arrow-left"></i> Kembali
-                            </a>
+
+                    <!-- Filter dan Summary dalam satu baris -->
+                    <div class="row mb-2 align-items-center">
+
+
+                        <!-- Summary Cards -->
+                        <div class="col-lg-10 col-md-9">
+                            <div class="row g-2">
+                                <div class="col-md-4 col-4">
+                                    <div class="card text-center shadow-sm border-0 bg-light">
+                                        <div class="card-body py-1 px-2">
+                                            <h6 class="fw-bold mb-0"><?= number_format($summary_data['total_transaksi'], 0, ',', '.') ?></h6>
+                                            <small class="text-muted" style="font-size: 0.7rem;">Total Transaksi</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-4">
+                                    <div class="card text-center shadow-sm border-0 bg-light">
+                                        <div class="card-body py-1 px-2">
+                                            <h6 class="fw-bold mb-0"><?= number_format($summary_data['total_jumlah'], 0, ',', '.') ?></h6>
+                                            <small class="text-muted" style="font-size: 0.7rem;">Total Jumlah</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-4">
+                                    <div class="card text-center shadow-sm border-0 bg-light">
+                                        <div class="card-body py-1 px-2">
+                                            <h6 class="fw-bold mb-0 text-primary"><?= formatRupiah($summary_data['total_nilai']) ?></h6>
+                                            <small class="text-muted" style="font-size: 0.7rem;">Total Nilai</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Filter Periode Grafik -->
+                        <div class="col-lg-2 col-md-3 mb-2 mb-md-0">
+                            <form method="GET" id="grafikFilterForm" class="d-flex gap-1">
+                                <select class="form-select form-select-sm" name="tahun_grafik" id="tahunGrafik" style="width: auto;">
+                                    <?php foreach ($tahun_tersedia as $t): ?>
+                                        <option value="<?= $t['tahun'] ?>" <?= $tahun_grafik == $t['tahun'] ? 'selected' : '' ?>>
+                                            <?= $t['tahun'] ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                    <?php if (empty($tahun_tersedia)): ?>
+                                        <option value="<?= date('Y') ?>"><?= date('Y') ?></option>
+                                    <?php endif; ?>
+                                </select>
+                                <button type="submit" class="btn btn-primary btn-sm">
+                                    <i class="ti ti-refresh"></i>
+                                </button>
+                            </form>
                         </div>
                     </div>
 
-                    <div class="row">
-                        <div class="col-md-4">
-                            <!-- Filter Periode Grafik -->
-                            <div class="card mb-6">
-                                <div class="card-body">
-                                    <form method="GET" class="row g-3 align-items-end" id="grafikFilterForm">
-                                        <div class="col-md-6">
-                                            <label class="form-label">Pilih Tahun</label>
-                                            <select class="form-select" name="tahun_grafik" id="tahunGrafik">
-                                                <?php foreach ($tahun_tersedia as $t): ?>
-                                                    <option value="<?= $t['tahun'] ?>" <?= $tahun_grafik == $t['tahun'] ? 'selected' : '' ?>>
-                                                        <?= $t['tahun'] ?>
-                                                    </option>
-                                                <?php endforeach; ?>
-                                                <?php if (empty($tahun_tersedia)): ?>
-                                                    <option value="<?= date('Y') ?>"><?= date('Y') ?></option>
-                                                <?php endif; ?>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <button type="submit" class="btn btn-primary w-100">
-                                                <i class="ti ti-refresh me-1"></i> Filter
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
+                    <!-- Grafik Penjualan Total Per Bulan (hidden) -->
+                    <div hidden class="card mb-4">
+                        <div class="card-header bg-warning">
+                            <h5 class="mb-0 text-dark d-flex align-items-center">
+                                <i class="ti ti-chart-bar me-2"></i>
+                                Grafik Total Penjualan
+                                <?= $mode_grafik == 'tahun' ? "Tahun $tahun_grafik" : '12 Bulan Terakhir' ?>
+                            </h5>
                         </div>
-
-                        <div class="col-md-8">
-                            <!-- Summary Cards -->
-                            <div class="row g-3 mb-4">
-                                <div class="col-md-3 col-sm-6">
-                                    <div class="card text-center shadow-sm border-0 bg-light">
-                                        <div class="card-body py-3">
-                                            <h4 class="fw-bold mb-1">
-                                                <?= number_format($summary_data['total_transaksi'], 0, ',', '.') ?>
-                                            </h4>
-                                            <small class="text-muted">Total Transaksi</small>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="col-md-3 col-sm-6">
-                                    <div class="card text-center shadow-sm border-0 bg-light">
-                                        <div class="card-body py-3">
-                                            <h4 class="fw-bold mb-1">
-                                                <?= number_format($summary_data['total_jumlah'], 0, ',', '.') ?>
-                                            </h4>
-                                            <small class="text-muted">Total Jumlah Barang</small>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 col-sm-6">
-                                    <div class="card text-center shadow-sm border-0 bg-light">
-                                        <div class="card-body py-3">
-                                            <h4 class="fw-bold mb-1 text-primary">
-                                                <?= formatRupiah($summary_data['total_nilai']) ?>
-                                            </h4>
-                                            <small class="text-muted">Total Nilai Penjualan</small>
-                                        </div>
-                                    </div>
-                                </div>
+                        <div class="card-body">
+                            <div style="position: relative; height: 400px;">
+                                <canvas id="salesChart"></canvas>
                             </div>
-
-                            <!-- Grafik Penjualan Total Per Bulan -->
-                            <div hidden class="card mb-4">
-                                <div class="card-header bg-warning">
-                                    <h5 class="mb-0 text-dark d-flex align-items-center">
-                                        <i class="ti ti-chart-bar me-2"></i>
-                                        Grafik Total Penjualan
-                                        <?= $mode_grafik == 'tahun' ? "Tahun $tahun_grafik" : '12 Bulan Terakhir' ?>
-                                    </h5>
-                                </div>
-                                <div class="card-body">
-                                    <div style="position: relative; height: 400px;">
-                                        <canvas id="salesChart"></canvas>
-                                    </div>
-                                </div>
-                            </div>
-
                         </div>
                     </div>
+
                     <div class="row">
                         <!-- Grafik Penjualan Per Produk -->
                         <div class="col-lg-8">
-                            <div class="card mb-4">
-                                <div class="card-header bg-info text-white">
-                                    <h5 class="mb-0 d-flex align-items-center">
+                            <div class="card mb-3">
+                                <div class="card-header bg-info text-white py-2">
+                                    <h6 class="mb-0 d-flex align-items-center">
                                         <i class="ti ti-chart-line me-2"></i>
                                         Grafik Penjualan Per Produk (Nilai Rupiah)
-                                    </h5>
+                                    </h6>
                                 </div>
-                                <div class="card-body">
-                                    <div style="position: relative; height: 400px;">
+                                <div class="card-body py-2">
+                                    <div style="position: relative; height: 280px;">
                                         <canvas id="productSalesChart"></canvas>
                                     </div>
                                 </div>
@@ -312,17 +291,17 @@ $top_produk_json = json_encode($top_produk);
 
                         <!-- Top Produk Terlaris -->
                         <div class="col-lg-4">
-                            <div class="card mb-4">
-                                <div class="card-header bg-success text-white">
-                                    <h5 class="mb-0 d-flex align-items-center">
+                            <div class="card mb-3">
+                                <div class="card-header bg-success text-white py-2">
+                                    <h6 class="mb-0 d-flex align-items-center">
                                         <i class="ti ti-trophy me-2"></i>
                                         Top 10 Produk Terlaris
-                                    </h5>
+                                    </h6>
                                 </div>
-                                <div class="card-body p-0">
+                                <div class="card-body p-0" style="max-height: 320px; overflow-y: auto;">
                                     <div class="table-responsive">
-                                        <table class="table table-sm table-hover mb-0">
-                                            <thead class="table-light">
+                                        <table class="table table-sm table-hover mb-0" style="font-size: 0.8rem;">
+                                            <thead class="table-light sticky-top">
                                                 <tr>
                                                     <th width="10%">#</th>
                                                     <th>Produk</th>
@@ -333,7 +312,7 @@ $top_produk_json = json_encode($top_produk);
                                             <tbody>
                                                 <?php if (empty($top_produk)): ?>
                                                     <tr>
-                                                        <td colspan="4" class="text-center text-muted py-3">
+                                                        <td colspan="4" class="text-center text-muted py-2">
                                                             Tidak ada data
                                                         </td>
                                                     </tr>
@@ -372,15 +351,15 @@ $top_produk_json = json_encode($top_produk);
                     </div>
 
                     <!-- Grafik Jumlah Terjual Per Produk -->
-                    <div class="card mb-4">
-                        <div class="card-header bg-primary text-white">
-                            <h5 class="mb-0 d-flex align-items-center">
+                    <div class="card mb-3">
+                        <div class="card-header bg-primary text-white py-2">
+                            <h6 class="mb-0 d-flex align-items-center">
                                 <i class="ti ti-chart-dots me-2"></i>
                                 Grafik Jumlah Terjual Per Produk (Pcs)
-                            </h5>
+                            </h6>
                         </div>
-                        <div class="card-body">
-                            <div style="position: relative; height: 400px;">
+                        <div class="card-body py-2">
+                            <div style="position: relative; height: 280px;">
                                 <canvas id="productQtyChart"></canvas>
                             </div>
                         </div>
@@ -389,30 +368,30 @@ $top_produk_json = json_encode($top_produk);
                     <!-- Grafik Pie Distribusi Produk -->
                     <div class="row">
                         <div class="col-lg-6">
-                            <div class="card mb-4">
-                                <div class="card-header bg-light text-dark">
-                                    <h5 class="mb-0 d-flex align-items-center">
+                            <div class="card mb-3">
+                                <div class="card-header bg-light text-dark py-2">
+                                    <h6 class="mb-0 d-flex align-items-center">
                                         <i class="ti ti-chart-pie me-2"></i>
                                         Distribusi Penjualan Per Produk (Nilai)
-                                    </h5>
+                                    </h6>
                                 </div>
-                                <div class="card-body">
-                                    <div style="position: relative; height: 350px;">
+                                <div class="card-body py-2">
+                                    <div style="position: relative; height: 200px;">
                                         <canvas id="productPieChart"></canvas>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-lg-6">
-                            <div class="card mb-4">
-                                <div class="card-header bg-light text-dark">
-                                    <h5 class="mb-0 d-flex align-items-center">
+                            <div class="card mb-3">
+                                <div class="card-header bg-light text-dark py-2">
+                                    <h6 class="mb-0 d-flex align-items-center">
                                         <i class="ti ti-chart-donut me-2"></i>
                                         Distribusi Penjualan Per Produk (Pcs)
-                                    </h5>
+                                    </h6>
                                 </div>
-                                <div class="card-body">
-                                    <div style="position: relative; height: 350px;">
+                                <div class="card-body py-2">
+                                    <div style="position: relative; height: 200px;">
                                         <canvas id="productDonutChart"></canvas>
                                     </div>
                                 </div>

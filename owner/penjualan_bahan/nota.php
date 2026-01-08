@@ -104,7 +104,7 @@ $pdf->SetFillColor(245, 245, 245);
 
 $pdf->Cell(8, 7, 'No', 1, 0, 'C', true);
 $pdf->Cell(42, 7, 'Bahan Baku', 1, 0, 'L', true);
-$pdf->Cell(15, 7, 'Roll/Yard', 1, 0, 'C', true);
+$pdf->Cell(15, 7, 'Roll', 1, 0, 'C', true);
 $pdf->Cell(15, 7, 'Meter', 1, 0, 'C', true);
 $pdf->Cell(25, 7, 'Harga / Meter', 1, 0, 'R', true);
 $pdf->Cell(25, 7, 'Subtotal', 1, 1, 'R', true);

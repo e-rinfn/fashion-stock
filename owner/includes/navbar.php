@@ -87,6 +87,10 @@
                                         <i class="ti ti-menu"></i>
                                         <span>Master Data</span>
                                     </a>
+                                    <a href="<?= $base_url ?>/owner/penjualan_produk/grafik.php" class="dropdown-item">
+                                        <i class="ti ti-chart-bar"></i>
+                                        <span>Grafik Penjualan Produk</span>
+                                    </a>
                                     <a href="<?= $base_url ?>/owner/hpp/hpp_calculation.php" class="dropdown-item">
                                         <i class="ti ti-calculator"></i>
                                         <span>HPP Penjualan Produk</span>

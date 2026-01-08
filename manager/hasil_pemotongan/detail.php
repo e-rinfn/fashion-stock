@@ -570,7 +570,7 @@ switch ($produksi['status_potong']) {
                         <div class="col-md-6">
                             <div class="card shadow-sm">
                                 <div class="card-header bg-light">
-                                    <h5 class="card-title mb-0">Bahan Baku Roll/Yard yang Digunakan</h5>
+                                    <h5 class="card-title mb-0">Bahan Baku Roll yang Digunakan</h5>
                                 </div>
                                 <div class="card-body">
                                     <div class="table-responsive">
@@ -579,7 +579,7 @@ switch ($produksi['status_potong']) {
                                                 <tr>
                                                     <th style="width: 50px;">No</th>
                                                     <th>Nama Bahan</th>
-                                                    <th colspan="2" style="width: 120px;">Roll/Yard</th>
+                                                    <th colspan="2" style="width: 120px;">Roll</th>
                                                     <th style="width: 120px;">Total Meter</th>
                                                 </tr>
                                             </thead>
@@ -606,7 +606,7 @@ switch ($produksi['status_potong']) {
                                                         <tr>
                                                             <td class="text-center"><?= $i + 1 ?></td>
                                                             <td><?= htmlspecialchars($d['nama_bahan']) ?></td>
-                                                            <td class="text-center"><?= $d['jumlah'] ?> Roll/Yard</td>
+                                                            <td class="text-center"><?= $d['jumlah'] ?> Roll</td>
                                                             <td colspan="3" class="text-end">
                                                                 <?= rtrim(rtrim($d['total_meter'], '0'), '.') ?>
                                                             </td>

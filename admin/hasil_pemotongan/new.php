@@ -485,7 +485,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
                                                 <tr class="text-center">
                                                     <th>Bahan <span class="text-danger">*</span></th>
                                                     <th>Stok</th>
-                                                    <th>Roll/Yard <span class="text-danger">*</span></th>
+                                                    <th>Roll <span class="text-danger">*</span></th>
                                                     <th>Meter <span class="text-danger">*</span></th>
                                                     <th>Total Meter</th>
                                                     <th>Aksi</th>

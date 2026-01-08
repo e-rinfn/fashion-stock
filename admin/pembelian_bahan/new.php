@@ -256,7 +256,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_pembelian_bahan
                                                     <th>Bahan</th>
                                                     <th>Harga/M (Rp)</th>
                                                     <th>Stok</th>
-                                                    <th>Roll/Yard</th>
+                                                    <th>Roll</th>
                                                     <th>Meter</th>
                                                     <th>Total Meter</th>
                                                     <th>Subtotal</th>

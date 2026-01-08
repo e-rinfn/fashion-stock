@@ -230,7 +230,7 @@ $total_cicilan = $cicilan['total'] ?? 0;
                                                 <th>Bahan</th>
                                                 <th>Harga Per Meter</th>
                                                 <th>Meter</th>
-                                                <th>Qty</th>
+                                                <th>Roll</th>
                                                 <th>Subtotal</th>
                                             </tr>
                                         </thead>

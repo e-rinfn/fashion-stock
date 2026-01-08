@@ -530,7 +530,7 @@ if (!empty($detail_pembelian)) {
                                                         <th>No</th>
                                                         <th>Nama Bahan</th>
                                                         <th>Satuan</th>
-                                                        <th class="text-end">Jumlah (Pcs)</th>
+                                                        <th class="text-end">Jumlah (Roll)</th>
                                                         <th class="text-end">Total Meter</th>
                                                         <!-- <th class="text-end">Harga Per Meter</th> -->
                                                         <th class="text-end">Total Nilai</th>

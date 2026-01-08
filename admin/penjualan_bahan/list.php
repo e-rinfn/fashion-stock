@@ -512,7 +512,7 @@ if (!empty($detail_penjualan)) {
                                                         <th>No</th>
                                                         <th>Nama Bahan</th>
                                                         <th>Satuan</th>
-                                                        <th class="text-end">Jumlah (Roll/Yard)</th>
+                                                        <th class="text-end">Jumlah (Roll)</th>
                                                         <th class="text-end">Total Meter</th>
                                                         <th class="text-end">Total Nilai</th>
                                                     </tr>

@@ -148,8 +148,13 @@ require_once './includes/header.php';
                     <div class="card">
                         <div class="row row-bordered g-0">
                             <div class="col-12">
-                                <h5 class="card-header m-0 me-2">Aktivitas Terakhir</h5>
 
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="m-0">Aktivitas Terakhir</h5>
+                                    <a href="<?= $base_url ?>/manager/aktivitas.php" class="btn btn-sm btn-outline-primary">
+                                        <i class="ti ti-list"></i> Lihat Semua
+                                    </a>
+                                </div>
                                 <!-- <div class="table-responsive text-nowrap px-3 pb-3"> -->
                                 <div class="table-responsive text-nowrap px-3 pb-3 mb-3 mt-3" style="max-height: 400px; overflow-y: auto;">
                                     <table class="table table-striped table-bordered align-middle">

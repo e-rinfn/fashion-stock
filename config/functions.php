@@ -843,6 +843,40 @@ function updateHutangUpahPenjahit($id_penjahit, $jumlah_kurang)
 //     }
 // }
 
+if (!function_exists('timeAgo')) {
+    function timeAgo($datetime)
+    {
+        if (empty($datetime)) return '-';
+        try {
+            $time = new DateTime($datetime);
+            $now  = new DateTime();
+        } catch (Exception $e) {
+            return '-';
+        }
+
+        $diff = $now->getTimestamp() - $time->getTimestamp();
+        if ($diff < 0) $diff = 0;
+
+        $units = [
+            31536000 => 'tahun',
+            2592000  => 'bulan',
+            604800   => 'minggu',
+            86400    => 'hari',
+            3600     => 'jam',
+            60       => 'menit',
+            1        => 'detik',
+        ];
+
+        foreach ($units as $secs => $label) {
+            if ($diff >= $secs) {
+                $value = floor($diff / $secs);
+                return $value . ' ' . $label . ' yang lalu';
+            }
+        }
+        return 'baru saja';
+    }
+}
+
 
 
 // Muat variabel lingkungan dari file .env

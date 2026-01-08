@@ -1,4 +1,7 @@
 <?php
+
+$page_title = "DETAIL PEMBAYARAN UPAH";
+
 require_once '../includes/header.php';
 require_once '../../config/database.php';
 require_once '../../config/functions.php';
@@ -91,30 +94,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['batal_pembayaran'])) {
     <?php include_once '../includes/sidebar.php'; ?>
     <!-- Sidebar End -->
 
-    <!-- [ Header Topbar ] start -->
-    <header class="pc-header">
-        <div class="header-wrapper">
-            <!-- [Mobile Media Block] start -->
-            <div class="me-auto pc-mob-drp">
-                <ul class="list-unstyled">
-                    <!-- ======= Menu collapse Icon ===== -->
-                    <li class="pc-h-item pc-sidebar-collapse">
-                        <a href="#" class="pc-head-link ms-0" id="sidebar-hide">
-                            <i class="ti ti-menu-2"></i>
-                        </a>
-                    </li>
-                    <li class="pc-h-item pc-sidebar-popup">
-                        <a href="#" class="pc-head-link ms-0" id="mobile-collapse">
-                            <i class="ti ti-menu-2"></i>
-                        </a>
-                    </li>
-                </ul>
-            </div>
-            <!-- [Mobile Media Block end] -->
+    <?php include_once '../includes/navbar.php'; ?>
 
-        </div>
-    </header>
-    <!-- [ Header ] end -->
     <!-- [ Main Content ] start -->
     <div class="pc-container">
         <div class="pc-content">
@@ -123,7 +104,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['batal_pembayaran'])) {
             <div class="row">
 
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2>Detail Hutang</h2>
                     <div>
                         <a href="hutang_upah.php" class="btn btn-secondary me-2">
                             <i class="ti ti-arrow-back"></i> Kembali

@@ -1,4 +1,7 @@
 <?php
+
+$page_title = "TAMBAH PEMOTONGAN BAHAN";
+
 require_once '../includes/header.php';
 require_once '../../config/database.php';
 require_once '../../config/functions.php';
@@ -342,10 +345,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
 
             <!-- [ Main Content ] start -->
             <div class="row">
-
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2>Tambah Riwayat Pemotongan Bahan</h2>
-                </div>
 
                 <div class="card">
                     <!-- Tampilkan pesan error atau success -->

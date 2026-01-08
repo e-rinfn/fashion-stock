@@ -4,6 +4,7 @@
 error_reporting(error_level: E_ALL);
 ini_set('display_errors', 1);
 
+$page_title = "MASTER DATA";
 
 require_once '../config/functions.php';
 require_once './includes/header.php';
@@ -82,11 +83,6 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
     <!-- [ Main Content ] start -->
     <div class="pc-container">
         <div class="pc-content">
-
-            <!-- Header -->
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2>Master Data</h2>
-            </div>
 
             <!-- Tab Navigation -->
             <ul class="nav nav-tabs-custom mb-4" id="masterDataTab" role="tablist">

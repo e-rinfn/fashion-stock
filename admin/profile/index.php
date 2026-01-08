@@ -1,5 +1,7 @@
 <?php
 
+$page_title = "PROFILE PENGGUNA";
+
 // owner/profile/index.php
 require_once '../../config/database.php';
 require_once '../../config/functions.php';
@@ -100,10 +102,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_password'])) {
 
             <!-- [ Main Content ] start -->
             <div class="row">
-
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2>Profile</h2>
-                </div>
 
                 <div class="card p-3">
                     <!-- Tampilkan pesan error atau success -->

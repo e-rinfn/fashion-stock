@@ -1,4 +1,7 @@
 <?php
+
+$page_title = "PEMBELIAN PRODUK";
+
 require_once '../includes/header.php';
 require_once '../../config/database.php';
 require_once '../../config/functions.php';
@@ -149,11 +152,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_pembelian'])) {
 
             <!-- [ Main Content ] start -->
             <div class="row">
-
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2>PESANAN PEMBELIAN PRODUK</h2>
-                </div>
-
 
                 <div class="card p-3">
                     <?php if (isset($_SESSION['error'])): ?>

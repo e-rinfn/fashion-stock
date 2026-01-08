@@ -1,4 +1,7 @@
 <?php
+
+$page_title = "KAS";
+
 require_once '../includes/header.php';
 require_once '../../config/functions.php';
 
@@ -642,13 +645,6 @@ for ($i = $tahun_sekarang; $i >= $tahun_sekarang - 4; $i--) {
     <!-- [ Main Content ] start -->
     <div class="pc-container">
         <div class="pc-content">
-            <!-- [ Main Content ] start -->
-            <div class="row">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2>Manajemen Kas</h2>
-
-                </div>
-            </div>
 
             <!-- Alert Messages -->
             <?php if (isset($_SESSION['error'])): ?>

@@ -1,4 +1,7 @@
 <?php
+
+$page_title = "DASHBOARD";
+
 require_once '../config/functions.php';
 require_once './includes/header.php';
 ?>

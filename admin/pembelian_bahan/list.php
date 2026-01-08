@@ -3,6 +3,8 @@
 error_reporting(error_level: E_ALL);
 ini_set('display_errors', 1);
 
+$page_title = "DATA PEMBELIAN BAHAN BAKU";
+
 require_once '../includes/header.php';
 require_once '../../config/database.php';
 require_once '../../config/functions.php';
@@ -313,8 +315,7 @@ if (!empty($detail_pembelian)) {
             <!-- [ Main Content ] start -->
             <div class="row">
                 <div class="col-12">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h2>DATA PEMBELIAN BAHAN BAKU</h2>
+                    <div class="d-flex justify-content-end align-items-center mb-4">
                         <div>
                             <a href="new.php" class="btn btn-success">
                                 <i class="ti ti-file-plus"></i> Tambah Pesanan

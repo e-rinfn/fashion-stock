@@ -4,6 +4,8 @@
 error_reporting(error_level: E_ALL);
 ini_set('display_errors', 1);
 
+$page_title = "DATA PRODUKSI";
+
 require_once '../includes/header.php';
 require_once '../../config/functions.php';
 
@@ -1256,7 +1258,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         <div class="pc-content">
             <div class="row">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2>Data Produksi</h2>
                     <div class="btn-group">
                         <div>
                             <a href="new.php" class="btn btn-warning">

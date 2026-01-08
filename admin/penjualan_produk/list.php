@@ -3,6 +3,8 @@
 error_reporting(error_level: E_ALL);
 ini_set('display_errors', 1);
 
+$page_title = "DATA PENJUALAN PRODUK";
+
 require_once '../includes/header.php';
 require_once '../../config/functions.php';
 
@@ -147,29 +149,6 @@ if (!empty($detail_penjualan)) {
     // Ubah ke array indexed
     $summary_per_produk = array_values($produk_data);
 }
-
-// Query untuk data penjualan per bulan (12 bulan terakhir)
-$bulan_labels = [];
-$penjualan_per_bulan = [];
-
-for ($i = 11; $i >= 0; $i--) {
-    $bulan = date('Y-m', strtotime("-$i months"));
-    $bulan_labels[] = date('M Y', strtotime("-$i months"));
-
-    // Query penjualan untuk bulan ini
-    $query_bulan = "SELECT COALESCE(SUM(dp.subtotal), 0) as total
-                    FROM detail_penjualan dp
-                    JOIN penjualan pj ON dp.id_penjualan = pj.id_penjualan
-                    WHERE DATE_FORMAT(pj.tanggal_penjualan, '%Y-%m') = '$bulan'
-                    AND pj.status_pembayaran != 'batal'";
-
-    $result_bulan = query($query_bulan);
-    $penjualan_per_bulan[] = $result_bulan[0]['total'] ?? 0;
-}
-
-// Data untuk chart dalam format JSON
-$chart_labels = json_encode($bulan_labels);
-$chart_data = json_encode($penjualan_per_bulan);
 ?>
 
 <style>
@@ -283,449 +262,341 @@ $chart_data = json_encode($penjualan_per_bulan);
             <!-- [ Main Content ] start -->
             <div class="row">
                 <div class="col-12">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h2>DATA PENJUALAN PRODUK</h2>
+                    <div class="d-flex justify-content-end align-items-center mb-4">
                         <div>
+                            <a href="grafik.php" class="btn btn-info me-2">
+                                <i class="ti ti-chart-bar"></i> Grafik Penjualan
+                            </a>
                             <a href="new.php" class="btn btn-success">
                                 <i class="ti ti-file-plus"></i> Tambah Pesanan
                             </a>
                         </div>
                     </div>
 
-                    <!-- Tab Navigation -->
-                    <ul class="nav nav-tabs mb-4" id="salesTab" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="data-tab" data-bs-toggle="tab" data-bs-target="#data-penjualan" type="button" role="tab" aria-controls="data-penjualan" aria-selected="true">
-                                <i class="ti ti-table me-2"></i>Data Penjualan
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="grafik-tab" data-bs-toggle="tab" data-bs-target="#grafik-penjualan" type="button" role="tab" aria-controls="grafik-penjualan" aria-selected="false">
-                                <i class="ti ti-chart-bar me-2"></i>Grafik Penjualan
-                            </button>
-                        </li>
-                    </ul>
-
-                    <!-- Tab Content -->
-                    <div class="tab-content" id="salesTabContent">
-                        <!-- Tab Data Penjualan -->
-                        <div class="tab-pane fade show active" id="data-penjualan" role="tabpanel" aria-labelledby="data-tab">
-
-                            <!-- Card Summary -->
-                            <div class="row g-3 mb-4">
-                                <div class="col-md-3 col-sm-6">
-                                    <div class="card text-center shadow-sm border-0">
-                                        <div class="card-body py-3">
-                                            <h4 class="fw-bold mb-1">
-                                                <?= number_format($summary_manual['total_transaksi'], 0, ',', '.') ?>
-                                            </h4>
-                                            <small class="text-muted">Total Transaksi</small>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="col-md-3 col-sm-6">
-                                    <div class="card text-center shadow-sm border-0">
-                                        <div class="card-body py-3">
-                                            <h4 class="fw-bold mb-1">
-                                                <?= number_format($summary_manual['total_item'], 0, ',', '.') ?>
-                                            </h4>
-                                            <small class="text-muted">Total Item Terjual</small>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="col-md-3 col-sm-6">
-                                    <div class="card text-center shadow-sm border-0">
-                                        <div class="card-body py-3">
-                                            <h4 class="fw-bold mb-1">
-                                                <?= number_format($summary_manual['total_jumlah'], 0, ',', '.') ?>
-                                            </h4>
-                                            <small class="text-muted">Total Jumlah Barang</small>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="col-md-3 col-sm-6">
-                                    <div class="card text-center shadow-sm border-0">
-                                        <div class="card-body py-3">
-                                            <h4 class="fw-bold mb-1 text-primary">
-                                                <?= formatRupiah($summary_manual['total_nilai']) ?>
-                                            </h4>
-                                            <small class="text-muted">Total Nilai Penjualan</small>
-                                        </div>
-                                    </div>
+                    <!-- Card Summary -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3 col-sm-6">
+                            <div class="card text-center shadow-sm border-0">
+                                <div class="card-body py-3">
+                                    <h4 class="fw-bold mb-1">
+                                        <?= number_format($summary_manual['total_transaksi'], 0, ',', '.') ?>
+                                    </h4>
+                                    <small class="text-muted">Total Transaksi</small>
                                 </div>
                             </div>
+                        </div>
 
-                            <div class="row">
-                                <div class="col-md-5">
-                                    <!-- Card Filter -->
-                                    <div class="card filter-card mb-4">
-                                        <div class="card-header bg-primary text-white">
-                                            <h5 class="mb-0"><i class="ti ti-filter me-2"></i>Filter Data Penjualan</h5>
-                                        </div>
-                                        <div class="card-body">
-                                            <form method="GET" id="mainFilterForm" class="row g-3">
-                                                <div class="col-md-6">
-                                                    <label class="form-label">Reseller</label>
-                                                    <select class="form-control" name="id_reseller">
-                                                        <option value="">Semua Reseller</option>
-                                                        <?php foreach ($resellers as $r): ?>
-                                                            <option value="<?= $r['id_reseller'] ?>"
-                                                                <?= $id_reseller == $r['id_reseller'] ? 'selected' : '' ?>>
-                                                                <?= htmlspecialchars($r['nama_reseller']) ?>
-                                                            </option>
-                                                        <?php endforeach; ?>
-                                                    </select>
-                                                </div>
-
-                                                <div class="col-md-6">
-                                                    <label class="form-label">Status</label>
-                                                    <select class="form-control" name="status">
-                                                        <option value="all" <?= $status == 'all' ? 'selected' : '' ?>>Semua Status</option>
-                                                        <option value="lunas" <?= $status == 'lunas' ? 'selected' : '' ?>>Lunas</option>
-                                                        <option value="cicilan" <?= $status == 'cicilan' ? 'selected' : '' ?>>Cicilan</option>
-                                                    </select>
-                                                </div>
-
-                                                <div class="col-md-12">
-                                                    <label class="form-label">Produk</label>
-                                                    <div class="multiselect-dropdown">
-                                                        <button class="btn btn-outline-secondary dropdown-toggle" type="button"
-                                                            id="produkDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                                            <?php if (empty($filter_produk)): ?>
-                                                                Pilih Produk...
-                                                            <?php else: ?>
-                                                                <?= count($filter_produk) ?> produk dipilih
-                                                            <?php endif; ?>
-                                                        </button>
-                                                        <ul class="dropdown-menu" aria-labelledby="produkDropdown">
-                                                            <li>
-                                                                <div class="dropdown-item">
-                                                                    <input type="checkbox" id="selectAllProduk"
-                                                                        <?= count($filter_produk) == count($produk_list) ? 'checked' : '' ?>>
-                                                                    <label for="selectAllProduk" style="cursor: pointer; margin-bottom: 0;">
-                                                                        <strong>Pilih Semua</strong>
-                                                                    </label>
-                                                                </div>
-                                                            </li>
-                                                            <li>
-                                                                <hr class="dropdown-divider">
-                                                            </li>
-                                                            <?php foreach ($produk_list as $pr): ?>
-                                                                <li>
-                                                                    <div class="dropdown-item">
-                                                                        <input type="checkbox" name="produk[]"
-                                                                            value="<?= $pr['id_produk'] ?>"
-                                                                            id="produk_<?= $pr['id_produk'] ?>"
-                                                                            <?= in_array($pr['id_produk'], $filter_produk) ? 'checked' : '' ?>>
-                                                                        <label for="produk_<?= $pr['id_produk'] ?>"
-                                                                            style="cursor: pointer; margin-bottom: 0;">
-                                                                            <?= htmlspecialchars($pr['nama_produk']) ?>
-                                                                        </label>
-                                                                    </div>
-                                                                </li>
-                                                            <?php endforeach; ?>
-                                                        </ul>
-                                                    </div>
-                                                    <!-- Container untuk menampilkan produk yang dipilih -->
-                                                    <div class="selected-produk-container mt-2">
-                                                        <?php foreach ($filter_produk as $produk_id):
-                                                            $produk_nama = '';
-                                                            foreach ($produk_list as $pr) {
-                                                                if ($pr['id_produk'] == $produk_id) {
-                                                                    $produk_nama = $pr['nama_produk'];
-                                                                    break;
-                                                                }
-                                                            }
-                                                            if (!empty($produk_nama)): ?>
-                                                                <span class="selected-produk-badge" data-id="<?= $produk_id ?>">
-                                                                    <?= htmlspecialchars($produk_nama) ?>
-                                                                </span>
-                                                            <?php endif; ?>
-                                                        <?php endforeach; ?>
-                                                    </div>
-                                                </div>
-
-                                                <div class="col-md-12">
-                                                    <label class="form-label">Tanggal Penjualan</label>
-                                                    <div class="input-group">
-                                                        <span class="input-group-text"><i class="ti ti-calendar"></i></span>
-                                                        <input type="date" class="form-control" name="tanggal_awal"
-                                                            value="<?= htmlspecialchars($filter_tanggal_awal) ?>">
-                                                        <span class="input-group-text">s/d</span>
-                                                        <input type="date" class="form-control" name="tanggal_akhir"
-                                                            value="<?= htmlspecialchars($filter_tanggal_akhir) ?>">
-                                                    </div>
-                                                </div>
-
-                                                <div class="col-12 filter-actions">
-                                                    <div class="d-flex justify-content-between align-items-center">
-                                                        <div>
-                                                            <?php if (!empty($filter_produk)): ?>
-                                                                <span class="text-muted">
-                                                                    <i class="ti ti-info-circle"></i>
-                                                                    Menampilkan <?= count($filter_produk) ?> produk terpilih
-                                                                </span>
-                                                            <?php endif; ?>
-                                                        </div>
-                                                        <div class="d-flex gap-2">
-                                                            <a href="list.php" class="btn btn-sm btn-secondary">
-                                                                <i class="ti ti-rotate me-1"></i> Reset
-                                                            </a>
-                                                            <button type="submit" class="btn btn-sm btn-primary">
-                                                                <i class="ti ti-filter me-1"></i> Filter
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="col-md-7">
-                                    <!-- Summary per Produk -->
-                                    <?php if (!empty($summary_per_produk)): ?>
-                                        <div class="card mb-4">
-                                            <div class="card-header bg-info text-white">
-                                                <h5 class="mb-0">
-                                                    <i class="ti ti-chart-bar me-2"></i>Ringkasan Penjualan per Produk
-                                                    <?php if (!empty($filter_produk)): ?>
-                                                        <small class="text-muted">(Filter: <?= count($filter_produk) ?> produk terpilih)</small>
-                                                    <?php endif; ?>
-                                                </h5>
-                                            </div>
-                                            <div class="card-body p-0">
-                                                <div class="table-responsive">
-                                                    <table class="table table-bordered mb-0 summary-produk-table">
-                                                        <thead>
-                                                            <tr>
-                                                                <th width="5%">No</th>
-                                                                <th width="35%">Nama Produk</th>
-                                                                <th width="15%" class="text-end">Jumlah Terjual</th>
-                                                                <th width="20%" class="text-end">Total Nilai</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            <?php
-                                                            $total_jumlah_summary = 0;
-                                                            $total_nilai_summary = 0;
-                                                            ?>
-
-                                                            <?php foreach ($summary_per_produk as $index => $produk): ?>
-                                                                <?php
-                                                                // Hitung total nilai
-                                                                $total_nilai_produk = $produk['total_subtotal'];
-
-                                                                // Akumulasi untuk total
-                                                                $total_jumlah_summary += $produk['total_jumlah'];
-                                                                $total_nilai_summary += $total_nilai_produk;
-                                                                ?>
-                                                                <tr>
-                                                                    <td class="text-center"><?= $index + 1 ?></td>
-                                                                    <td>
-                                                                        <?= htmlspecialchars($produk['nama_produk']) ?>
-                                                                        <?php if (!empty($filter_produk) && in_array($produk['id_produk'], $filter_produk)): ?>
-                                                                            <span class="badge bg-success ms-1">Terpilih</span>
-                                                                        <?php endif; ?>
-                                                                    </td>
-                                                                    <td class="text-end"><?= number_format($produk['total_jumlah'], 0, ',', '.') ?></td>
-                                                                    <td class="text-end text-money"><?= formatRupiah($total_nilai_produk) ?></td>
-                                                                </tr>
-                                                            <?php endforeach; ?>
-                                                        </tbody>
-                                                        <tfoot>
-                                                            <tr class="table-light">
-                                                                <th colspan="2" class="text-end">TOTAL</th>
-                                                                <th class="text-end"><?= number_format($total_jumlah_summary, 0, ',', '.') ?></th>
-                                                                <th class="text-end text-primary"><?= formatRupiah($total_nilai_summary) ?></th>
-                                                            </tr>
-                                                        </tfoot>
-                                                    </table>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    <?php endif; ?>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="card text-center shadow-sm border-0">
+                                <div class="card-body py-3">
+                                    <h4 class="fw-bold mb-1">
+                                        <?= number_format($summary_manual['total_item'], 0, ',', '.') ?>
+                                    </h4>
+                                    <small class="text-muted">Total Item Terjual</small>
                                 </div>
                             </div>
+                        </div>
 
-                            <!-- Card Data Detail -->
-                            <div class="card">
-                                <div class="card-header bg-light border-bottom">
-                                    <h5 class="mb-0 d-flex align-items-center gap-2">
-                                        <i class="ti ti-table"></i>
-                                        Detail Penjualan Produk
-                                        <?php if (!empty($filter_produk)): ?>
-                                            <span class="badge bg-info ms-2">
-                                                Filter: <?= count($filter_produk) ?> produk terpilih
-                                            </span>
-                                        <?php endif; ?>
-                                    </h5>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="card text-center shadow-sm border-0">
+                                <div class="card-body py-3">
+                                    <h4 class="fw-bold mb-1">
+                                        <?= number_format($summary_manual['total_jumlah'], 0, ',', '.') ?>
+                                    </h4>
+                                    <small class="text-muted">Total Jumlah Barang</small>
                                 </div>
+                            </div>
+                        </div>
 
+                        <div class="col-md-3 col-sm-6">
+                            <div class="card text-center shadow-sm border-0">
+                                <div class="card-body py-3">
+                                    <h4 class="fw-bold mb-1 text-primary">
+                                        <?= formatRupiah($summary_manual['total_nilai']) ?>
+                                    </h4>
+                                    <small class="text-muted">Total Nilai Penjualan</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-5">
+                            <!-- Card Filter -->
+                            <div class="card filter-card mb-4">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="mb-0"><i class="ti ti-filter me-2"></i>Filter Data Penjualan</h5>
+                                </div>
                                 <div class="card-body">
-                                    <?php
-                                    $showErrorPopup = false;
-                                    $errorMessage = '';
-                                    if (isset($_SESSION['error'])):
-                                        $showErrorPopup = true;
-                                        $errorMessage = $_SESSION['error'];
-                                    ?>
-                                        <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center" role="alert">
-                                            <i class="ti ti-alert-circle me-2"></i>
-                                            <div><?= htmlspecialchars($_SESSION['error']) ?></div>
-                                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                    <form method="GET" id="mainFilterForm" class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Reseller</label>
+                                            <select class="form-control" name="id_reseller">
+                                                <option value="">Semua Reseller</option>
+                                                <?php foreach ($resellers as $r): ?>
+                                                    <option value="<?= $r['id_reseller'] ?>"
+                                                        <?= $id_reseller == $r['id_reseller'] ? 'selected' : '' ?>>
+                                                        <?= htmlspecialchars($r['nama_reseller']) ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            </select>
                                         </div>
-                                        <?php unset($_SESSION['error']); ?>
-                                    <?php endif; ?>
 
-                                    <?php if (isset($_SESSION['success'])): ?>
-                                        <div class="alert alert-success alert-dismissible fade show d-flex align-items-center" role="alert">
-                                            <i class="ti ti-check me-2"></i>
-                                            <div><?= htmlspecialchars($_SESSION['success']) ?></div>
-                                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Status</label>
+                                            <select class="form-control" name="status">
+                                                <option value="all" <?= $status == 'all' ? 'selected' : '' ?>>Semua Status</option>
+                                                <option value="lunas" <?= $status == 'lunas' ? 'selected' : '' ?>>Lunas</option>
+                                                <option value="cicilan" <?= $status == 'cicilan' ? 'selected' : '' ?>>Cicilan</option>
+                                            </select>
                                         </div>
-                                        <?php unset($_SESSION['success']); ?>
-                                    <?php endif; ?>
 
-                                    <div class="table-responsive">
-                                        <table class="table table-bordered table-hover mb-0">
-                                            <thead class="table-light">
-                                                <tr>
-                                                    <th width="120">Tanggal</th>
-                                                    <th>Reseller</th>
-                                                    <th>Produk</th>
-                                                    <th width="90" class="text-center">Jumlah (Pcs)</th>
-                                                    <th width="120" class="text-end">Harga Satuan</th>
-                                                    <th width="140" class="text-end">Subtotal</th>
-                                                    <th width="100" class="text-center">Status</th>
-                                                    <th width="120" class="text-center">Aksi</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <?php if (empty($detail_penjualan)): ?>
-                                                    <tr>
-                                                        <td colspan="8" class="text-center py-4">
-                                                            <div class="text-muted">
-                                                                <i class="ti ti-inbox fs-1 d-block mb-2"></i>
-                                                                Tidak ada data penjualan produk
-                                                                <?php if ($id_reseller > 0 || $status != 'all' || !empty($filter_produk)): ?>
-                                                                    <br><small>Coba gunakan filter yang berbeda</small>
-                                                                <?php endif; ?>
+                                        <div class="col-md-12">
+                                            <label class="form-label">Produk</label>
+                                            <div class="multiselect-dropdown">
+                                                <button class="btn btn-outline-secondary dropdown-toggle" type="button"
+                                                    id="produkDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                                    <?php if (empty($filter_produk)): ?>
+                                                        Pilih Produk...
+                                                    <?php else: ?>
+                                                        <?= count($filter_produk) ?> produk dipilih
+                                                    <?php endif; ?>
+                                                </button>
+                                                <ul class="dropdown-menu" aria-labelledby="produkDropdown">
+                                                    <li>
+                                                        <div class="dropdown-item">
+                                                            <input type="checkbox" id="selectAllProduk"
+                                                                <?= count($filter_produk) == count($produk_list) ? 'checked' : '' ?>>
+                                                            <label for="selectAllProduk" style="cursor: pointer; margin-bottom: 0;">
+                                                                <strong>Pilih Semua</strong>
+                                                            </label>
+                                                        </div>
+                                                    </li>
+                                                    <li>
+                                                        <hr class="dropdown-divider">
+                                                    </li>
+                                                    <?php foreach ($produk_list as $pr): ?>
+                                                        <li>
+                                                            <div class="dropdown-item">
+                                                                <input type="checkbox" name="produk[]"
+                                                                    value="<?= $pr['id_produk'] ?>"
+                                                                    id="produk_<?= $pr['id_produk'] ?>"
+                                                                    <?= in_array($pr['id_produk'], $filter_produk) ? 'checked' : '' ?>>
+                                                                <label for="produk_<?= $pr['id_produk'] ?>"
+                                                                    style="cursor: pointer; margin-bottom: 0;">
+                                                                    <?= htmlspecialchars($pr['nama_produk']) ?>
+                                                                </label>
                                                             </div>
-                                                        </td>
+                                                        </li>
+                                                    <?php endforeach; ?>
+                                                </ul>
+                                            </div>
+                                            <!-- Container untuk menampilkan produk yang dipilih -->
+                                            <div class="selected-produk-container mt-2">
+                                                <?php foreach ($filter_produk as $produk_id):
+                                                    $produk_nama = '';
+                                                    foreach ($produk_list as $pr) {
+                                                        if ($pr['id_produk'] == $produk_id) {
+                                                            $produk_nama = $pr['nama_produk'];
+                                                            break;
+                                                        }
+                                                    }
+                                                    if (!empty($produk_nama)): ?>
+                                                        <span class="selected-produk-badge" data-id="<?= $produk_id ?>">
+                                                            <?= htmlspecialchars($produk_nama) ?>
+                                                        </span>
+                                                    <?php endif; ?>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-12">
+                                            <label class="form-label">Tanggal Penjualan</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text"><i class="ti ti-calendar"></i></span>
+                                                <input type="date" class="form-control" name="tanggal_awal"
+                                                    value="<?= htmlspecialchars($filter_tanggal_awal) ?>">
+                                                <span class="input-group-text">s/d</span>
+                                                <input type="date" class="form-control" name="tanggal_akhir"
+                                                    value="<?= htmlspecialchars($filter_tanggal_akhir) ?>">
+                                            </div>
+                                        </div>
+
+                                        <div class="col-12 filter-actions">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <?php if (!empty($filter_produk)): ?>
+                                                        <span class="text-muted">
+                                                            <i class="ti ti-info-circle"></i>
+                                                            Menampilkan <?= count($filter_produk) ?> produk terpilih
+                                                        </span>
+                                                    <?php endif; ?>
+                                                </div>
+                                                <div class="d-flex gap-2">
+                                                    <a href="list.php" class="btn btn-sm btn-secondary">
+                                                        <i class="ti ti-rotate me-1"></i> Reset
+                                                    </a>
+                                                    <button type="submit" class="btn btn-sm btn-primary">
+                                                        <i class="ti ti-filter me-1"></i> Filter
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-7">
+                            <!-- Summary per Produk -->
+                            <?php if (!empty($summary_per_produk)): ?>
+                                <div class="card mb-4">
+                                    <div class="card-header bg-info text-white">
+                                        <h5 class="mb-0">
+                                            <i class="ti ti-chart-bar me-2"></i>Ringkasan Penjualan per Produk
+                                            <?php if (!empty($filter_produk)): ?>
+                                                <small class="text-muted">(Filter: <?= count($filter_produk) ?> produk terpilih)</small>
+                                            <?php endif; ?>
+                                        </h5>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <div class="table-responsive">
+                                            <table class="table table-bordered mb-0 summary-produk-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th width="5%">No</th>
+                                                        <th width="35%">Nama Produk</th>
+                                                        <th width="15%" class="text-end">Jumlah Terjual</th>
+                                                        <th width="20%" class="text-end">Total Nilai</th>
                                                     </tr>
-                                                <?php else: ?>
+                                                </thead>
+                                                <tbody>
                                                     <?php
-                                                    $current_penjualan_id = null;
-                                                    $row_number = 0;
-                                                    $current_transaksi_total = 0;
-                                                    $grand_total = 0;
+                                                    $total_jumlah_summary = 0;
+                                                    $total_nilai_summary = 0;
                                                     ?>
 
-                                                    <?php foreach ($detail_penjualan as $item): ?>
+                                                    <?php foreach ($summary_per_produk as $index => $produk): ?>
                                                         <?php
-                                                        $row_number++;
-                                                        $grand_total += $item['subtotal'];
+                                                        // Hitung total nilai
+                                                        $total_nilai_produk = $produk['total_subtotal'];
 
-                                                        // Tampilkan baris reseller jika penjualan berbeda
-                                                        if ($current_penjualan_id != $item['id_penjualan']):
-                                                            // Tampilkan total transaksi sebelumnya jika ada
-                                                            if ($current_penjualan_id !== null): ?>
-                                                                <!-- Baris total transaksi -->
-                                                                <tr class="table-light">
-                                                                    <td colspan="5" class="text-end fw-bold">Total Transaksi:</td>
-                                                                    <td class="text-end fw-bold text-primary">
-                                                                        <?= formatRupiah($current_transaksi_total) ?>
-                                                                    </td>
-                                                                    <td colspan="2"></td>
-                                                                </tr>
-                                                            <?php endif;
-
-                                                            // Reset untuk transaksi baru
-                                                            $current_penjualan_id = $item['id_penjualan'];
-                                                            $current_transaksi_total = 0;
-                                                            ?>
-                                                            <!-- Baris Header Transaksi -->
-                                                            <tr class="table-active">
-                                                                <td>
-                                                                    <div class="fw-bold"><?= dateIndo($item['tanggal_penjualan']) ?></div>
-                                                                    <small class="text-muted">ID Transaksi: <?= $item['id_penjualan'] ?></small>
-                                                                </td>
-                                                                <td colspan="2">
-                                                                    <div class="fw-bold"><?= htmlspecialchars($item['nama_reseller']) ?></div>
-                                                                    <?php if (!empty($item['metode_pembayaran'])): ?>
-                                                                        <small class="text-muted"><?= ucfirst($item['metode_pembayaran']) ?></small>
-                                                                    <?php endif; ?>
-                                                                </td>
-                                                                <td colspan="2"></td>
-                                                                <td></td>
-                                                                <td class="text-center">
-                                                                    <span class="badge <?= $item['status_pembayaran'] == 'lunas' ? 'bg-success' : 'bg-warning text-dark' ?>">
-                                                                        <?= ucfirst($item['status_pembayaran']) ?>
-                                                                    </span>
-                                                                </td>
-                                                                <td class="text-center">
-                                                                    <div class="btn-group btn-group-sm">
-                                                                        <?php if ($item['status_pembayaran'] != 'batal'): ?>
-                                                                            <button class="btn btn-danger btn-batal"
-                                                                                data-id="<?= $item['id_penjualan'] ?>"
-                                                                                data-no="<?= $item['id_penjualan'] ?>"
-                                                                                title="Batalkan Penjualan">
-                                                                                <i class="ti ti-x"></i>
-                                                                            </button>
-                                                                            <?php if ($item['status_pembayaran'] == 'cicilan'): ?>
-                                                                                <a href="cicilan.php?id=<?= $item['id_penjualan'] ?>"
-                                                                                    class="btn btn-warning"
-                                                                                    title="Pembayaran Cicilan">
-                                                                                    <i class="ti ti-cash"></i>
-                                                                                </a>
-                                                                            <?php endif; ?>
-                                                                            <a href="nota.php?id=<?= $item['id_penjualan'] ?>"
-                                                                                target="_blank"
-                                                                                class="btn btn-info"
-                                                                                title="Cetak Nota">
-                                                                                <i class="ti ti-printer"></i>
-                                                                            </a>
-                                                                        <?php else: ?>
-                                                                            <span class="badge bg-secondary">Dibatalkan</span>
-                                                                        <?php endif; ?>
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
-                                                        <?php endif; ?>
-
-                                                        <!-- Baris Detail Produk -->
-                                                        <?php $current_transaksi_total += $item['subtotal']; ?>
+                                                        // Akumulasi untuk total
+                                                        $total_jumlah_summary += $produk['total_jumlah'];
+                                                        $total_nilai_summary += $total_nilai_produk;
+                                                        ?>
                                                         <tr>
-                                                            <td></td>
-                                                            <td></td>
+                                                            <td class="text-center"><?= $index + 1 ?></td>
                                                             <td>
-                                                                <div><?= htmlspecialchars($item['nama_produk']) ?></div>
-                                                                <?php if (!empty($filter_produk) && in_array($item['id_produk'], $filter_produk)): ?>
-                                                                    <small class="text-success">
-                                                                        <i class="ti ti-check"></i> Terpilih
-                                                                    </small>
+                                                                <?= htmlspecialchars($produk['nama_produk']) ?>
+                                                                <?php if (!empty($filter_produk) && in_array($produk['id_produk'], $filter_produk)): ?>
+                                                                    <span class="badge bg-success ms-1">Terpilih</span>
                                                                 <?php endif; ?>
                                                             </td>
-                                                            <td class="text-center">
-                                                                <?= number_format($item['jumlah'], 0, ',', '.') ?>
-                                                            </td>
-                                                            <td class="text-end">
-                                                                <?= formatRupiah($item['harga_satuan']) ?>
-                                                            </td>
-                                                            <td class="text-end fw-bold">
-                                                                <?= formatRupiah($item['subtotal']) ?>
-                                                            </td>
-                                                            <td></td>
-                                                            <td></td>
+                                                            <td class="text-end"><?= number_format($produk['total_jumlah'], 0, ',', '.') ?></td>
+                                                            <td class="text-end text-money"><?= formatRupiah($total_nilai_produk) ?></td>
                                                         </tr>
                                                     <?php endforeach; ?>
+                                                </tbody>
+                                                <tfoot>
+                                                    <tr class="table-light">
+                                                        <th colspan="2" class="text-end">TOTAL</th>
+                                                        <th class="text-end"><?= number_format($total_jumlah_summary, 0, ',', '.') ?></th>
+                                                        <th class="text-end text-primary"><?= formatRupiah($total_nilai_summary) ?></th>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
 
-                                                    <!-- Total Transaksi Terakhir -->
-                                                    <?php if ($current_penjualan_id !== null): ?>
+                    <!-- Card Data Detail -->
+                    <div class="card">
+                        <div class="card-header bg-light border-bottom">
+                            <h5 class="mb-0 d-flex align-items-center gap-2">
+                                <i class="ti ti-table"></i>
+                                Detail Penjualan Produk
+                                <?php if (!empty($filter_produk)): ?>
+                                    <span class="badge bg-info ms-2">
+                                        Filter: <?= count($filter_produk) ?> produk terpilih
+                                    </span>
+                                <?php endif; ?>
+                            </h5>
+                        </div>
+
+                        <div class="card-body">
+                            <?php
+                            $showErrorPopup = false;
+                            $errorMessage = '';
+                            if (isset($_SESSION['error'])):
+                                $showErrorPopup = true;
+                                $errorMessage = $_SESSION['error'];
+                            ?>
+                                <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center" role="alert">
+                                    <i class="ti ti-alert-circle me-2"></i>
+                                    <div><?= htmlspecialchars($_SESSION['error']) ?></div>
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                                <?php unset($_SESSION['error']); ?>
+                            <?php endif; ?>
+
+                            <?php if (isset($_SESSION['success'])): ?>
+                                <div class="alert alert-success alert-dismissible fade show d-flex align-items-center" role="alert">
+                                    <i class="ti ti-check me-2"></i>
+                                    <div><?= htmlspecialchars($_SESSION['success']) ?></div>
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                                <?php unset($_SESSION['success']); ?>
+                            <?php endif; ?>
+
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th width="120">Tanggal</th>
+                                            <th>Reseller</th>
+                                            <th>Produk</th>
+                                            <th width="90" class="text-center">Jumlah (Pcs)</th>
+                                            <th width="120" class="text-end">Harga Satuan</th>
+                                            <th width="140" class="text-end">Subtotal</th>
+                                            <th width="100" class="text-center">Status</th>
+                                            <th width="120" class="text-center">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php if (empty($detail_penjualan)): ?>
+                                            <tr>
+                                                <td colspan="8" class="text-center py-4">
+                                                    <div class="text-muted">
+                                                        <i class="ti ti-inbox fs-1 d-block mb-2"></i>
+                                                        Tidak ada data penjualan produk
+                                                        <?php if ($id_reseller > 0 || $status != 'all' || !empty($filter_produk)): ?>
+                                                            <br><small>Coba gunakan filter yang berbeda</small>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        <?php else: ?>
+                                            <?php
+                                            $current_penjualan_id = null;
+                                            $row_number = 0;
+                                            $current_transaksi_total = 0;
+                                            $grand_total = 0;
+                                            ?>
+
+                                            <?php foreach ($detail_penjualan as $item): ?>
+                                                <?php
+                                                $row_number++;
+                                                $grand_total += $item['subtotal'];
+
+                                                // Tampilkan baris reseller jika penjualan berbeda
+                                                if ($current_penjualan_id != $item['id_penjualan']):
+                                                    // Tampilkan total transaksi sebelumnya jika ada
+                                                    if ($current_penjualan_id !== null): ?>
+                                                        <!-- Baris total transaksi -->
                                                         <tr class="table-light">
                                                             <td colspan="5" class="text-end fw-bold">Total Transaksi:</td>
                                                             <td class="text-end fw-bold text-primary">
@@ -733,93 +604,113 @@ $chart_data = json_encode($penjualan_per_bulan);
                                                             </td>
                                                             <td colspan="2"></td>
                                                         </tr>
-                                                    <?php endif; ?>
+                                                    <?php endif;
+
+                                                    // Reset untuk transaksi baru
+                                                    $current_penjualan_id = $item['id_penjualan'];
+                                                    $current_transaksi_total = 0;
+                                                    ?>
+                                                    <!-- Baris Header Transaksi -->
+                                                    <tr class="table-active">
+                                                        <td>
+                                                            <div class="fw-bold"><?= dateIndo($item['tanggal_penjualan']) ?></div>
+                                                            <small class="text-muted">ID Transaksi: <?= $item['id_penjualan'] ?></small>
+                                                        </td>
+                                                        <td colspan="2">
+                                                            <div class="fw-bold"><?= htmlspecialchars($item['nama_reseller']) ?></div>
+                                                            <?php if (!empty($item['metode_pembayaran'])): ?>
+                                                                <small class="text-muted"><?= ucfirst($item['metode_pembayaran']) ?></small>
+                                                            <?php endif; ?>
+                                                        </td>
+                                                        <td colspan="2"></td>
+                                                        <td></td>
+                                                        <td class="text-center">
+                                                            <span class="badge <?= $item['status_pembayaran'] == 'lunas' ? 'bg-success' : 'bg-warning text-dark' ?>">
+                                                                <?= ucfirst($item['status_pembayaran']) ?>
+                                                            </span>
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <div class="btn-group btn-group-sm">
+                                                                <?php if ($item['status_pembayaran'] != 'batal'): ?>
+                                                                    <button class="btn btn-danger btn-batal"
+                                                                        data-id="<?= $item['id_penjualan'] ?>"
+                                                                        data-no="<?= $item['id_penjualan'] ?>"
+                                                                        title="Batalkan Penjualan">
+                                                                        <i class="ti ti-x"></i>
+                                                                    </button>
+                                                                    <?php if ($item['status_pembayaran'] == 'cicilan'): ?>
+                                                                        <a href="cicilan.php?id=<?= $item['id_penjualan'] ?>"
+                                                                            class="btn btn-warning"
+                                                                            title="Pembayaran Cicilan">
+                                                                            <i class="ti ti-cash"></i>
+                                                                        </a>
+                                                                    <?php endif; ?>
+                                                                    <a href="nota.php?id=<?= $item['id_penjualan'] ?>"
+                                                                        target="_blank"
+                                                                        class="btn btn-info"
+                                                                        title="Cetak Nota">
+                                                                        <i class="ti ti-printer"></i>
+                                                                    </a>
+                                                                <?php else: ?>
+                                                                    <span class="badge bg-secondary">Dibatalkan</span>
+                                                                <?php endif; ?>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
                                                 <?php endif; ?>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
+
+                                                <!-- Baris Detail Produk -->
+                                                <?php $current_transaksi_total += $item['subtotal']; ?>
+                                                <tr>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td>
+                                                        <div><?= htmlspecialchars($item['nama_produk']) ?></div>
+                                                        <?php if (!empty($filter_produk) && in_array($item['id_produk'], $filter_produk)): ?>
+                                                            <small class="text-success">
+                                                                <i class="ti ti-check"></i> Terpilih
+                                                            </small>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <?= number_format($item['jumlah'], 0, ',', '.') ?>
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <?= formatRupiah($item['harga_satuan']) ?>
+                                                    </td>
+                                                    <td class="text-end fw-bold">
+                                                        <?= formatRupiah($item['subtotal']) ?>
+                                                    </td>
+                                                    <td></td>
+                                                    <td></td>
+                                                </tr>
+                                            <?php endforeach; ?>
+
+                                            <!-- Total Transaksi Terakhir -->
+                                            <?php if ($current_penjualan_id !== null): ?>
+                                                <tr class="table-light">
+                                                    <td colspan="5" class="text-end fw-bold">Total Transaksi:</td>
+                                                    <td class="text-end fw-bold text-primary">
+                                                        <?= formatRupiah($current_transaksi_total) ?>
+                                                    </td>
+                                                    <td colspan="2"></td>
+                                                </tr>
+                                            <?php endif; ?>
+                                        <?php endif; ?>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
-                    <!-- End Tab Data Penjualan -->
 
-                    <!-- Tab Grafik Penjualan -->
-                    <div class="tab-pane fade" id="grafik-penjualan" role="tabpanel" aria-labelledby="grafik-tab">
-                        <!-- Grafik Penjualan Per Bulan -->
-                        <div class="card mb-4">
-                            <div class="card-header bg-warning">
-                                <h5 class="mb-0 text-dark d-flex align-items-center">
-                                    <i class="ti ti-chart-bar me-2"></i>
-                                    Grafik Penjualan 12 Bulan Terakhir
-                                </h5>
-                            </div>
-                            <div class="card-body">
-                                <div style="position: relative; height: 400px;">
-                                    <canvas id="salesChart"></canvas>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Summary Cards di Tab Grafik -->
-                        <div class="row g-3">
-                            <div class="col-md-3 col-sm-6">
-                                <div class="card text-center shadow-sm border-0 bg-light">
-                                    <div class="card-body py-3">
-                                        <h4 class="fw-bold mb-1">
-                                            <?= number_format($summary_manual['total_transaksi'], 0, ',', '.') ?>
-                                        </h4>
-                                        <small class="text-muted">Total Transaksi</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-3 col-sm-6">
-                                <div class="card text-center shadow-sm border-0 bg-light">
-                                    <div class="card-body py-3">
-                                        <h4 class="fw-bold mb-1">
-                                            <?= number_format($summary_manual['total_item'], 0, ',', '.') ?>
-                                        </h4>
-                                        <small class="text-muted">Total Item Terjual</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-3 col-sm-6">
-                                <div class="card text-center shadow-sm border-0 bg-light">
-                                    <div class="card-body py-3">
-                                        <h4 class="fw-bold mb-1">
-                                            <?= number_format($summary_manual['total_jumlah'], 0, ',', '.') ?>
-                                        </h4>
-                                        <small class="text-muted">Total Jumlah Barang</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-3 col-sm-6">
-                                <div class="card text-center shadow-sm border-0 bg-light">
-                                    <div class="card-body py-3">
-                                        <h4 class="fw-bold mb-1 text-primary">
-                                            <?= formatRupiah($summary_manual['total_nilai']) ?>
-                                        </h4>
-                                        <small class="text-muted">Total Nilai Penjualan</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- End Tab Grafik Penjualan -->
                 </div>
-                <!-- End Tab Content -->
-
             </div>
+            <!-- [ Main Content ] end -->
         </div>
-        <!-- [ Main Content ] end -->
-    </div>
     </div>
     <!-- [ Main Content ] end -->
 
     <?php include_once '../includes/footer.php'; ?>
-
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -961,106 +852,6 @@ $chart_data = json_encode($penjualan_per_bulan);
                     window.location.href = 'batal.php?id=' + pembelianId;
                 }
             });
-        });
-
-        // Inisialisasi Chart Penjualan saat tab diklik
-        let salesChart = null;
-        const chartLabels = <?= $chart_labels ?>;
-        const chartData = <?= $chart_data ?>;
-
-        function initSalesChart() {
-            if (salesChart) return; // Sudah di-inisialisasi
-
-            const ctx = document.getElementById('salesChart').getContext('2d');
-            salesChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: chartLabels,
-                    datasets: [{
-                        label: 'Total Penjualan',
-                        data: chartData,
-                        backgroundColor: 'rgba(255, 193, 7, 0.8)',
-                        borderColor: 'rgba(255, 193, 7, 1)',
-                        borderWidth: 2,
-                        borderRadius: 8,
-                        borderSkipped: false,
-                        hoverBackgroundColor: 'rgba(255, 193, 7, 1)',
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            backgroundColor: 'rgba(255, 193, 7, 0.95)',
-                            titleColor: '#000',
-                            bodyColor: '#000',
-                            titleFont: {
-                                size: 14,
-                                weight: 'bold'
-                            },
-                            bodyFont: {
-                                size: 13
-                            },
-                            padding: 12,
-                            cornerRadius: 8,
-                            displayColors: false,
-                            callbacks: {
-                                label: function(context) {
-                                    let value = context.raw;
-                                    return 'Rp ' + new Intl.NumberFormat('id-ID').format(value);
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: {
-                                color: 'rgba(0, 0, 0, 0.05)',
-                                drawBorder: false
-                            },
-                            ticks: {
-                                callback: function(value) {
-                                    if (value >= 1000000) {
-                                        return 'Rp ' + (value / 1000000).toFixed(1) + ' Jt';
-                                    } else if (value >= 1000) {
-                                        return 'Rp ' + (value / 1000).toFixed(0) + ' Rb';
-                                    }
-                                    return 'Rp ' + value;
-                                },
-                                font: {
-                                    size: 11
-                                },
-                                color: '#666'
-                            }
-                        },
-                        x: {
-                            grid: {
-                                display: false
-                            },
-                            ticks: {
-                                font: {
-                                    size: 11
-                                },
-                                color: '#666'
-                            }
-                        }
-                    },
-                    animation: {
-                        duration: 1000,
-                        easing: 'easeOutQuart'
-                    }
-                }
-            });
-        }
-
-        // Inisialisasi chart saat tab grafik dibuka
-        $('#grafik-tab').on('shown.bs.tab', function() {
-            initSalesChart();
         });
     </script>
 </body>

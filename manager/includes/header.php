@@ -39,7 +39,7 @@ if ($_SESSION['role'] !== 'manager') {
     <link rel="icon" type="image/x-icon" href="<?= $base_url ?>/assets/img/Logo-Ipenk.png" />
 
     <!-- [PWA] -->
-    <link rel="manifest" href="<?= $base_url ?>/manifest.json">
+    <link rel="manifest" href="<?= $base_url ?>/manifest.php">
     <meta name="theme-color" content="#000000">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">

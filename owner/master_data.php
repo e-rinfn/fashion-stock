@@ -181,7 +181,7 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                     <div class="card">
                         <div class="card-header card-header-simple d-flex justify-content-between align-items-center">
                             <h6 class="mb-0">Data Bahan Baku</h6>
-                            <a href="<?= $base_url ?>/manager/bahan_baku/add.php" class="btn btn-success btn-sm">
+                            <a href="<?= $base_url ?>/owner/bahan_baku/add.php" class="btn btn-success btn-sm">
                                 <i class="ti ti-plus"></i> Tambah
                             </a>
                         </div>
@@ -213,13 +213,13 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                                                     <td class="text-end"><?= number_format($b['jumlah_meter'] ?? 0) ?></td>
                                                     <td class="text-end"><?= formatRupiah($b['harga_per_satuan'] ?? 0) ?></td>
                                                     <td class="text-center">
-                                                        <a href="<?= $base_url ?>/manager/bahan_baku/edit.php?id=<?= $b['id_bahan'] ?>" class="btn btn-warning btn-sm" title="Edit">
+                                                        <a href="<?= $base_url ?>/owner/bahan_baku/edit.php?id=<?= $b['id_bahan'] ?>" class="btn btn-warning btn-sm" title="Edit">
                                                             <i class="ti ti-pencil"></i>
                                                         </a>
                                                         <button type="button" class="btn btn-danger btn-sm btn-delete"
                                                             data-id="<?= $b['id_bahan'] ?>"
                                                             data-nama="<?= htmlspecialchars($b['nama_bahan']) ?>"
-                                                            data-url="<?= $base_url ?>/manager/bahan_baku/delete.php"
+                                                            data-url="<?= $base_url ?>/owner/bahan_baku/delete.php"
                                                             title="Hapus">
                                                             <i class="ti ti-trash"></i>
                                                         </button>
@@ -239,7 +239,7 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                     <div class="card">
                         <div class="card-header card-header-simple d-flex justify-content-between align-items-center">
                             <h6 class="mb-0">Data Produk</h6>
-                            <a href="<?= $base_url ?>/manager/produk/add.php" class="btn btn-success btn-sm">
+                            <a href="<?= $base_url ?>/owner/produk/add.php" class="btn btn-success btn-sm">
                                 <i class="ti ti-plus"></i> Tambah
                             </a>
                         </div>
@@ -271,13 +271,13 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                                                     <td class="text-end"><?= number_format($p['stok'] ?? 0) ?></td>
                                                     <td class="text-end"><?= formatRupiah($p['harga_jual'] ?? 0) ?></td>
                                                     <td class="text-center">
-                                                        <a href="<?= $base_url ?>/manager/produk/edit.php?id=<?= $p['id_produk'] ?>" class="btn btn-warning btn-sm" title="Edit">
+                                                        <a href="<?= $base_url ?>/owner/produk/edit.php?id=<?= $p['id_produk'] ?>" class="btn btn-warning btn-sm" title="Edit">
                                                             <i class="ti ti-pencil"></i>
                                                         </a>
                                                         <button type="button" class="btn btn-danger btn-sm btn-delete"
                                                             data-id="<?= $p['id_produk'] ?>"
                                                             data-nama="<?= htmlspecialchars($p['nama_produk']) ?>"
-                                                            data-url="<?= $base_url ?>/manager/produk/delete.php"
+                                                            data-url="<?= $base_url ?>/owner/produk/delete.php"
                                                             title="Hapus">
                                                             <i class="ti ti-trash"></i>
                                                         </button>
@@ -297,7 +297,7 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                     <div class="card">
                         <div class="card-header card-header-simple d-flex justify-content-between align-items-center">
                             <h6 class="mb-0">Data Pemotong</h6>
-                            <a href="<?= $base_url ?>/manager/pemotong/add.php" class="btn btn-success btn-sm">
+                            <a href="<?= $base_url ?>/owner/pemotong/add.php" class="btn btn-success btn-sm">
                                 <i class="ti ti-plus"></i> Tambah
                             </a>
                         </div>
@@ -327,13 +327,13 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                                                     <td><?= htmlspecialchars($pm['kontak'] ?? '-') ?></td>
                                                     <td><?= htmlspecialchars($pm['alamat'] ?? '-') ?></td>
                                                     <td class="text-center">
-                                                        <a href="<?= $base_url ?>/manager/pemotong/edit.php?id=<?= $pm['id_pemotong'] ?>" class="btn btn-warning btn-sm" title="Edit">
+                                                        <a href="<?= $base_url ?>/owner/pemotong/edit.php?id=<?= $pm['id_pemotong'] ?>" class="btn btn-warning btn-sm" title="Edit">
                                                             <i class="ti ti-pencil"></i>
                                                         </a>
                                                         <button type="button" class="btn btn-danger btn-sm btn-delete"
                                                             data-id="<?= $pm['id_pemotong'] ?>"
                                                             data-nama="<?= htmlspecialchars($pm['nama_pemotong']) ?>"
-                                                            data-url="<?= $base_url ?>/manager/pemotong/delete.php"
+                                                            data-url="<?= $base_url ?>/owner/pemotong/delete.php"
                                                             title="Hapus">
                                                             <i class="ti ti-trash"></i>
                                                         </button>
@@ -353,7 +353,7 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                     <div class="card">
                         <div class="card-header card-header-simple d-flex justify-content-between align-items-center">
                             <h6 class="mb-0">Data Bordir</h6>
-                            <a href="<?= $base_url ?>/manager/petugas_bordir/add.php" class="btn btn-success btn-sm">
+                            <a href="<?= $base_url ?>/owner/petugas_bordir/add.php" class="btn btn-success btn-sm">
                                 <i class="ti ti-plus"></i> Tambah
                             </a>
                         </div>
@@ -383,13 +383,13 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                                                     <td><?= htmlspecialchars($bd['kontak'] ?? '-') ?></td>
                                                     <td><?= htmlspecialchars($bd['alamat'] ?? '-') ?></td>
                                                     <td class="text-center">
-                                                        <a href="<?= $base_url ?>/manager/petugas_bordir/edit.php?id=<?= $bd['id_bordir'] ?>" class="btn btn-warning btn-sm" title="Edit">
+                                                        <a href="<?= $base_url ?>/owner/petugas_bordir/edit.php?id=<?= $bd['id_bordir'] ?>" class="btn btn-warning btn-sm" title="Edit">
                                                             <i class="ti ti-pencil"></i>
                                                         </a>
                                                         <button type="button" class="btn btn-danger btn-sm btn-delete"
                                                             data-id="<?= $bd['id_bordir'] ?>"
                                                             data-nama="<?= htmlspecialchars($bd['nama_bordir']) ?>"
-                                                            data-url="<?= $base_url ?>/manager/petugas_bordir/delete.php"
+                                                            data-url="<?= $base_url ?>/owner/petugas_bordir/delete.php"
                                                             title="Hapus">
                                                             <i class="ti ti-trash"></i>
                                                         </button>
@@ -409,7 +409,7 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                     <div class="card">
                         <div class="card-header card-header-simple d-flex justify-content-between align-items-center">
                             <h6 class="mb-0">Data Penjahit</h6>
-                            <a href="<?= $base_url ?>/manager/penjahit/add.php" class="btn btn-success btn-sm">
+                            <a href="<?= $base_url ?>/owner/penjahit/add.php" class="btn btn-success btn-sm">
                                 <i class="ti ti-plus"></i> Tambah
                             </a>
                         </div>
@@ -439,13 +439,13 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                                                     <td><?= htmlspecialchars($pj['kontak'] ?? '-') ?></td>
                                                     <td><?= htmlspecialchars($pj['alamat'] ?? '-') ?></td>
                                                     <td class="text-center">
-                                                        <a href="<?= $base_url ?>/manager/penjahit/edit.php?id=<?= $pj['id_penjahit'] ?>" class="btn btn-warning btn-sm" title="Edit">
+                                                        <a href="<?= $base_url ?>/owner/penjahit/edit.php?id=<?= $pj['id_penjahit'] ?>" class="btn btn-warning btn-sm" title="Edit">
                                                             <i class="ti ti-pencil"></i>
                                                         </a>
                                                         <button type="button" class="btn btn-danger btn-sm btn-delete"
                                                             data-id="<?= $pj['id_penjahit'] ?>"
                                                             data-nama="<?= htmlspecialchars($pj['nama_penjahit']) ?>"
-                                                            data-url="<?= $base_url ?>/manager/penjahit/delete.php"
+                                                            data-url="<?= $base_url ?>/owner/penjahit/delete.php"
                                                             title="Hapus">
                                                             <i class="ti ti-trash"></i>
                                                         </button>
@@ -465,7 +465,7 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                     <div class="card">
                         <div class="card-header card-header-simple d-flex justify-content-between align-items-center">
                             <h6 class="mb-0">Data Petugas Finishing</h6>
-                            <a href="<?= $base_url ?>/manager/petugas_finishing/add.php" class="btn btn-success btn-sm">
+                            <a href="<?= $base_url ?>/owner/petugas_finishing/add.php" class="btn btn-success btn-sm">
                                 <i class="ti ti-plus"></i> Tambah
                             </a>
                         </div>
@@ -495,13 +495,13 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                                                     <td><?= htmlspecialchars($fn['kontak'] ?? '-') ?></td>
                                                     <td><?= htmlspecialchars($fn['alamat'] ?? '-') ?></td>
                                                     <td class="text-center">
-                                                        <a href="<?= $base_url ?>/manager/petugas_finishing/edit.php?id=<?= $fn['id_petugas_finishing'] ?>" class="btn btn-warning btn-sm" title="Edit">
+                                                        <a href="<?= $base_url ?>/owner/petugas_finishing/edit.php?id=<?= $fn['id_petugas_finishing'] ?>" class="btn btn-warning btn-sm" title="Edit">
                                                             <i class="ti ti-pencil"></i>
                                                         </a>
                                                         <button type="button" class="btn btn-danger btn-sm btn-delete"
                                                             data-id="<?= $fn['id_petugas_finishing'] ?>"
                                                             data-nama="<?= htmlspecialchars($fn['nama_petugas']) ?>"
-                                                            data-url="<?= $base_url ?>/manager/petugas_finishing/delete.php"
+                                                            data-url="<?= $base_url ?>/owner/petugas_finishing/delete.php"
                                                             title="Hapus">
                                                             <i class="ti ti-trash"></i>
                                                         </button>
@@ -521,7 +521,7 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                     <div class="card">
                         <div class="card-header card-header-simple d-flex justify-content-between align-items-center">
                             <h6 class="mb-0">Data Reseller</h6>
-                            <a href="<?= $base_url ?>/manager/reseller/add.php" class="btn btn-success btn-sm">
+                            <a href="<?= $base_url ?>/owner/reseller/add.php" class="btn btn-success btn-sm">
                                 <i class="ti ti-plus"></i> Tambah
                             </a>
                         </div>
@@ -551,13 +551,13 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                                                     <td><?= htmlspecialchars($rs['kontak'] ?? '-') ?></td>
                                                     <td class="text-center"><?= isset($rs['tanggal_bergabung']) ? dateIndo($rs['tanggal_bergabung']) : '-' ?></td>
                                                     <td class="text-center">
-                                                        <a href="<?= $base_url ?>/manager/reseller/edit.php?id=<?= $rs['id_reseller'] ?>" class="btn btn-warning btn-sm" title="Edit">
+                                                        <a href="<?= $base_url ?>/owner/reseller/edit.php?id=<?= $rs['id_reseller'] ?>" class="btn btn-warning btn-sm" title="Edit">
                                                             <i class="ti ti-pencil"></i>
                                                         </a>
                                                         <button type="button" class="btn btn-danger btn-sm btn-delete"
                                                             data-id="<?= $rs['id_reseller'] ?>"
                                                             data-nama="<?= htmlspecialchars($rs['nama_reseller']) ?>"
-                                                            data-url="<?= $base_url ?>/manager/reseller/delete.php"
+                                                            data-url="<?= $base_url ?>/owner/reseller/delete.php"
                                                             title="Hapus">
                                                             <i class="ti ti-trash"></i>
                                                         </button>
@@ -577,7 +577,7 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                     <div class="card">
                         <div class="card-header card-header-simple d-flex justify-content-between align-items-center">
                             <h6 class="mb-0">Data Supplier</h6>
-                            <a href="<?= $base_url ?>/manager/supplier/add.php" class="btn btn-success btn-sm">
+                            <a href="<?= $base_url ?>/owner/supplier/add.php" class="btn btn-success btn-sm">
                                 <i class="ti ti-plus"></i> Tambah
                             </a>
                         </div>
@@ -607,13 +607,13 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                                                     <td><?= htmlspecialchars($sp['kontak'] ?? '-') ?></td>
                                                     <td><?= htmlspecialchars($sp['alamat'] ?? '-') ?></td>
                                                     <td class="text-center">
-                                                        <a href="<?= $base_url ?>/manager/supplier/edit.php?id=<?= $sp['id_supplier'] ?>" class="btn btn-warning btn-sm" title="Edit">
+                                                        <a href="<?= $base_url ?>/owner/supplier/edit.php?id=<?= $sp['id_supplier'] ?>" class="btn btn-warning btn-sm" title="Edit">
                                                             <i class="ti ti-pencil"></i>
                                                         </a>
                                                         <button type="button" class="btn btn-danger btn-sm btn-delete"
                                                             data-id="<?= $sp['id_supplier'] ?>"
                                                             data-nama="<?= htmlspecialchars($sp['nama_supplier']) ?>"
-                                                            data-url="<?= $base_url ?>/manager/supplier/delete.php"
+                                                            data-url="<?= $base_url ?>/owner/supplier/delete.php"
                                                             title="Hapus">
                                                             <i class="ti ti-trash"></i>
                                                         </button>
@@ -681,7 +681,7 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                                                         <button type="button" class="btn btn-danger btn-sm btn-delete"
                                                             data-id="<?= $tu['id_tarif'] ?>"
                                                             data-nama="Tarif <?= ucfirst($tu['jenis_tarif']) ?>"
-                                                            data-url="<?= $base_url ?>/manager/upah/upah_settings.php?hapus=<?= $tu['id_tarif'] ?>"
+                                                            data-url="<?= $base_url ?>/owner/upah/upah_settings.php?hapus=<?= $tu['id_tarif'] ?>"
                                                             data-direct="true"
                                                             title="Hapus">
                                                             <i class="ti ti-trash"></i>

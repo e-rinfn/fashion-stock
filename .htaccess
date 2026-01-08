@@ -2,10 +2,19 @@
 
 RewriteEngine On
 
+# PWA Files - Allow direct access
+RewriteRule ^manifest\.php$ manifest.php [L]
+RewriteRule ^sw\.php$ sw.php [L]
+
+# Set correct MIME types for PWA
+<IfModule mod_mime.c>
+    AddType application/manifest+json .webmanifest
+</IfModule>
+
 # Redirect ke https jika tersedia
 
 RewriteCond %{HTTPS} off
-RewriteRule ^(.\*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
 # Blok akses langsung ke file tertentu
 

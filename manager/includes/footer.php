@@ -39,7 +39,7 @@ include_once __DIR__ . '/../../config/config.php';
 <script>
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('<?= $base_url ?>/sw.js')
+            navigator.serviceWorker.register('<?= $base_url ?>/sw.php')
                 .then((registration) => {
                     console.log('ServiceWorker registered: ', registration.scope);
                 })

@@ -11,7 +11,7 @@ if (!isLoggedIn()) {
     exit;
 }
 
-if ($_SESSION['role'] !== 'manager') {
+if ($_SESSION['role'] !== 'owner') {
     header("Location: {$base_url}/auth/role_tidak_cocok.php");
     exit();
 }
@@ -131,7 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <button type="submit" class="btn btn-primary">
                                 <i class="ti ti-file-plus"></i> Simpan Perubahan
                             </button>
-                            <a href="<?= $base_url ?>/manager/master_data.php" class="btn btn-secondary">
+                            <a href="<?= $base_url ?>/owner/master_data.php" class="btn btn-secondary">
                                 <i class="ti ti-arrow-back"></i> Batal
                             </a>
                         </div>

@@ -77,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <button type="submit" class="btn btn-primary">
                                 <i class="ti ti-file-plus"></i> Simpan
                             </button>
-                            <a href="<?= $base_url ?>/manager/master_data.php" class="btn btn-secondary">
+                            <a href="<?= $base_url ?>/owner/master_data.php" class="btn btn-secondary">
                                 <i class="ti ti-arrow-back"></i> Batal
                             </a>
                         </div>

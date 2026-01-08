@@ -185,7 +185,7 @@ if (isset($_POST['login'])) {
   <!-- [Favicon] icon -->
   <link rel="icon" type="image/x-icon" href="<?= $base_url ?>/assets/img/Logo-Ipenk.png" />
   <!-- [PWA] -->
-  <link rel="manifest" href="<?= $base_url ?>/manifest.json">
+  <link rel="manifest" href="<?= $base_url ?>/manifest.php">
   <meta name="theme-color" content="#000000">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -325,7 +325,7 @@ if (isset($_POST['login'])) {
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('<?= $base_url ?>/sw.js')
+        navigator.serviceWorker.register('<?= $base_url ?>/sw.php')
           .then((registration) => {
             console.log('ServiceWorker registered: ', registration.scope);
           })

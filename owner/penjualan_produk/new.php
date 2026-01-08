@@ -1,4 +1,7 @@
 <?php
+
+$page_title = "PENJUALAN PRODUK";
+
 require_once '../includes/header.php';
 require_once '../../config/database.php';
 require_once '../../config/functions.php';
@@ -168,11 +171,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_penjualan'])) {
             <!-- [ Main Content ] start -->
             <div class="row">
 
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2>PESANAN PENJUALAN PRODUK</h2>
-                </div>
-
-
                 <div class="card">
                     <div class="card-body">
                         <div class="row">
@@ -199,7 +197,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_penjualan'])) {
                                                 <div class="input-group">
                                                     <span class="input-group-text"><i class="ti ti-calendar"></i></span>
                                                     <input type="date" name="tanggal_penjualan" class="form-control date-input"
-                                                        value="<?= date('Y-m-d') ?>" required>
+                                                        value="" placeholder="YYYY-MM-DD" required>
                                                 </div>
                                             </div>
 
@@ -232,7 +230,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_penjualan'])) {
                                             <thead>
                                                 <tr class="text-center">
                                                     <th>Produk</th>
-                                                    <th>Harga/Pcs (Rp)</th>
+                                                    <th>Harga Per Pcs</th>
                                                     <th>Stok</th>
                                                     <th>Qty</th>
                                                     <th>Subtotal</th>
@@ -584,10 +582,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_penjualan'])) {
     // Tambahkan satu produk secara default saat halaman dimuat
     document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('tambahProduk').click();
-
-        // Set default tanggal ke hari ini
-        const today = new Date().toISOString().split('T')[0];
-        document.querySelector('input[name="tanggal_penjualan"]').value = today;
     });
 </script>
 

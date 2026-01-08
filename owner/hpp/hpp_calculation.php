@@ -3,6 +3,8 @@
 error_reporting(error_level: E_ALL);
 ini_set('display_errors', 1);
 
+$page_title = "HPP PENJUALAN PRODUK";
+
 require_once '../includes/header.php';
 require_once '../../config/database.php';
 require_once '../../config/functions.php';
@@ -261,9 +263,6 @@ if ($periode_id > 0) {
             <!-- [ Main Content ] start -->
             <div class="row">
                 <div class="col-12">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h2>Perhitungan HPP (Harga Pokok Produksi)</h2>
-                    </div>
 
                     <!-- Period Selector -->
                     <div class="card shadow-sm mb-4">
@@ -468,19 +467,23 @@ if ($periode_id > 0) {
                                                 <tr class="table-light">
                                                     <th class="text-end">Total:</th>
                                                     <th class="text-center"><?= number_format($total_produk, 0, ',', '.') ?> pcs</th>
-                                                    <th class="text-end"><?= formatRupiah($total_penjualan) ?></th>
+                                                    <th class="text-end"><?= formatRupiah($total_harga_all) ?></th>
                                                 </tr>
                                             </tfoot>
                                         </table>
                                     </div>
 
                                     <!-- Perhitungan HPP -->
+                                    <?php
+                                    // Hitung ulang laba bersih dengan data penjualan real-time
+                                    $laba_bersih_realtime = $total_penjualan_bulanan - $total_hpp;
+                                    ?>
                                     <div class="card">
                                         <div class="card-body">
                                             <table class="table table-bordered mb-0">
                                                 <tr>
                                                     <td width="70%"><strong>Total Penjualan Produk</strong></td>
-                                                    <td class="text-end"><?= formatRupiah($total_penjualan) ?></td>
+                                                    <td class="text-end"><?= formatRupiah($total_penjualan_bulanan) ?></td>
                                                 </tr>
                                                 <tr>
                                                     <td><strong>Total Biaya Produksi (HPP)</strong></td>
@@ -488,8 +491,8 @@ if ($periode_id > 0) {
                                                 </tr>
                                                 <tr class="table-light">
                                                     <td><strong>LABA BERSIH</strong></td>
-                                                    <td class="text-end fw-bold <?= $laba_bersih >= 0 ? 'text-success' : 'text-danger' ?>">
-                                                        <?= formatRupiah($laba_bersih) ?>
+                                                    <td class="text-end fw-bold <?= $laba_bersih_realtime >= 0 ? 'text-success' : 'text-danger' ?>">
+                                                        <?= formatRupiah($laba_bersih_realtime) ?>
                                                     </td>
                                                 </tr>
                                             </table>

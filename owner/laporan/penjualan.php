@@ -22,122 +22,141 @@ $totalPenjualan = query("SELECT SUM(total_harga) as total FROM penjualan
 ?>
 
 
-<!-- [Body] Start -->
+<style>
+    /* Paksa SweetAlert berada di atas segalanya */
+    .swal2-container {
+        z-index: 99999 !important;
+    }
+</style>
 
-<body data-pc-preset="preset-1" data-pc-direction="ltr" data-pc-theme="light">
-    <!-- [ Pre-loader ] start -->
-    <div class="loader-bg">
-        <div class="loader-track">
-            <div class="loader-fill"></div>
-        </div>
-    </div>
-    <!-- [ Pre-loader ] End -->
+<body>
+    <!-- Layout wrapper -->
+    <div class="layout-wrapper layout-content-navbar">
+        <div class="layout-container">
 
-    <!-- Sidebar Start -->
-    <?php include_once '../includes/sidebar.php'; ?>
-    <!-- Sidebar End -->
+            <!-- Sidebar -->
+            <?php include '../includes/sidebar.php'; ?>
+            <!-- / Sidebar -->
 
-    <?php include_once '../includes/navbar.php'; ?>
+            <!-- Layout container -->
+            <div class="layout-page">
+                <!-- Navbar -->
+                <?php include '../includes/navbar.php'; ?>
+                <!-- / Navbar -->
 
-    <!-- [ Main Content ] start -->
-    <div class="pc-container">
-        <div class="pc-content">
+                <!-- Content wrapper -->
+                <div class="content-wrapper">
+                    <!-- Content -->
 
-            <!-- [ Main Content ] start -->
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2>Data Penjualan</h2>
-            </div>
-
-
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Detail Penjualan</h5>
-                </div>
-
-                <div class="card-body">
-                    <form method="get" class="row g-2 mb-3">
-                        <div class="col-auto">
-                            <input type="date" name="start_date" value="<?= $startDate ?>" class="form-control form-control-sm">
+                    <div class="container-xxl flex-grow-1 container-p-y">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h2>Data Penjualan</h2>
                         </div>
-                        <div class="col-auto">
-                            <input type="date" name="end_date" value="<?= $endDate ?>" class="form-control form-control-sm">
+
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Detail Penjualan</h5>
+                            </div>
+
+                            <div class="card-body">
+                                <form method="get" class="row g-2 mb-3">
+                                    <div class="col-auto">
+                                        <input type="date" name="start_date" value="<?= $startDate ?>" class="form-control form-control-sm">
+                                    </div>
+                                    <div class="col-auto">
+                                        <input type="date" name="end_date" value="<?= $endDate ?>" class="form-control form-control-sm">
+                                    </div>
+                                    <div class="col-auto">
+                                        <button type="submit" class="btn btn-sm btn-primary">Filter</button>
+                                        <a href="penjualan.php" class="btn btn-sm btn-outline-secondary">Reset</a>
+                                    </div>
+                                </form>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-hover">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>No</th>
+                                                <th>Tanggal</th>
+                                                <th>Reseller</th>
+                                                <th>Total</th>
+                                                <th>Dibayar</th>
+                                                <th>Sisa</th>
+                                                <th>Status</th>
+                                                <th>Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php if (empty($penjualan)) : ?>
+                                                <tr>
+                                                    <td colspan="8" class="text-center">Tidak ada data penjualan</td>
+                                                </tr>
+                                            <?php else : ?>
+                                                <?php $no = 1; ?>
+                                                <?php foreach ($penjualan as $jual) : ?>
+                                                    <?php
+                                                    $dibayar = $jual['dibayar'] ?? 0;
+                                                    $sisa = $jual['total_harga'] - $dibayar;
+                                                    ?>
+                                                    <tr>
+                                                        <td><?= $no++; ?></td>
+                                                        <td><?= date('d/m/Y', strtotime($jual['tanggal_penjualan'])) ?></td>
+                                                        <td><?= htmlspecialchars($jual['nama_reseller']) ?></td>
+                                                        <td class="text-end"><?= formatRupiah($jual['total_harga']) ?></td>
+                                                        <td class="text-end"><?= formatRupiah($dibayar) ?></td>
+                                                        <td class="text-end"><?= formatRupiah($sisa) ?></td>
+                                                        <td>
+                                                            <span class="badge bg-<?= $jual['status_pembayaran'] === 'lunas' ? 'success' : 'warning' ?>">
+                                                                <?= ucfirst($jual['status_pembayaran']) ?>
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            <a href="../penjualan/detail.php?id=<?= $jual['id_penjualan'] ?>"
+                                                                class="btn btn-sm btn-info" title="Detail">
+                                                                <i class="bx bx-detail"></i>
+                                                            </a>
+                                                        </td>
+                                                    </tr>
+                                                <?php endforeach; ?>
+                                                <tr class="table-active">
+                                                    <th colspan="3" class="text-end">TOTAL</th>
+                                                    <th class="text-end"><?= formatRupiah($totalPenjualan) ?></th>
+                                                    <th colspan="4"></th>
+                                                </tr>
+                                            <?php endif; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-auto">
-                            <button type="submit" class="btn btn-sm btn-primary">Filter</button>
-                            <a href="penjualan.php" class="btn btn-sm btn-outline-secondary">Reset</a>
+
+                        <div class="card mt-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">Statistik Penjualan</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="penjualanChart" height="100"></canvas>
+                            </div>
                         </div>
-                    </form>
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-hover">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>No</th>
-                                    <th>Tanggal</th>
-                                    <th>Reseller</th>
-                                    <th>Total</th>
-                                    <th>Dibayar</th>
-                                    <th>Sisa</th>
-                                    <th>Status</th>
-                                    <th>Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php if (empty($penjualan)) : ?>
-                                    <tr>
-                                        <td colspan="8" class="text-center">Tidak ada data penjualan</td>
-                                    </tr>
-                                <?php else : ?>
-                                    <?php $no = 1; ?>
-                                    <?php foreach ($penjualan as $jual) : ?>
-                                        <?php
-                                        $dibayar = $jual['dibayar'] ?? 0;
-                                        $sisa = $jual['total_harga'] - $dibayar;
-                                        ?>
-                                        <tr>
-                                            <td><?= $no++; ?></td>
-                                            <td><?= date('d/m/Y', strtotime($jual['tanggal_penjualan'])) ?></td>
-                                            <td><?= htmlspecialchars($jual['nama_reseller']) ?></td>
-                                            <td class="text-end"><?= formatRupiah($jual['total_harga']) ?></td>
-                                            <td class="text-end"><?= formatRupiah($dibayar) ?></td>
-                                            <td class="text-end"><?= formatRupiah($sisa) ?></td>
-                                            <td>
-                                                <span class="badge bg-<?= $jual['status_pembayaran'] === 'lunas' ? 'success' : 'warning' ?>">
-                                                    <?= ucfirst($jual['status_pembayaran']) ?>
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <a href="../penjualan/detail.php?id=<?= $jual['id_penjualan'] ?>"
-                                                    class="btn btn-sm btn-info" title="Detail">
-                                                    <i class="bx bx-detail"></i>
-                                                </a>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                    <tr class="table-active">
-                                        <th colspan="3" class="text-end">TOTAL</th>
-                                        <th class="text-end fs-6"><?= formatRupiah($totalPenjualan) ?></th>
-                                        <th colspan="4"></th>
-                                    </tr>
-                                <?php endif; ?>
-                            </tbody>
-                        </table>
+
+
                     </div>
-                </div>
-            </div>
 
-            <div class="card mt-4">
-                <div class="card-header">
-                    <h5 class="mb-0">Statistik Penjualan</h5>
+
+                    <!-- / Content -->
+
+                    <div class="content-backdrop fade"></div>
                 </div>
-                <div class="card-body">
-                    <canvas id="penjualanChart" height="100"></canvas>
-                </div>
+                <!-- Content wrapper -->
             </div>
+            <!-- / Layout page -->
         </div>
-    </div>
-    <!-- [ Main Content ] end -->
 
-    <?php include_once '../includes/footer.php'; ?>
+        <!-- Overlay -->
+        <div class="layout-overlay layout-menu-toggle"></div>
+    </div>
+    <!-- / Layout wrapper -->
+
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
@@ -181,8 +200,10 @@ $totalPenjualan = query("SELECT SUM(total_harga) as total FROM penjualan
         });
     </script>
 
+    <!-- Core JS footer -->
+    <!-- /Core JS footer -->
+
 
 </body>
-<!-- [Body] end -->
 
 </html>

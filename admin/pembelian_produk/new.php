@@ -203,7 +203,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_pembelian'])) {
                                                 <div class="input-group">
                                                     <span class="input-group-text"><i class="ti ti-calendar"></i></span>
                                                     <input type="date" name="tanggal_pembelian" class="form-control date-input"
-                                                        value="<?= date('Y-m-d') ?>" required>
+                                                        value="" placeholder="YYYY-MM-DD" required>
                                                 </div>
                                             </div>
 

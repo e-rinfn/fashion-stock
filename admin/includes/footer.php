@@ -34,3 +34,18 @@ include_once __DIR__ . '/../../config/config.php';
 <script>
     font_change("Public-Sans");
 </script>
+
+<!-- [PWA Service Worker Registration] -->
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('<?= $base_url ?>/sw.js')
+                .then((registration) => {
+                    console.log('ServiceWorker registered: ', registration.scope);
+                })
+                .catch((error) => {
+                    console.log('ServiceWorker registration failed: ', error);
+                });
+        });
+    }
+</script>

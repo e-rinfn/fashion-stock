@@ -1,4 +1,7 @@
 <?php
+
+$page_title = "PEMBELIAN BAHAN BAKU";
+
 require_once '../includes/header.php';
 require_once '../../config/database.php';
 require_once '../../config/functions.php';
@@ -168,11 +171,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_pembelian_bahan
             <!-- [ Main Content ] start -->
             <div class="row">
 
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2>PESANAN PEMBELIAN BAHAN BAKU</h2>
-                </div>
-
-
                 <div class="card">
                     <?php if (isset($_SESSION['error'])): ?>
                         <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -222,7 +220,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_pembelian_bahan
                                                 <div class="input-group">
                                                     <span class="input-group-text"><i class="ti ti-calendar"></i></span>
                                                     <input type="date" name="tanggal_pembelian" class="form-control date-input"
-                                                        value="<?= date('Y-m-d') ?>" required>
+                                                        value="" placeholder="YYYY-MM-DD" required>
                                                 </div>
                                             </div>
 
@@ -362,6 +360,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_pembelian_bahan
             </td>
             <td>
                 <div class="input-group">
+                   
                     <input type="number" name="items[${rowId}][harga]" class="form-control harga-input" min="1" required>
                 </div>
             </td>
@@ -372,12 +371,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_pembelian_bahan
             <td class="w-15">
                 <div class="input-group">
                     <input type="number" name="items[${rowId}][qty]" class="form-control qty" min="1" value="1" required>
+                   
                 </div>
             </td>
             <td class="w-15">
                 <div class="input-group">
                     <input type="number" name="items[${rowId}][meter]" class="form-control meter-input" 
                            step="1" min="1" value="0" required>
+                   
                 </div>
             </td>
             <td class="total-meter">0 m</td>
@@ -621,10 +622,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_pembelian_bahan
 
     document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('tambahBahan').click();
-
-        // Set default tanggal ke hari ini
-        const today = new Date().toISOString().split('T')[0];
-        document.querySelector('input[name="tanggal_pembelian"]').value = today;
     });
 </script>
 

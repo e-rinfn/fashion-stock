@@ -1,4 +1,7 @@
 <?php
+
+$page_title = "PENJUALAN BAHAN BAKU";
+
 require_once '../includes/header.php';
 require_once '../../config/database.php';
 require_once '../../config/functions.php';
@@ -197,10 +200,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_penjualan_bahan
             <!-- [ Main Content ] start -->
             <div class="row">
 
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2>PENJUALAN BAHAN BAKU</h2>
-                </div>
-
                 <div class="card">
                     <?php if (isset($_SESSION['error'])): ?>
                         <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -243,7 +242,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_penjualan_bahan
                                                 <div class="input-group">
                                                     <span class="input-group-text"><i class="ti ti-calendar"></i></span>
                                                     <input type="date" name="tanggal_penjualan_bahan" class="form-control date-input"
-                                                        value="<?= date('Y-m-d') ?>" required>
+                                                        value="" placeholder="YYYY-MM-DD" required>
                                                 </div>
                                             </div>
 
@@ -681,10 +680,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_penjualan_bahan
 
     document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('tambahBahan').click();
-
-        // Set default tanggal ke hari ini
-        const today = new Date().toISOString().split('T')[0];
-        document.querySelector('input[name="tanggal_penjualan_bahan"]').value = today;
     });
 </script>
 

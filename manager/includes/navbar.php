@@ -87,14 +87,6 @@
                                         <i class="ti ti-menu"></i>
                                         <span>Master Data</span>
                                     </a>
-                                    <a href="<?= $base_url ?>/manager/hpp/hpp_calculation.php" class="dropdown-item">
-                                        <i class="ti ti-calculator"></i>
-                                        <span>HPP Penjualan Produk</span>
-                                    </a>
-                                    <a href="<?= $base_url ?>/manager/user/index.php" class="dropdown-item">
-                                        <i class="ti ti-clipboard-list"></i>
-                                        <span>Daftar Pengguna</span>
-                                    </a>
                                     <a href="<?= $base_url ?>/auth/logout.php" class="dropdown-item text-danger">
                                         <i class="ti ti-power"></i>
                                         <span>Logout</span>

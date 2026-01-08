@@ -38,6 +38,13 @@ if ($_SESSION['role'] !== 'manager') {
     <!-- <link rel="icon" href="<?= $base_url ?>assets/images/favicon.svg" type="image/x-icon" /> -->
     <link rel="icon" type="image/x-icon" href="<?= $base_url ?>/assets/img/Logo-Ipenk.png" />
 
+    <!-- [PWA] -->
+    <link rel="manifest" href="<?= $base_url ?>/manifest.json">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="Ipenk Legend">
+    <link rel="apple-touch-icon" href="<?= $base_url ?>/icons/Logo-Ipenk.png">
 
     <!-- [Google Font] Family -->
     <link

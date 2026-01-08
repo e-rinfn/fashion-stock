@@ -1,4 +1,7 @@
 <?php
+
+$page_title = "PENJUALAN PRODUK";
+
 require_once '../includes/header.php';
 require_once '../../config/database.php';
 require_once '../../config/functions.php';
@@ -196,16 +199,6 @@ $total_cicilan_info = $cicilan_info['total'] ?? 0;
             <!-- [ Main Content ] start -->
             <div class="row">
 
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2>PENJUALAN PRODUK</h2>
-                    <div>
-                        <a href="list.php" class="btn btn-secondary">
-                            <i class="ti ti-arrow-back"></i> Kembali
-                        </a>
-                    </div>
-                </div>
-
-
                 <div class="card p-3">
                     <?php if (isset($_SESSION['error'])): ?>
                         <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -361,10 +354,10 @@ $total_cicilan_info = $cicilan_info['total'] ?? 0;
                                         <div class="d-flex justify-content-between align-items-center mb-3 mt-3">
 
                                             <a href="list.php" class="btn btn-secondary">
-                                                <i class="bx bx-arrow-back"></i> Kembali
+                                                <i class="ti ti-arrow-back"></i> Kembali
                                             </a>
                                             <button type="submit" name="tambah_cicilan" class="btn btn-primary">
-                                                Simpan Pembayaran
+                                                <i class="ti ti-file"></i> Simpan Pembayaran
                                             </button>
                                         </div>
                                     </form>

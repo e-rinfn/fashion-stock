@@ -1506,7 +1506,7 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
                                                                         class="form-select upah-select"
                                                                         onchange="updateTotalUpah(<?= $id_detail ?>)">
                                                                         <?php foreach ($upah_dropdown_options as $option): ?>
-                                                                            <?php if ($option['tarif_per_unit'] > 0): ?>
+                                                                            <?php if ($option['tarif_per_unit'] >= 0): ?>
                                                                                 <option value="<?= $option['tarif_per_unit'] ?>">
                                                                                     Rp <?= number_format($option['tarif_per_unit'], 0, ',', '.') ?>
                                                                                     <?= !empty($option['keterangan']) ? ' - ' . htmlspecialchars($option['keterangan']) : '' ?>

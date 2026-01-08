@@ -27,7 +27,7 @@ if (isset($_POST['tambah_tarif'])) {
 
     if ($conn->query($sql)) {
         $_SESSION['success'] = "Tarif upah berhasil ditambahkan";
-        header("Location: upah_settings.php");
+        header("Location: {$base_url}/manager/master_data.php");
         exit();
     } else {
         $error = "Gagal menambahkan tarif upah: " . $conn->error;
@@ -41,7 +41,7 @@ if (isset($_GET['hapus'])) {
     $sql = "DELETE FROM tarif_upah WHERE id_tarif = $id_tarif";
     if ($conn->query($sql)) {
         $_SESSION['success'] = "Tarif upah berhasil dihapus";
-        header("Location: upah_settings.php");
+        header("Location: {$base_url}/manager/master_data.php");
         exit();
     } else {
         $error = "Gagal menghapus tarif upah: " . $conn->error;

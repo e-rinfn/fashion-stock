@@ -148,7 +148,6 @@ require_once './includes/header.php';
                     <div class="card">
                         <div class="row row-bordered g-0">
                             <div class="col-12">
-
                                 <div class="card-header d-flex justify-content-between align-items-center">
                                     <h5 class="m-0">Aktivitas Terakhir</h5>
                                     <a href="<?= $base_url ?>/manager/aktivitas.php" class="btn btn-sm btn-outline-primary">

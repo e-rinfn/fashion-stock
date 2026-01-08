@@ -27,7 +27,7 @@ if (isset($_POST['tambah_tarif'])) {
 
     if ($conn->query($sql)) {
         $_SESSION['success'] = "Tarif upah berhasil ditambahkan";
-        header("Location: upah_settings.php");
+        header("Location: {$base_url}/owner/master_data.php");
         exit();
     } else {
         $error = "Gagal menambahkan tarif upah: " . $conn->error;
@@ -41,7 +41,7 @@ if (isset($_GET['hapus'])) {
     $sql = "DELETE FROM tarif_upah WHERE id_tarif = $id_tarif";
     if ($conn->query($sql)) {
         $_SESSION['success'] = "Tarif upah berhasil dihapus";
-        header("Location: upah_settings.php");
+        header("Location: {$base_url}/owner/master_data.php");
         exit();
     } else {
         $error = "Gagal menghapus tarif upah: " . $conn->error;
@@ -77,7 +77,7 @@ if (isset($_GET['hapus'])) {
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h2>Data Tarif Upah</h2>
                     <div>
-                        <a href="<?= $base_url ?>/manager/master_data.php" class="btn btn-secondary">
+                        <a href="<?= $base_url ?>/owner/master_data.php" class="btn btn-secondary">
                             <i class="ti ti-arrow-left"></i> Kembali
                         </a>
                         <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalTambahTarif">

@@ -1608,7 +1608,7 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
                                                         <option value="buah" selected>Buah</option>
                                                         <option value="set">Set</option>
                                                         <option value="roll">Roll</option>
-                                                        <option value="lembar">Lembar</option>
+                                                        <option value="lbr">Lembar</option>
                                                         <option value="lainnya">Lainnya</option>
                                                     </select>
                                                 </div>
@@ -2021,7 +2021,7 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
                     <option value="buah" selected>Buah</option>
                     <option value="set">Set</option>
                     <option value="roll">Roll</option>
-                    <option value="lembar">Lembar</option>
+                    <option value="lbr">Lembar</option>
                     <option value="lainnya">Lainnya</option>
                 </select>
             </div>

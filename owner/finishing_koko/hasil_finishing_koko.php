@@ -1193,11 +1193,11 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
                                             <?php if (!empty($main_data['keterangan'])): ?>
                                                 <p id="keterangan-text" class="mb-2"><?= htmlspecialchars($main_data['keterangan']) ?></p>
                                             <?php else: ?>
-                                                <p id="keterangan-text" class="text-muted mb-2">Belum ada keterangan</p>
+                                                <p id="keterangan-text" class="text-muted mb-2">-</p>
                                             <?php endif; ?>
-                                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="editKeterangan()">
+                                            <!-- <button type="button" class="btn btn-sm btn-outline-primary" onclick="editKeterangan()">
                                                 <i class="ti ti-pencil"></i> Edit Keterangan
-                                            </button>
+                                            </button> -->
                                         </div>
                                         <div id="keterangan-edit" style="display: none;">
                                             <textarea id="keterangan-input" class="form-control mb-2" rows="3" placeholder="Masukkan keterangan..."><?= htmlspecialchars($main_data['keterangan'] ?? '') ?></textarea>
@@ -1370,11 +1370,11 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
                                             <?php if (!empty($main_data['keterangan'])): ?>
                                                 <p id="keterangan-text" class="mb-2"><?= htmlspecialchars($main_data['keterangan']) ?></p>
                                             <?php else: ?>
-                                                <p id="keterangan-text" class="text-muted mb-2">Belum ada keterangan</p>
+                                                <p id="keterangan-text" class="text-muted mb-2">-</p>
                                             <?php endif; ?>
-                                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="editKeterangan()">
+                                            <!-- <button type="button" class="btn btn-sm btn-outline-primary" onclick="editKeterangan()">
                                                 <i class="ti ti-pencil"></i> Edit Keterangan
-                                            </button>
+                                            </button> -->
                                         </div>
                                         <div id="keterangan-edit" style="display: none;">
                                             <textarea id="keterangan-input" class="form-control mb-2" rows="3" placeholder="Masukkan keterangan..."><?= htmlspecialchars($main_data['keterangan'] ?? '') ?></textarea>

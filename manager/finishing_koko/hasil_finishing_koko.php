@@ -740,19 +740,6 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
         margin-bottom: 20px;
     }
 
-    .btn-batal-semua {
-        background-color: #dc3545;
-        border-color: #dc3545;
-        color: white;
-        cursor: pointer !important;
-    }
-
-    .btn-batal-semua:hover {
-        background-color: #c82333;
-        border-color: #bd2130;
-        cursor: pointer !important;
-    }
-
     .upah-section {
         background-color: #e8f4fd;
         padding: 10px;
@@ -1227,7 +1214,10 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
 
                             <!-- Informasi Produk -->
                             <div class="row mt-4">
+
+
                                 <div class="col-md-6">
+
                                     <h6><i class="ti ti-package"></i> Informasi Stok Produk</h6>
                                     <div class="row">
                                         <div class="col-md-6">
@@ -1257,8 +1247,16 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
                                             </div>
                                         </div>
                                     </div>
+
+                                    <!-- Tombol Cetak PDF -->
+                                    <a href="print_hasil_finishing.php?id=<?= $id_hasil_kirim_finishing ?>"
+                                        class="btn btn-danger me-2" target="_blank">
+                                        <i class="ti ti-printer"></i> Cetak Laporan
+                                    </a>
                                 </div>
                                 <div class="col-md-6">
+
+
                                     <!-- Tampilkan ATK yang sudah digunakan -->
                                     <?php if ($has_atk): ?>
                                         <div class="mt-4">
@@ -1304,7 +1302,7 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
 
                             <!-- Tombol Batal -->
                             <div class="d-flex justify-content-end mt-4">
-                                <button class="btn btn-batal-semua btn-batal-semua-koko"
+                                <button class="btn btn-danger btn-batal-semua-koko"
                                     data-id="<?= $id_hasil_kirim_finishing ?>"
                                     title="Batalkan semua hasil finishing koko">
                                     <i class="ti ti-trash"></i> Batalkan Semua Hasil
@@ -1610,7 +1608,7 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
                                                         <option value="buah" selected>Buah</option>
                                                         <option value="set">Set</option>
                                                         <option value="roll">Roll</option>
-                                                        <option value="lbr">Lembar</option>
+                                                        <option value="lembar">Lembar</option>
                                                         <option value="lainnya">Lainnya</option>
                                                     </select>
                                                 </div>
@@ -2023,7 +2021,7 @@ function getTarifUpah($jenis_tarif, $tanggal_referensi = null)
                     <option value="buah" selected>Buah</option>
                     <option value="set">Set</option>
                     <option value="roll">Roll</option>
-                    <option value="lbr">Lembar</option>
+                    <option value="lembar">Lembar</option>
                     <option value="lainnya">Lainnya</option>
                 </select>
             </div>

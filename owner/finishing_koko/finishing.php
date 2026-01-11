@@ -476,52 +476,6 @@ $status = isset($_GET['status']) ? $_GET['status'] : 'all';
 $start_date = isset($_GET['start_date']) ? $_GET['start_date'] : '';
 $end_date = isset($_GET['end_date']) ? $_GET['end_date'] : '';
 
-// Query untuk mengambil data kirim finishing
-// $sql = "SELECT hk.*, p.nama_produk, pet.nama_petugas,
-//                (SELECT SUM(jumlah) FROM detail_hasil_kirim_finishing 
-//                 WHERE id_hasil_kirim_finishing = hk.id_hasil_kirim_finishing) as total_bahan
-//         FROM hasil_kirim_finishing hk 
-//         LEFT JOIN produk p ON hk.id_produk = p.id_produk 
-//         LEFT JOIN petugas_finishing pet ON hk.id_petugas_finishing = pet.id_petugas_finishing 
-//         WHERE 1=1";
-
-// $sql = "SELECT 
-//             hk.*, 
-//             p.nama_produk, 
-//             pet.nama_petugas,
-//             GROUP_CONCAT(DISTINCT k.nama_koko ORDER BY k.nama_koko SEPARATOR ', ') as jenis_bahan,
-//             COUNT(DISTINCT dh.id_koko) as jumlah_jenis_bahan,
-//             SUM(dh.jumlah) as total_bahan
-//         FROM hasil_kirim_finishing hk 
-//         LEFT JOIN produk p ON hk.id_produk = p.id_produk 
-//         LEFT JOIN petugas_finishing pet ON hk.id_petugas_finishing = pet.id_petugas_finishing 
-//         LEFT JOIN detail_hasil_kirim_finishing dh ON hk.id_hasil_kirim_finishing = dh.id_hasil_kirim_finishing
-//         LEFT JOIN koko k ON dh.id_koko = k.id_koko
-//         WHERE 1=1
-//         GROUP BY hk.id_hasil_kirim_finishing";
-
-// // Filter produk
-// if ($id_produk > 0) {
-//     $sql .= " AND hk.id_produk = $id_produk";
-// }
-
-// // Filter status
-// if ($status != 'all') {
-//     $sql .= " AND hk.status_finishing = '$status'";
-// }
-
-// // Filter periode
-// if (!empty($start_date)) {
-//     $sql .= " AND hk.tanggal_kirim_finishing >= '$start_date'";
-// }
-
-// if (!empty($end_date)) {
-//     $end_date .= ' 23:59:59';
-//     $sql .= " AND hk.tanggal_kirim_finishing <= '$end_date'";
-// }
-
-// $sql .= " ORDER BY hk.tanggal_kirim_finishing DESC";
-
 
 // Query untuk mengambil data kirim finishing
 $sql = "SELECT 
@@ -826,26 +780,41 @@ $total_upah_filtered = $total_hasil_finishing_filtered * $tarif_standar;
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label">Tanggal Mulai</label>
-                                <input type="date" name="start_date" class="form-control" value="<?= htmlspecialchars($start_date) ?>">
+                                <input type="date" name="start_date" class="form-control"
+                                    value="<?= htmlspecialchars($start_date ?: $start_date_default) ?>">
                                 <small class="text-muted">Bulan/Tanggal/Tahun</small>
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label">Tanggal Akhir</label>
-                                <input type="date" name="end_date" class="form-control" value="<?= htmlspecialchars($end_date) ?>">
+                                <input type="date" name="end_date" class="form-control"
+                                    value="<?= htmlspecialchars($end_date ?: $end_date_default) ?>">
                                 <small class="text-muted">Bulan/Tanggal/Tahun</small>
                             </div>
 
 
-                            <div class="col-md-4 d-flex align-items-end">
+                            <div class="col-md-8 d-flex align-items-end">
                                 <div class="d-flex">
                                     <button type="submit" class="btn btn-primary me-2">
                                         <i class="ti ti-filter"></i> Filter
                                     </button>
                                     <?php if ($is_filtered): ?>
-                                        <a href="finishing.php" class="btn btn-secondary">
+                                        <a href="finishing.php" class="btn btn-secondary me-2">
                                             <i class="ti ti-rotate"></i> Reset
                                         </a>
                                     <?php endif; ?>
+
+                                    <!-- Tambahkan di bagian BAGIAN FILTER DAN RINGKASAN, setelah form filter -->
+                                    <?php if (!empty($data_finishing)): ?>
+                                        <a href="print_laporan_finishing.php?
+                                                id_petugas_finishing=<?= $id_petugas_finishing ?>&
+                                                status=<?= $status ?>&
+                                                start_date=<?= urlencode($start_date) ?>&
+                                                end_date=<?= urlencode($end_date) ?>"
+                                            class="btn btn-danger" target="_blank">
+                                            <i class="ti ti-printer"></i> Cetak PDF
+                                        </a>
+                                    <?php endif; ?>
+
                                 </div>
                             </div>
                         </form>

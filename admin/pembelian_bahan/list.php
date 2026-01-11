@@ -751,7 +751,7 @@ if (!empty($detail_pembelian)) {
                                                         <?php endif; ?>
                                                     </td>
                                                     <td class="text-center">
-                                                        <?= number_format($item['jumlah'], 0, ',', '.') ?> Pcs
+                                                        <?= number_format($item['jumlah'], 0, ',', '.') ?> Roll
                                                     </td>
                                                     <td class="text-center">
                                                         <?= number_format($item['meter'], 0, ',', '.') ?> Meter

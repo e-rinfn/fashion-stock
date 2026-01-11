@@ -166,12 +166,8 @@ $info_html = '
 
 // Format nama penjahit
 if (!empty($main_data['nama_penjahit'])) {
-    $penjahit_list = explode(', ', $main_data['nama_penjahit']);
-    $info_html .= '<div style="line-height: 1.3;">';
-    foreach ($penjahit_list as $penjahit) {
-        $info_html .= '<span style="background-color: #17a2b8; color: white; padding: 1px 4px; border-radius: 2px; margin-right: 3px; font-size: 7pt; display: inline-block; margin-bottom: 2px;">' . htmlspecialchars($penjahit) . '</span>';
-    }
-    $info_html .= '</div>';
+    $penjahit_list = array_map('trim', explode(',', $main_data['nama_penjahit']));
+    $info_html .= htmlspecialchars(implode(', ', $penjahit_list));
 } else {
     $info_html .= '-';
 }

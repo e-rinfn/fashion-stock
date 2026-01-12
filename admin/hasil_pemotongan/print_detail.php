@@ -337,9 +337,8 @@ if (!empty($detail)) {
         <thead>
             <tr>
                 <th width="5%">No</th>
-                <th width="50%">Bahan</th>
+                <th width="65%">Bahan</th>
                 <th width="15%" class="text-center">Roll</th>
-                <th width="15%" class="text-center">Meter/Roll</th>
                 <th width="15%" class="text-right">Total M</th>
             </tr>
         </thead>
@@ -352,9 +351,8 @@ if (!empty($detail)) {
         $bahan_html .= '
         <tr>
             <td width="5%" class="text-center">' . ($i + 1) . '</td>
-            <td width="50%" >' . htmlspecialchars($d['nama_bahan']) . '</td>
+            <td width="65%" >' . htmlspecialchars($d['nama_bahan']) . '</td>
             <td width="15%" class="text-center">' . $d['jumlah'] . '</td>
-            <td width="15%" class="text-center">' . ($meter_per_roll > 0 ? number_format($meter_per_roll, 0) : '-') . '</td>
             <td width="15%" class="text-right">' . ($total_meter > 0 ? number_format($total_meter, 0) : '-') . '</td>
         </tr>';
     }
@@ -365,7 +363,7 @@ if (!empty($detail)) {
             <tr style="background-color: #d4edda;">
                 <td colspan="2" class="text-center"><strong>TOTAL</strong></td>
                 <td width="15%" class="text-center"><strong>' . $total_roll_used . '</strong></td>
-                <td width="15%" class="text-center"><strong>-</strong></td>
+               
                 <td width="15%" class="text-right"><strong>' . number_format($total_meter_used, 0) . ' m</strong></td>
             </tr>
         </tfoot>

@@ -264,9 +264,9 @@ if (!empty($detail_penjualan)) {
                 <div class="col-12">
                     <div class="d-flex justify-content-end align-items-center mb-4">
                         <div>
-                            <a href="grafik.php" class="btn btn-info me-2">
+                            <!-- <a href="grafik.php" class="btn btn-info me-2">
                                 <i class="ti ti-chart-bar"></i> Grafik Penjualan
-                            </a>
+                            </a> -->
                             <a href="new.php" class="btn btn-success">
                                 <i class="ti ti-file-plus"></i> Tambah Pesanan
                             </a>

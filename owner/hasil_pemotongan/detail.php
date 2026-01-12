@@ -264,11 +264,15 @@ switch ($produksi['status_potong']) {
             <!-- [ Main Content ] start -->
             <div class="row">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <div>
-                        <a href="list.php" class="btn btn-secondary m-1">
-                            <i class="ti ti-arrow-back"></i> Kembali ke Daftar
-                        </a>
-                    </div>
+
+                    <a href="list.php" class="btn btn-secondary m-1">
+                        <i class="ti ti-arrow-back"></i> Kembali ke Daftar
+                    </a>
+
+                    <a href="print_detail.php?id=<?= $id_hasil_potong_fix ?>"
+                        class="btn btn-danger" target="_blank">
+                        <i class="ti ti-printer me-1"></i> Cetak Laporan
+                    </a>
                 </div>
             </div>
 

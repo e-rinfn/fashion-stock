@@ -5,8 +5,7 @@ $page_title = "PEMBELIAN BAHAN BAKU";
 require_once '../includes/header.php';
 require_once '../../config/database.php';
 require_once '../../config/functions.php';
-// redirectIfNotLoggedIn();
-// checkRole('admin');
+
 
 $bahan = query("SELECT * FROM bahan_baku ORDER BY nama_bahan");
 $supplier = query("SELECT * FROM supplier ORDER BY nama_supplier");
@@ -257,6 +256,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_pembelian_bahan
                                                     <th>Harga/M (Rp)</th>
                                                     <th>Stok</th>
                                                     <th>Roll</th>
+                                                    <th>Meter</th>
                                                     <th>Total Meter</th>
                                                     <th>Subtotal</th>
                                                     <th>Aksi</th>
@@ -360,6 +360,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_pembelian_bahan
             </td>
             <td>
                 <div class="input-group">
+                   
                     <input type="number" name="items[${rowId}][harga]" class="form-control harga-input" min="1" required>
                 </div>
             </td>
@@ -370,14 +371,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_pembelian_bahan
             <td class="w-15">
                 <div class="input-group">
                     <input type="number" name="items[${rowId}][qty]" class="form-control qty" min="1" value="1" required>
+                   
                 </div>
             </td>
             <td class="w-15">
                 <div class="input-group">
                     <input type="number" name="items[${rowId}][meter]" class="form-control meter-input" 
-                        step="1" min="1" value="0" required>
+                           step="1" min="1" value="0" required>
+                   
                 </div>
             </td>
+            <td class="total-meter">0 m</td>
             <td class="currency-format subtotal">Rp 0</td>
             <td><button type="button" class="btn btn-sm btn-danger hapus-bahan" data-row="${rowId}">Hapus</button></td>
         `;
@@ -469,7 +473,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_pembelian_bahan
         const row = document.getElementById(`row-${rowId}`);
         const qty = parseInt(row.querySelector('.qty').value) || 0;
         const meterPerRoll = parseFloat(row.querySelector('.meter-input').value) || 0;
-        const totalMeter = qty * meterPerRoll;
+        const totalMeter = meterPerRoll;
         row.querySelector('.total-meter').textContent = totalMeter.toFixed(0) + ' m';
     }
 
@@ -479,8 +483,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_pembelian_bahan
         const harga = parseFloat(row.querySelector('.harga-input').value) || 0;
         const qty = parseInt(row.querySelector('.qty').value) || 0;
         const meterPerRoll = parseFloat(row.querySelector('.meter-input').value) || 0;
-        const totalMeter = qty * meterPerRoll;
-        const subtotal = harga * totalMeter;
+        const totalMeter = meterPerRoll;
+        const subtotal = harga * meterPerRoll;
         row.querySelector('.subtotal').textContent = formatCurrency(subtotal);
         hitungTotal();
     }

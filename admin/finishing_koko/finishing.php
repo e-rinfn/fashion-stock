@@ -810,8 +810,18 @@ $total_upah_filtered = $total_hasil_finishing_filtered * $tarif_standar;
                                                 status=<?= $status ?>&
                                                 start_date=<?= urlencode($start_date) ?>&
                                                 end_date=<?= urlencode($end_date) ?>"
-                                            class="btn btn-danger" target="_blank">
+                                            class="btn btn-danger me-2" target="_blank">
                                             <i class="ti ti-printer"></i> Cetak PDF
+                                        </a>
+
+                                        <!-- TOMBOL EXPORT EXCEL BARU -->
+                                        <a href="export_excel_finishing.php?
+                                                id_petugas_finishing=<?= $id_petugas_finishing ?>&
+                                                status=<?= $status ?>&
+                                                start_date=<?= urlencode($start_date) ?>&
+                                                end_date=<?= urlencode($end_date) ?>"
+                                            class="btn btn-success" target="_blank">
+                                            <i class="ti ti-file-analytics"></i> Export Excel
                                         </a>
                                     <?php endif; ?>
 

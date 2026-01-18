@@ -745,13 +745,7 @@ $total_upah_filtered = $total_hasil_finishing_filtered * $tarif_standar;
         <div class="pc-content">
             <!-- [ Main Content ] start -->
             <div class="row">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <div>
-                        <a href="kirim_koko.php" class="btn btn-warning">
-                            <i class="ti ti-circle-plus"></i> Kirim Koko
-                        </a>
-                    </div>
-                </div>
+
 
                 <!-- BAGIAN FILTER DAN RINGKASAN -->
                 <div class="row mb-4">
@@ -810,8 +804,18 @@ $total_upah_filtered = $total_hasil_finishing_filtered * $tarif_standar;
                                                 status=<?= $status ?>&
                                                 start_date=<?= urlencode($start_date) ?>&
                                                 end_date=<?= urlencode($end_date) ?>"
-                                            class="btn btn-danger" target="_blank">
+                                            class="btn btn-danger me-2" target="_blank">
                                             <i class="ti ti-printer"></i> Cetak PDF
+                                        </a>
+
+                                        <!-- TOMBOL EXPORT EXCEL BARU -->
+                                        <a href="export_excel_finishing.php?
+                                                id_petugas_finishing=<?= $id_petugas_finishing ?>&
+                                                status=<?= $status ?>&
+                                                start_date=<?= urlencode($start_date) ?>&
+                                                end_date=<?= urlencode($end_date) ?>"
+                                            class="btn btn-success" target="_blank">
+                                            <i class="ti ti-file-analytics"></i> Export Excel
                                         </a>
                                     <?php endif; ?>
 
@@ -1032,6 +1036,14 @@ $total_upah_filtered = $total_hasil_finishing_filtered * $tarif_standar;
                                 <?php endif; ?>
                             <?php endif; ?>
                         </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <a href="kirim_koko.php" class="btn btn-warning">
+                            <i class="ti ti-circle-plus"></i> Kirim Koko
+                        </a>
                     </div>
                 </div>
 

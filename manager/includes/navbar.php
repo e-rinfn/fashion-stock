@@ -83,6 +83,10 @@
                                         <i class="ti ti-user"></i>
                                         <span>Lihat Profil</span>
                                     </a>
+                                    <a href="<?= $base_url ?>/manager/aktivitas.php" class="dropdown-item">
+                                        <i class="ti ti-activity"></i>
+                                        <span>Aktivitas</span>
+                                    </a>
                                     <a href="<?= $base_url ?>/manager/master_data.php" class="dropdown-item">
                                         <i class="ti ti-menu"></i>
                                         <span>Master Data</span>

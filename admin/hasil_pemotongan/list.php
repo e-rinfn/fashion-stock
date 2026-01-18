@@ -1257,15 +1257,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <div class="pc-container">
         <div class="pc-content">
             <div class="row">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <div class="btn-group">
-                        <div>
-                            <a href="new.php" class="btn btn-warning">
-                                <i class="ti ti-circle-plus"></i> Tambah Produksi
-                            </a>
-                        </div>
-                    </div>
-                </div>
+
 
                 <div class="row">
                     <!-- Filter Form -->
@@ -1368,7 +1360,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                         <?php endif; ?>
 
                                         <button type="button" class="btn btn-danger" id="btnPrintPDF">
-                                            <i class="ti ti-file-text"></i> Print PDF
+                                            <i class="ti ti-printer"></i> Print PDF
                                         </button>
 
                                         <!-- TAMBAHKAN TOMBOL INI -->
@@ -1581,6 +1573,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     </div>
                                 </div>
                             <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="btn-group">
+                        <div>
+                            <a href="new.php" class="btn btn-warning">
+                                <i class="ti ti-circle-plus"></i> Tambah Produksi
+                            </a>
                         </div>
                     </div>
                 </div>

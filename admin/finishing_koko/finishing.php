@@ -745,13 +745,7 @@ $total_upah_filtered = $total_hasil_finishing_filtered * $tarif_standar;
         <div class="pc-content">
             <!-- [ Main Content ] start -->
             <div class="row">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <div>
-                        <a href="kirim_koko.php" class="btn btn-warning">
-                            <i class="ti ti-circle-plus"></i> Kirim Koko
-                        </a>
-                    </div>
-                </div>
+
 
                 <!-- BAGIAN FILTER DAN RINGKASAN -->
                 <div class="row mb-4">
@@ -1042,6 +1036,14 @@ $total_upah_filtered = $total_hasil_finishing_filtered * $tarif_standar;
                                 <?php endif; ?>
                             <?php endif; ?>
                         </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <a href="kirim_koko.php" class="btn btn-warning">
+                            <i class="ti ti-circle-plus"></i> Kirim Koko
+                        </a>
                     </div>
                 </div>
 

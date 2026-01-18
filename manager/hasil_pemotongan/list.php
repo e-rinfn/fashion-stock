@@ -1258,15 +1258,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <div class="pc-container">
         <div class="pc-content">
             <div class="row">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <div class="btn-group">
-                        <div>
-                            <a href="new.php" class="btn btn-warning">
-                                <i class="ti ti-circle-plus"></i> Tambah Produksi
-                            </a>
-                        </div>
-                    </div>
-                </div>
+
 
                 <div class="row">
                     <!-- Filter Form -->
@@ -1369,8 +1361,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                         <?php endif; ?>
 
                                         <button type="button" class="btn btn-danger" id="btnPrintPDF">
-                                            <i class="ti ti-file-text"></i> Print PDF
+                                            <i class="ti ti-printer"></i> Print PDF
                                         </button>
+
+                                        <!-- TAMBAHKAN TOMBOL INI -->
+                                        <button type="button" class="btn btn-success" id="btnExportExcel">
+                                            <i class="ti ti-file-analytics"></i> Export Excel
+                                        </button>
+
                                     </div>
                                 </div>
                             </div>
@@ -1577,6 +1575,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     </div>
                                 </div>
                             <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="btn-group">
+                        <div>
+                            <a href="new.php" class="btn btn-warning">
+                                <i class="ti ti-circle-plus"></i> Tambah Produksi
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -2788,6 +2796,27 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     '&status=' + (status || 'all') +
                     '&start_date=' + (start_date || '') +
                     '&end_date=' + (end_date || '');
+
+                window.open(url, '_blank');
+            });
+
+            // Setelah tombol Print PDF, tambahkan ini:
+            document.getElementById('btnExportExcel')?.addEventListener('click', function() {
+                const id_produk = document.querySelector('select[name="id_produk"]')?.value;
+                const status = document.querySelector('select[name="status"]')?.value;
+                const start_date = document.querySelector('input[name="start_date"]')?.value;
+                const end_date = document.querySelector('input[name="end_date"]')?.value;
+                const id_pemotong = document.querySelector('select[name="id_pemotong"]')?.value;
+                const id_penjahit = document.querySelector('select[name="id_penjahit"]')?.value;
+                const id_bordir = document.querySelector('select[name="id_bordir"]')?.value;
+
+                let url = 'export_excel_produksi.php?id_produk=' + (id_produk || 0) +
+                    '&status=' + (status || 'all') +
+                    '&start_date=' + (start_date || '') +
+                    '&end_date=' + (end_date || '') +
+                    '&id_pemotong=' + (id_pemotong || 0) +
+                    '&id_penjahit=' + (id_penjahit || 0) +
+                    '&id_bordir=' + (id_bordir || 0);
 
                 window.open(url, '_blank');
             });

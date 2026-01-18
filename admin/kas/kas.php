@@ -1133,7 +1133,19 @@ for ($i = $tahun_sekarang; $i >= $tahun_sekarang - 4; $i--) {
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                            <button type="submit" name="tambah_transaksi" class="btn btn-primary">Simpan</button>
+                            <button type="submit" name="tambah_transaksi" class="btn btn-primary" id="btnSimpan">Simpan</button>
+                            <script>
+                                document.addEventListener('DOMContentLoaded', function() {
+                                    var form = document.querySelector('#tambahModal form');
+                                    var btn = document.getElementById('btnSimpan');
+                                    if (form && btn) {
+                                        form.addEventListener('submit', function() {
+                                            btn.disabled = true;
+                                            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Loading...';
+                                        });
+                                    }
+                                });
+                            </script>
                         </div>
                     </form>
                 </div>

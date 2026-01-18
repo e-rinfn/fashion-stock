@@ -88,7 +88,7 @@ $base_sql = "
     UNION ALL
     (SELECT 'hasil_finishing_koko' as type, 'Hasil Finishing Koko' as kategori, dhfk.tanggal_finishing as waktu,
         CONCAT('Finishing: ', COALESCE(p.nama_produk, 'Produk')) as aktivitas,
-        CONCAT(dhfk.jumlah_selesai, ' pcs selesai, ', dhfk.jumlah_rusak, ' pcs rusak') as detail,
+        CONCAT(dhfk.jumlah_selesai, ' pcs selesai, ', dhfk.jumlah_rusak, ' pcs kembali') as detail,
         'ti ti-shirt' as icon,
         'bg-dark' as badge_color,
         dhfk.id_detail_hasil_finishing_koko as id_ref

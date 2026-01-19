@@ -139,7 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $detail_hutang = getDetailHutang($id_hutang);
         if ($detail_hutang && $detail_hutang['sisa_hutang'] <= 0) {
             // Hapus pembayaran terkait terlebih dahulu
-            $conn->query("DELETE FROM pembayaran_upah WHERE id_hutang = $id_hutang");
+            $conn->query("DELETE FROM pembayaran_upah_2 WHERE id_hutang = $id_hutang");
             // Hapus hutang
             $delete = $conn->query("DELETE FROM hutang_upah WHERE id_hutang = $id_hutang");
             if ($delete) {
@@ -409,7 +409,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                         <tr>
                                             <td class="text-center"><?= $no++; ?></td>
                                             <!-- <td><?= bulanTahunIndo($h['periode']) ?></td> -->
-                                            <td><?= htmlspecialchars($h['nama_karyawan']) ?></td>
+                                            <td><?= htmlspecialchars($h['nama_karyawan'] ?? '-') ?></td>
                                             <td class="text-center">
                                                 <?php
                                                 // PERBAIKAN: Gunakan 'finishing' untuk pengecekan
@@ -451,7 +451,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                                 <div class="btn-group-actions">
                                                     <button class="btn btn-sm btn-primary btn-bayar"
                                                         data-id="<?= $h['id_hutang'] ?>"
-                                                        data-nama="<?= htmlspecialchars($h['nama_karyawan']) ?>"
+                                                        data-nama="<?= htmlspecialchars($h['nama_karyawan'] ?? '-') ?>"
                                                         data-sisa="<?= $h['sisa_hutang'] ?>"
                                                         <?= $h['sisa_hutang'] <= 0 ? 'disabled' : '' ?>
                                                         title="Bayar Hutang">

@@ -1,5 +1,10 @@
 <?php
-session_start();
+
+// Aktifkan error reporting
+error_reporting(error_level: E_ALL);
+ini_set('display_errors', 1);
+
+
 require_once '../../config/database.php';
 require_once '../../config/functions.php';
 
@@ -72,7 +77,6 @@ if (!empty($start_date)) {
 }
 
 if (!empty($end_date)) {
-    $end_date .= ' 23:59:59';
     $sql .= " AND hk.tanggal_kirim_finishing <= '$end_date'";
 }
 
@@ -135,26 +139,28 @@ $pdf->AddPage();
 // === HEADER PERUSAHAAN ===
 // Logo (kiri)
 $logoPath = __DIR__ . '/Logo-Ipenk.png';
-if (file_exists($logoPath)) {
-    $pdf->Image($logoPath, 10, 10, 15);
-}
+$pdf->Image($logoPath, 10, 10, 15); // x=10 (kiri), y=10, width=22
 
-$pdf->SetFont('helvetica', 'B', 13);
+$pdf->SetFont('times', 'B', 13);
 $pdf->Cell(0, 6, 'IPENK LEGEND', 0, 1, 'C');
-$pdf->SetFont('helvetica', '', 9);
+$pdf->SetFont('times', '', 9);
 $pdf->Cell(0, 5, 'Jl. Raya Cigereung No. 45, Tasikmalaya - Jawa Barat', 0, 1, 'C');
 $pdf->Cell(0, 5, 'Telp: 0812-3456-7890 | Email: admin@ipenklegend.com', 0, 1, 'C');
+// Tanggal cetak
+$pdf->SetFont('times', '', 9);
+$pdf->Cell(0, 5, 'Tanggal Cetak: ' . dateIndo(date('Y-m-d')) . ' | ' . date('H:i') . ' WIB', 0, 1, 'C');
+
 $pdf->Ln(2);
 $pdf->Cell(0, 0, '', 'T', 1, 'C');
 $pdf->Ln(5);
 
 // Judul utama
-$pdf->SetFont('helvetica', 'B', 14);
+$pdf->SetFont('times', 'B', 14);
 $pdf->Cell(0, 8, 'LAPORAN DATA FINISHING KOKO', 0, 1, 'C');
 $pdf->Ln(3);
 
 // Filter info
-$pdf->SetFont('helvetica', '', 9);
+$pdf->SetFont('times', '', 9);
 $filter_info = "";
 
 // Info periode
@@ -188,11 +194,6 @@ if ($status != 'all') {
 
 $pdf->Cell(0, 5, $filter_info, 0, 1, 'L');
 $pdf->Ln(5);
-
-// Info tanggal cetak
-$pdf->SetFont('helvetica', 'I', 8);
-$pdf->Cell(0, 5, 'Dicetak pada: ' . date('d/m/Y H:i:s'), 0, 1, 'R');
-$pdf->Ln(3);
 
 // Buat HTML table yang compact untuk data finishing
 $html = '
@@ -331,7 +332,7 @@ $pdf->writeHTML($html, true, false, true, false, '');
 
 // Summary section
 $pdf->Ln(10);
-$pdf->SetFont('helvetica', 'B', 10);
+$pdf->SetFont('times', 'B', 10);
 $pdf->Cell(0, 6, 'RINGKASAN FINISHING', 0, 1, 'L');
 $pdf->Ln(3);
 
@@ -375,19 +376,11 @@ $summary_html = '
         <td class="summary-value">' . number_format($total_hasil_all) . ' Pcs</td>
     </tr>
     <tr>
-        <td>Data Selesai:</td>
-        <td class="summary-value">' . number_format($jumlah_selesai) . ' Data (' . number_format($persentase_selesai, 1) . '%)</td>
-    </tr>
-    <tr>
         <td colspan="2"><hr></td>
     </tr>
     <tr>
         <td>Total Upah Finishing:</td>
         <td class="summary-value">' . formatRupiah($total_upah_all) . '</td>
-    </tr>
-    <tr>
-        <td>Rata-rata Tarif:</td>
-        <td class="summary-value">' . formatRupiah($rata_rata_tarif) . '/Pcs</td>
     </tr>
 </table>';
 
@@ -395,11 +388,11 @@ $pdf->writeHTML($summary_html, true, false, true, false, '');
 
 // Footer dengan informasi jumlah data
 $pdf->Ln(10);
-$pdf->SetFont('helvetica', 'I', 8);
+$pdf->SetFont('times', 'I', 8);
 $pdf->Cell(0, 5, 'Jumlah data yang ditampilkan: ' . count($all_data) . ' pengiriman finishing', 0, 1, 'L');
 
 // Legenda status
-$pdf->SetFont('helvetica', '', 8);
+$pdf->SetFont('times', '', 8);
 $pdf->Ln(5);
 $pdf->Cell(0, 5, 'Status:', 0, 1, 'L');
 $pdf->Cell(5, 4, '', 0, 0, 'L');
@@ -415,9 +408,9 @@ $pdf->Cell(25, 4, 'Selesai', 0, 1, 'L');
 
 // Informasi statistik per status
 $pdf->Ln(8);
-$pdf->SetFont('helvetica', 'B', 9);
+$pdf->SetFont('times', 'B', 9);
 $pdf->Cell(0, 5, 'Distribusi Status:', 0, 1, 'L');
-$pdf->SetFont('helvetica', '', 8);
+$pdf->SetFont('times', '', 8);
 
 // Hitung distribusi status
 $status_distribution = [

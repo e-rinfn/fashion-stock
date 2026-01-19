@@ -115,11 +115,15 @@ $pdf->AddPage();
 $logoPath = __DIR__ . '/Logo-Ipenk.png';
 $pdf->Image($logoPath, 10, 10, 15); // x=10 (kiri), y=10, width=22
 
-$pdf->SetFont('helvetica', 'B', 13);
+$pdf->SetFont('times', 'B', 13);
 $pdf->Cell(0, 6, 'IPENK LEGEND', 0, 1, 'C');
-$pdf->SetFont('helvetica', '', 9);
+$pdf->SetFont('times', '', 9);
 $pdf->Cell(0, 5, 'Jl. Raya Cigereung No. 45, Tasikmalaya - Jawa Barat', 0, 1, 'C');
 $pdf->Cell(0, 5, 'Telp: 0812-3456-7890 | Email: admin@ipenklegend.com', 0, 1, 'C');
+// Tanggal cetak
+$pdf->SetFont('times', '', 9);
+$pdf->Cell(0, 5, 'Tanggal Cetak: ' . dateIndo(date('Y-m-d')) . ' | ' . date('H:i') . ' WIB', 0, 1, 'C');
+
 $pdf->Ln(2);
 $pdf->Cell(0, 0, '', 'T', 1, 'C');
 $pdf->Ln(5);
@@ -130,7 +134,7 @@ $right_width = 177; // Lebar kolom kanan
 $start_y = 35;
 
 // === KOLOM KIRI: INFORMASI DAN RINGKASAN ===
-$pdf->SetFont('helvetica', 'B', 10);
+$pdf->SetFont('times', 'B', 10);
 $pdf->SetXY(10, $start_y);
 $pdf->Cell($left_width, 6, 'INFORMASI PENGIRIMAN', 0, 1);
 
@@ -189,7 +193,7 @@ $pdf->writeHTMLCell($left_width, 0, '', '', $info_html, 0, 1, 0, true, '', true)
 $pdf->Ln(3);
 
 // RINGKASAN HASIL
-$pdf->SetFont('helvetica', 'B', 10);
+$pdf->SetFont('times', 'B', 10);
 $pdf->Cell($left_width, 6, 'RINGKASAN HASIL', 0, 1);
 
 $summary_html = '
@@ -220,7 +224,7 @@ $pdf->writeHTMLCell($left_width, 0, '', '', $summary_html, 0, 1, 0, true, '', tr
 $pdf->Ln(3);
 
 // INFORMASI STOK
-$pdf->SetFont('helvetica', 'B', 10);
+$pdf->SetFont('times', 'B', 10);
 $pdf->Cell($left_width, 6, 'INFORMASI STOK', 0, 1);
 
 $produk_ditambahkan = [];
@@ -237,7 +241,7 @@ foreach ($finishing_data as $finish) {
 
     // Koko yang dikembalikan (rusak)
     if ($finish['jumlah_rusak'] > 0) {
-        $koko_rusak_list[] = $finish['nama_koko'] . ' (' . number_format($finish['jumlah_rusak']) . ' pcs)';
+        $koko_rusak_list[] = $finish['nama_koko'] . ': ' . number_format($finish['jumlah_rusak']) . ' pcs';
     }
 }
 
@@ -282,7 +286,7 @@ $pdf->SetY(130);
 
 // === KOLOM KANAN: TABEL DETAIL ===
 $right_start_x = 105;
-$pdf->SetFont('helvetica', 'B', 10);
+$pdf->SetFont('times', 'B', 10);
 $pdf->SetXY($right_start_x, $start_y);
 $pdf->Cell($right_width, 6, 'DETAIL HASIL FINISHING KOKO', 0, 1);
 
@@ -357,7 +361,7 @@ $pdf->Ln(3);
 
 // === ATK FINISHING YANG DIGUNAKAN ===
 if ($has_atk) {
-    $pdf->SetFont('helvetica', 'B', 10);
+    $pdf->SetFont('times', 'B', 10);
     $pdf->SetXY($right_start_x, $pdf->GetY() + 3);
     $pdf->Cell($right_width, 6, 'ATK FINISHING YANG DIGUNAKAN', 0, 1);
 
@@ -401,7 +405,7 @@ if ($has_atk) {
 }
 
 // === INFORMASI UPAH DAN HUTANG ===
-$pdf->SetFont('helvetica', 'B', 10);
+$pdf->SetFont('times', 'B', 10);
 $pdf->SetXY($right_start_x, $pdf->GetY() + 5);
 $pdf->Cell($right_width, 6, 'INFORMASI UPAH', 0, 1);
 

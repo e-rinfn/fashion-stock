@@ -111,24 +111,28 @@ $pdf->SetMargins(10, 10, 10);
 $pdf->AddPage();
 
 // Font
-$pdf->SetFont('helvetica', '', 10);
+$pdf->SetFont('times', '', 10);
 
 // Logo (kiri)
 $logoPath = __DIR__ . '/Logo-Ipenk.png';
 $pdf->Image($logoPath, 10, 10, 22); // x=10 (kiri), y=10, width=22
 
 // Posisi teks header (kanan logo)
-$pdf->SetXY(10, 15);
+$pdf->SetXY(10, 10);
 
-$pdf->SetFont('helvetica', 'B', 14);
+$pdf->SetFont('times', 'B', 14);
 $pdf->Cell(0, 6, 'IPENK LEGEND', 0, 1, 'C');
 
-$pdf->SetFont('helvetica', '', 9);
-$pdf->Cell(0, 5, 'Jl. Contoh No. 123, Kota Tasikmalaya', 0, 1, 'C');
-$pdf->Cell(0, 5, 'Telp: 0812-3456-7890', 0, 1, 'C');
+$pdf->SetFont('times', '', 9);
+$pdf->Cell(0, 5, 'Jl. Raya Cigereung No. 45, Tasikmalaya - Jawa Barat', 0, 1, 'C');
+$pdf->Cell(0, 5, 'Telp: 0812-3456-7890 | Email: admin@ipenklegend.com', 0, 1, 'C');
+
+// Tanggal cetak
+$pdf->SetFont('times', '', 9);
+$pdf->Cell(0, 5, 'Tanggal Cetak: ' . dateIndo(date('Y-m-d')) . ' | ' . date('H:i') . ' WIB', 0, 1, 'C');
 
 // Spasi ke bawah
-$pdf->Ln(10);
+$pdf->Ln(5);
 
 // Garis pemisah
 $y = $pdf->GetY();
@@ -136,13 +140,13 @@ $pdf->Line(0, $y, 300, $y);
 $pdf->Ln(2);
 
 // Judul Laporan
-$pdf->SetFont('helvetica', 'B', 14);
+$pdf->SetFont('times', 'B', 14);
 $pdf->Cell(0, 8, 'LAPORAN PENGELUARAN KAS', 0, 1, 'C');
 $pdf->Ln(3);
 
 // Informasi Filter
-$pdf->SetFont('helvetica', 'B', 10);
-$pdf->SetFont('helvetica', '', 10);
+$pdf->SetFont('times', 'B', 10);
+$pdf->SetFont('times', '', 10);
 
 $filter_info = "Periode: ";
 if (!empty($filter_bulan) && !empty($filter_tahun)) {
@@ -163,7 +167,7 @@ $pdf->Cell(0, 6, $filter_info, 0, 1);
 $pdf->Ln(5);
 
 // Summary informasi
-$pdf->SetFont('helvetica', '', 10);
+$pdf->SetFont('times', '', 10);
 $pdf->Cell(0, 6, "Total Kelompok: " . count($detail_data), 0, 1);
 $pdf->Cell(0, 6, "Total Kategori: " . $total_all_kategori, 0, 1);
 $pdf->Cell(0, 6, "Total Transaksi: " . $total_all_transaksi, 0, 1);
@@ -171,16 +175,16 @@ $pdf->Ln(5);
 
 // Jika tidak ada data kategori sama sekali
 if (empty($detail_data)) {
-    $pdf->SetFont('helvetica', 'I', 10);
+    $pdf->SetFont('times', 'I', 10);
     $pdf->Cell(0, 20, 'Tidak ada kategori pengeluaran ditemukan.', 0, 1, 'C');
-    $pdf->SetFont('helvetica', '', 10);
+    $pdf->SetFont('times', '', 10);
     $pdf->Cell(0, 10, 'Silakan tambahkan kategori pengeluaran terlebih dahulu.', 0, 1, 'C');
     $pdf->Output('laporan_pengeluaran_kosong.pdf', 'I');
     exit();
 }
 
 // Tabel Header
-$pdf->SetFont('helvetica', 'B', 10);
+$pdf->SetFont('times', 'B', 10);
 $pdf->SetFillColor(220, 220, 220);
 $pdf->Cell(0, 10, 'DETAIL PENGELUARAN PER KELOMPOK', 0, 1, 'L', 1);
 $pdf->Ln(3);
@@ -189,18 +193,18 @@ $pdf->Ln(3);
 $counter = 1;
 foreach ($detail_data as $kelompok => $kategories) {
     // Header kelompok
-    $pdf->SetFont('helvetica', 'B', 11);
+    $pdf->SetFont('times', 'B', 11);
     $pdf->SetFillColor(240, 240, 240);
     $pdf->Cell(0, 8, $counter . ". Kelompok: " . $kelompok, 0, 1, 'L', 1);
     $counter++;
 
     // Tabel detail kategori
-    $pdf->SetFont('helvetica', 'B', 10);
+    $pdf->SetFont('times', 'B', 10);
     $pdf->Cell(100, 8, 'Nama Kategori', 1, 0, 'C');
     $pdf->Cell(40, 8, 'Jumlah Transaksi', 1, 0, 'C');
     $pdf->Cell(50, 8, 'Total Pengeluaran', 1, 1, 'C');
 
-    $pdf->SetFont('helvetica', '', 9);
+    $pdf->SetFont('times', '', 9);
     $sub_total = 0;
     $sub_transaksi = 0;
     $kategori_count = 0;
@@ -221,13 +225,13 @@ foreach ($detail_data as $kelompok => $kategories) {
 
     // Jika tidak ada transaksi sama sekali dalam kelompok ini
     if ($sub_total == 0) {
-        $pdf->SetFont('helvetica', 'I', 9);
+        $pdf->SetFont('times', 'I', 9);
         $pdf->Cell(190, 7, '* Tidak ada transaksi untuk kelompok ini', 1, 1, 'C');
-        $pdf->SetFont('helvetica', '', 9);
+        $pdf->SetFont('times', '', 9);
     }
 
     // Sub total per kelompok
-    $pdf->SetFont('helvetica', 'B', 10);
+    $pdf->SetFont('times', 'B', 10);
     $pdf->SetFillColor(220, 220, 220);
     $pdf->SetTextColor(255, 0, 0);
     $pdf->Cell(140, 8, 'Sub Total Kelompok ' . $kelompok . ' (' . $kategori_count . ' kategori)', 1, 0, 'L', 1);
@@ -244,7 +248,7 @@ $pdf->Line(10, $pdf->GetY(), 200, $pdf->GetY());
 $pdf->Ln(5);
 
 // Total Keseluruhan PENGELUARAN
-$pdf->SetFont('helvetica', 'B', 10);
+$pdf->SetFont('times', 'B', 10);
 $pdf->SetFillColor(255, 200, 200);
 $pdf->SetTextColor(255, 0, 0);
 $pdf->Cell(140, 8, 'TOTAL PENGELUARAN KESELURUHAN', 1, 0, 'L', 1);

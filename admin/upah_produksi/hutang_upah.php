@@ -131,6 +131,29 @@ if (!empty($params)) {
 
 // Proses pembayaran
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    // Hapus Hutang (hanya yang sudah lunas)
+    if (isset($_POST['hapus_hutang'])) {
+        $id_hutang = intval($_POST['id_hutang']);
+
+        // Cek apakah hutang sudah lunas
+        $detail_hutang = getDetailHutang($id_hutang);
+        if ($detail_hutang && $detail_hutang['sisa_hutang'] <= 0) {
+            // Hapus pembayaran terkait terlebih dahulu
+            $conn->query("DELETE FROM pembayaran_upah_2 WHERE id_hutang = $id_hutang");
+            // Hapus hutang
+            $delete = $conn->query("DELETE FROM hutang_upah WHERE id_hutang = $id_hutang");
+            if ($delete) {
+                $_SESSION['success'] = "Data hutang berhasil dihapus";
+            } else {
+                $_SESSION['error'] = "Gagal menghapus data hutang";
+            }
+        } else {
+            $_SESSION['error'] = "Hutang yang belum lunas tidak dapat dihapus";
+        }
+        header("Location: hutang_upah.php?" . http_build_query($_GET));
+        exit();
+    }
+
     // Bayar Hutang
     if (isset($_POST['bayar_hutang'])) {
         $id_hutang = intval($_POST['id_hutang']);
@@ -386,7 +409,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                         <tr>
                                             <td class="text-center"><?= $no++; ?></td>
                                             <!-- <td><?= bulanTahunIndo($h['periode']) ?></td> -->
-                                            <td><?= htmlspecialchars($h['nama_karyawan']) ?></td>
+                                            <td><?= htmlspecialchars($h['nama_karyawan'] ?? '-') ?></td>
                                             <td class="text-center">
                                                 <?php
                                                 // PERBAIKAN: Gunakan 'finishing' untuk pengecekan
@@ -428,7 +451,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                                 <div class="btn-group-actions">
                                                     <button class="btn btn-sm btn-primary btn-bayar"
                                                         data-id="<?= $h['id_hutang'] ?>"
-                                                        data-nama="<?= htmlspecialchars($h['nama_karyawan']) ?>"
+                                                        data-nama="<?= htmlspecialchars($h['nama_karyawan'] ?? '-') ?>"
                                                         data-sisa="<?= $h['sisa_hutang'] ?>"
                                                         <?= $h['sisa_hutang'] <= 0 ? 'disabled' : '' ?>
                                                         title="Bayar Hutang">
@@ -437,6 +460,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                                     <a href="detail_hutang.php?id=<?= $h['id_hutang'] ?>" class="btn btn-sm btn-info" title="Detail">
                                                         <i class="ti ti-eye"></i>
                                                     </a>
+                                                    <button class="btn btn-sm btn-danger btn-hapus"
+                                                        data-id="<?= $h['id_hutang'] ?>"
+                                                        data-nama="<?= htmlspecialchars($h['nama_karyawan']) ?>"
+                                                        data-lunas="<?= $h['sisa_hutang'] <= 0 ? '1' : '0' ?>"
+                                                        title="<?= $h['sisa_hutang'] <= 0 ? 'Hapus Hutang' : 'Tidak dapat dihapus (belum lunas)' ?>"
+                                                        <?= $h['sisa_hutang'] > 0 ? 'disabled' : '' ?>>
+                                                        <i class="ti ti-trash"></i>
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -513,11 +544,53 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 </body>
 <!-- [Body] end -->
 
+<!-- Form Hidden untuk Hapus -->
+<form id="formHapusHutang" method="POST" style="display: none;">
+    <input type="hidden" name="hapus_hutang" value="1">
+    <input type="hidden" name="id_hutang" id="hapus_id_hutang">
+</form>
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const modalBayar = new bootstrap.Modal(document.getElementById('modalBayar'));
+
+        // Hapus hutang dengan SweetAlert
+        document.querySelectorAll('.btn-hapus').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = this.dataset.id;
+                const nama = this.dataset.nama;
+                const lunas = this.dataset.lunas;
+
+                if (lunas !== '1') {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Tidak Dapat Dihapus',
+                        text: 'Hutang yang belum lunas tidak dapat dihapus!',
+                        confirmButtonColor: '#3085d6'
+                    });
+                    return;
+                }
+
+                Swal.fire({
+                    title: 'Konfirmasi Hapus',
+                    html: `Apakah Anda yakin ingin menghapus data hutang <strong>${nama}</strong>?<br><small class="text-muted">Data pembayaran terkait juga akan dihapus.</small>`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Ya, Hapus!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        document.getElementById('hapus_id_hutang').value = id;
+                        document.getElementById('formHapusHutang').submit();
+                    }
+                });
+            });
+        });
         const searchInput = document.getElementById('searchKaryawan');
         const searchResults = document.getElementById('searchResults');
         const selectedKaryawanId = document.getElementById('selectedKaryawanId');

@@ -85,14 +85,15 @@ if ($status != 'all') {
     $sql .= " AND h.status_potong = '$status'";
 }
 
-// Filter periode
+
+// Filter periode: jika tidak ada filter tanggal, tampilkan semua data (periode: semua data)
 if (!empty($start_date)) {
     $sql .= " AND h.tanggal_hasil_potong >= '$start_date'";
 }
-
 if (!empty($end_date)) {
     $sql .= " AND h.tanggal_hasil_potong <= '$end_date'";
 }
+// Jika start_date dan end_date dua-duanya kosong, tidak tambahkan filter tanggal apapun (tampilkan semua data)
 
 $sql .= " ORDER BY CAST(h.seri AS UNSIGNED) DESC, h.tanggal_hasil_potong DESC";
 
@@ -113,20 +114,20 @@ foreach ($produksi as $prod) {
     // Hitung upah (gunakan tarif yang sudah ada di database atau tarif standar)
     // PERBAIKAN: Upah pemotong diambil langsung dari kolom total_upah di tabel hasil_potong_fix
     $upah_pemotong = !empty($prod['total_upah']) ? $prod['total_upah'] : 0;
-    
+
     // Hitung rate pemotong implisit untuk display
     $tarif_upah_pemotong_aktual = ($prod['total_hasil'] > 0) ? ($upah_pemotong / $prod['total_hasil']) : $tarif_pemotong;
 
     $tarif_upah_bordir_aktual = !empty($prod['tarif_upah_bordir']) ? $prod['tarif_upah_bordir'] : $tarif_bordir;
-    
+
     // PERBAIKAN: Upah penjahit = tarif_upah di tabel hasil_potong_fix * total_hasil_jahit
     $tarif_upah_penjahit_aktual = !empty($prod['tarif_upah']) ? $prod['tarif_upah'] : $tarif_penjahit;
-    
+
     $upah_bordir = !empty($prod['total_hasil_bordir']) ? $prod['total_hasil_bordir'] * $tarif_upah_bordir_aktual : 0;
     $upah_penjahit = !empty($prod['total_hasil_jahit']) ? $prod['total_hasil_jahit'] * $tarif_upah_penjahit_aktual : 0;
-    
+
     $total_upah_produksi = $upah_pemotong + $upah_bordir + $upah_penjahit;
-    
+
     // Hitung sisa
     $sisa = $prod['total_hasil'] - ($prod['total_hasil_jahit'] ?? 0);
 
@@ -181,22 +182,27 @@ $pdf->AddPage();
 $logoPath = __DIR__ . '/Logo-Ipenk.png';
 $pdf->Image($logoPath, 10, 10, 15); // x=10 (kiri), y=10, width=22
 
-$pdf->SetFont('helvetica', 'B', 13);
+$pdf->SetFont('times', 'B', 13);
 $pdf->Cell(0, 6, 'IPENK LEGEND', 0, 1, 'C');
-$pdf->SetFont('helvetica', '', 9);
+$pdf->SetFont('times', '', 9);
 $pdf->Cell(0, 5, 'Jl. Raya Cigereung No. 45, Tasikmalaya - Jawa Barat', 0, 1, 'C');
 $pdf->Cell(0, 5, 'Telp: 0812-3456-7890 | Email: admin@ipenklegend.com', 0, 1, 'C');
+// Tanggal cetak
+$pdf->SetFont('times', '', 9);
+$pdf->Cell(0, 5, 'Tanggal Cetak: ' . dateIndo(date('Y-m-d')) . ' | ' . date('H:i') . ' WIB', 0, 1, 'C');
+
 $pdf->Ln(2);
 $pdf->Cell(0, 0, '', 'T', 1, 'C');
 $pdf->Ln(5);
 
+
 // Judul utama
-$pdf->SetFont('helvetica', 'B', 14);
+$pdf->SetFont('times', 'B', 14);
 $pdf->Cell(0, 8, 'LAPORAN PEMOTONGAN SAMPAI PENJAHITAN', 0, 1, 'C');
 $pdf->Ln(3);
 
 // Filter info
-$pdf->SetFont('helvetica', '', 9);
+$pdf->SetFont('times', '', 9);
 $filter_info = "";
 
 // Info periode
@@ -239,11 +245,6 @@ if ($status != 'all') {
 
 $pdf->Cell(0, 5, $filter_info, 0, 1, 'L');
 $pdf->Ln(5);
-
-// Info tanggal cetak
-$pdf->SetFont('helvetica', 'I', 8);
-$pdf->Cell(0, 5, 'Dicetak pada: ' . date('d/m/Y H:i:s'), 0, 1, 'R');
-$pdf->Ln(3);
 
 // Buat HTML table yang lebih compact untuk data lengkap
 $html = '
@@ -323,35 +324,43 @@ foreach ($all_data as $data) {
     $tipe_produk = htmlspecialchars($data['tipe_produk'] ?? '-');
     $bordir = htmlspecialchars($data['bordir'] ?? '-');
     $penjahit = htmlspecialchars($data['penjahit'] ?? '-');
-    
+
     // Format tanggal
     $tgl_potong = !empty($data['tanggal_potong']) ? dateIndo($data['tanggal_potong']) : '-';
     $tgl_kirim_bordir = !empty($data['tanggal_kirim_bordir']) ? dateIndo($data['tanggal_kirim_bordir']) : '-';
     $tgl_bordir = !empty($data['tanggal_hasil_bordir']) ? dateIndo($data['tanggal_hasil_bordir']) : '-';
     $tgl_kirim_jahit = !empty($data['tanggal_kirim_jahit']) ? dateIndo($data['tanggal_kirim_jahit']) : '-';
     $tgl_jahit = !empty($data['tanggal_hasil_jahit']) ? dateIndo($data['tanggal_hasil_jahit']) : '-';
-    
+
     // Format jumlah
     $hasil_potong = $data['total_hasil'] ? number_format($data['total_hasil']) . ' Pcs' : '-';
     $hasil_bordir = $data['total_hasil_bordir'] ? number_format($data['total_hasil_bordir']) . ' Pcs' : '-';
     $hasil_jahit = $data['total_hasil_jahit'] ? number_format($data['total_hasil_jahit']) . ' Pcs' : '-';
     $sisa = $data['sisa'] > 0 ? number_format($data['sisa']) . ' Pcs' : '-';
-    
+
     // Format upah
     $upah_pemotong = $data['upah_pemotong'] > 0 ? formatRupiah($data['upah_pemotong']) : '-';
     $upah_bordir = $data['upah_bordir'] > 0 ? formatRupiah($data['upah_bordir']) : '-';
     $upah_penjahit = $data['upah_penjahit'] > 0 ? formatRupiah($data['upah_penjahit']) : '-';
     $total_upah = $data['total_upah'] > 0 ? formatRupiah($data['total_upah']) : '-';
-    
+
     // Tentukan warna background berdasarkan status
     $status_class = '';
     switch ($data['status']) {
-        case 'diproses': $status_class = 'bg-potong'; break;
-        case 'bordir': $status_class = 'bg-bordir'; break;
-        case 'penjahitan': $status_class = 'bg-penjahitan'; break;
-        case 'selesai': $status_class = 'bg-selesai'; break;
+        case 'diproses':
+            $status_class = 'bg-potong';
+            break;
+        case 'bordir':
+            $status_class = 'bg-bordir';
+            break;
+        case 'penjahitan':
+            $status_class = 'bg-penjahitan';
+            break;
+        case 'selesai':
+            $status_class = 'bg-selesai';
+            break;
     }
-    
+
     // Tambah baris
     $html .= '
     <tr class="' . $status_class . '">
@@ -414,7 +423,7 @@ $pdf->writeHTML($html, true, false, true, false, '');
 
 // Summary section
 $pdf->Ln(10);
-$pdf->SetFont('helvetica', 'B', 10);
+$pdf->SetFont('times', 'B', 10);
 $pdf->Cell(0, 6, 'RINGKASAN PRODUKSI', 0, 1, 'L');
 $pdf->Ln(3);
 
@@ -480,11 +489,11 @@ $pdf->writeHTML($summary_html, true, false, true, false, '');
 
 // Footer dengan informasi jumlah data
 $pdf->Ln(10);
-$pdf->SetFont('helvetica', 'I', 8);
+$pdf->SetFont('times', 'I', 8);
 $pdf->Cell(0, 5, 'Jumlah data yang ditampilkan: ' . count($all_data) . ' produksi', 0, 1, 'L');
 
 // Legenda status
-$pdf->SetFont('helvetica', '', 8);
+$pdf->SetFont('times', '', 8);
 $pdf->Ln(5);
 $pdf->Cell(0, 5, 'Status:', 0, 1, 'L');
 $pdf->Cell(5, 4, '', 0, 0, 'L');

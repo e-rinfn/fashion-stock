@@ -146,17 +146,21 @@ $pdf->AddPage();
 $logoPath = __DIR__ . '/Logo-Ipenk.png';
 $pdf->Image($logoPath, 10, 10, 15); // x=10 (kiri), y=10, width=22
 
-$pdf->SetFont('helvetica', 'B', 13);
+$pdf->SetFont('times', 'B', 13);
 $pdf->Cell(0, 6, 'IPENK LEGEND', 0, 1, 'C');
-$pdf->SetFont('helvetica', '', 9);
+$pdf->SetFont('times', '', 9);
 $pdf->Cell(0, 5, 'Jl. Raya Cigereung No. 45, Tasikmalaya - Jawa Barat', 0, 1, 'C');
 $pdf->Cell(0, 5, 'Telp: 0812-3456-7890 | Email: admin@ipenklegend.com', 0, 1, 'C');
+// Tanggal cetak
+$pdf->SetFont('times', '', 9);
+$pdf->Cell(0, 5, 'Tanggal Cetak: ' . dateIndo(date('Y-m-d')) . ' | ' . date('H:i') . ' WIB', 0, 1, 'C');
+
 $pdf->Ln(2);
 $pdf->Cell(0, 0, '', 'T', 1, 'C');
 $pdf->Ln(5);
 
 // Judul utama
-$pdf->SetFont('helvetica', 'B', 14);
+$pdf->SetFont('times', 'B', 14);
 $pdf->Cell(0, 8, 'LAPORAN DETAIL PRODUKSI', 0, 1, 'C');
 $pdf->Ln(4);
 
@@ -169,7 +173,7 @@ $current_y = 50;
 
 // === KOLOM KIRI: INFORMASI PRODUK DAN DATA ===
 // Informasi Produk
-$pdf->SetFont('helvetica', 'B', 9);
+$pdf->SetFont('times', 'B', 9);
 $pdf->SetXY($col_left_x, $current_y);
 $pdf->Cell($col_left_width, 5, 'INFORMASI PRODUK', 0, 1);
 
@@ -200,7 +204,7 @@ $pdf->writeHTMLCell($col_left_width, 0, '', '', $info_html, 0, 1, 0, true, '', t
 $pdf->Ln(2);
 
 // Ringkasan Upah
-$pdf->SetFont('helvetica', 'B', 9);
+$pdf->SetFont('times', 'B', 9);
 $pdf->SetXY($col_left_x, $pdf->GetY() + 2);
 $pdf->Cell($col_left_width, 5, 'RINGKASAN UPAH', 0, 1);
 
@@ -246,7 +250,7 @@ $pdf->writeHTMLCell($col_left_width, 0, '', '', $summary_html, 0, 1, 0, true, ''
 $pdf->Ln(3);
 
 // Tahap Produksi (Tabel)
-$pdf->SetFont('helvetica', 'B', 9);
+$pdf->SetFont('times', 'B', 9);
 $pdf->SetXY($col_left_x, $pdf->GetY() + 2);
 $pdf->Cell($col_left_width, 5, 'TAHAP PRODUKSI', 0, 1);
 
@@ -318,7 +322,7 @@ $pdf->writeHTMLCell($col_left_width, 0, '', '', $produksi_html, 0, 1, 0, true, '
 $pdf->Ln(3);
 
 // Bahan Baku
-$pdf->SetFont('helvetica', 'B', 9);
+$pdf->SetFont('times', 'B', 9);
 $pdf->SetXY($col_left_x, $pdf->GetY() + 2);
 $pdf->Cell($col_left_width, 5, 'BAHAN BAKU', 0, 1);
 
@@ -375,7 +379,7 @@ if (!empty($detail)) {
 
 // ATK Finishing (jika ada)
 if ($has_atk_finishing && in_array($produksi['status_potong'], ['penjahitan', 'selesai'])) {
-    $pdf->SetFont('helvetica', 'B', 9);
+    $pdf->SetFont('times', 'B', 9);
     $pdf->SetXY($col_left_x, $pdf->GetY() + 2);
     $pdf->Cell($col_left_width, 5, 'ATK FINISHING', 0, 1);
 
@@ -418,7 +422,7 @@ if ($has_atk_finishing && in_array($produksi['status_potong'], ['penjahitan', 's
 
 // === KOLOM KANAN: TIMELINE HORIZONTAL ===
 // Timeline Header
-$pdf->SetFont('helvetica', 'B', 9);
+$pdf->SetFont('times', 'B', 9);
 $pdf->SetXY($col_right_x, $current_y);
 $pdf->Cell($col_right_width, 5, 'TIMELINE PRODUKSI', 0, 1);
 

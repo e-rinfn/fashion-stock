@@ -249,7 +249,7 @@ $top_produk_json = json_encode($top_produk);
                                     <?php endif; ?>
                                 </select>
                                 <button type="submit" class="btn btn-primary btn-sm">
-                                    <i class="ti ti-refresh"></i>
+                                    <i class="ti ti-filter"></i> Filter
                                 </button>
                             </form>
                         </div>

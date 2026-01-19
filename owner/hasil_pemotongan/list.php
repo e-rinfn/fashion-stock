@@ -1360,9 +1360,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                             </a>
                                         <?php endif; ?>
 
-                                        <button type="button" class="btn btn-danger" id="btnPrintPDF">
-                                            <i class="ti ti-printer"></i> Print PDF
-                                        </button>
+
+                                        <a href="print_laporan_produksi.php?
+                                                id_produk=<?= $id_produk ?>&
+                                                id_pemotong=<?= $id_pemotong ?>&
+                                                id_penjahit=<?= $id_penjahit ?>&
+                                                id_bordir=<?= $id_bordir ?>&
+                                                status=<?= $status ?>&
+                                                start_date=<?= urlencode($start_date) ?>&
+                                                end_date=<?= urlencode($end_date) ?>"
+                                            class="btn btn-danger" target="_blank">
+                                            <i class="ti ti-printer"></i> Cetak PDF
+                                        </a>
 
                                         <!-- TAMBAHKAN TOMBOL INI -->
                                         <button type="button" class="btn btn-success" id="btnExportExcel">
@@ -2783,21 +2792,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     }
                 }, 3000);
             }
-
-            // Tombol Print PDF
-            document.getElementById('btnPrintPDF')?.addEventListener('click', function() {
-                const id_produk = document.querySelector('select[name="id_produk"]')?.value;
-                const status = document.querySelector('select[name="status"]')?.value;
-                const start_date = document.querySelector('input[name="start_date"]')?.value;
-                const end_date = document.querySelector('input[name="end_date"]')?.value;
-
-                let url = 'print_laporan_produksi.php?id_produk=' + (id_produk || 0) +
-                    '&status=' + (status || 'all') +
-                    '&start_date=' + (start_date || '') +
-                    '&end_date=' + (end_date || '');
-
-                window.open(url, '_blank');
-            });
 
             // Setelah tombol Print PDF, tambahkan ini:
             document.getElementById('btnExportExcel')?.addEventListener('click', function() {

@@ -29,25 +29,29 @@ if ($penjualan_bahan['status_pembayaran'] == 'cicilan') {
 $pdf = new TCPDF('P', 'mm', 'A5', true, 'UTF-8', false);
 $pdf->setPrintHeader(false);
 $pdf->setPrintFooter(false);
-$pdf->SetMargins(8, 8, 8);
+$pdf->SetMargins(10, 10, 10);
 $pdf->AddPage();
 
 // Font
-$pdf->SetFont('helvetica', '', 10);
+$pdf->SetFont('times', '', 10);
 
 // Logo (kiri)
 $logoPath = __DIR__ . '/Logo-Ipenk.png';
 $pdf->Image($logoPath, 10, 10, 22); // x=10 (kiri), y=10, width=22
 
 // Posisi teks header (kanan logo)
-$pdf->SetXY(10, 15);
+$pdf->SetXY(10, 10);
 
-$pdf->SetFont('helvetica', 'B', 12);
+$pdf->SetFont('times', 'B', 12);
 $pdf->Cell(0, 6, 'IPENK LEGEND', 0, 1, 'C');
 
-$pdf->SetFont('helvetica', '', 9);
-$pdf->Cell(0, 5, 'Jl. Contoh No. 123, Kota Tasikmalaya', 0, 1, 'C');
-$pdf->Cell(0, 5, 'Telp: 0812-3456-7890', 0, 1, 'C');
+$pdf->SetFont('times', '', 9);
+$pdf->Cell(0, 5, 'Jl. Raya Cigereung No. 45, Tasikmalaya - Jawa Barat', 0, 1, 'C');
+$pdf->Cell(0, 5, 'Telp: 0812-3456-7890 | Email: admin@ipenklegend.com', 0, 1, 'C');
+
+// Tanggal cetak
+$pdf->SetFont('times', '', 9);
+$pdf->Cell(0, 5, 'Tanggal Cetak: ' . dateIndo(date('Y-m-d')) . ' | ' . date('H:i') . ' WIB', 0, 1, 'C');
 
 // Spasi ke bawah
 $pdf->Ln(10);
@@ -59,13 +63,13 @@ $pdf->Ln(2);
 
 
 // Judul
-$pdf->SetFont('helvetica', 'B', 11);
+$pdf->SetFont('times', 'B', 11);
 $pdf->Cell(0, 6, 'NOTA PENJUALAN BAHAN BAKU', 0, 1, 'C');
-$pdf->SetFont('helvetica', '', 9);
+$pdf->SetFont('times', '', 9);
 $pdf->Ln(5);
 
 // Informasi Penjualan bahan dan Reseller
-$pdf->SetFont('helvetica', '', 9);
+$pdf->SetFont('times', '', 9);
 $pdf->Cell(35, 5, 'No. Transaksi', 0, 0);
 $pdf->Cell(3, 5, ':', 0, 0);
 $pdf->Cell(60, 5, '#' . $penjualan_bahan['id_penjualan_bahan'], 0, 1);
@@ -99,7 +103,7 @@ if ($penjualan_bahan['status_pembayaran'] == 'cicilan' && $total_cicilan > 0) {
 $pdf->Ln(5);
 
 // Tabel Bahan
-$pdf->SetFont('helvetica', 'B', 9);
+$pdf->SetFont('times', 'B', 9);
 $pdf->SetFillColor(245, 245, 245);
 
 $pdf->Cell(8, 7, 'No', 1, 0, 'C', true);
@@ -109,7 +113,7 @@ $pdf->Cell(15, 7, 'Meter', 1, 0, 'C', true);
 $pdf->Cell(25, 7, 'Harga / Meter', 1, 0, 'R', true);
 $pdf->Cell(25, 7, 'Subtotal', 1, 1, 'R', true);
 
-$pdf->SetFont('helvetica', '', 9);
+$pdf->SetFont('times', '', 9);
 
 foreach ($detail as $i => $d) {
 
@@ -128,7 +132,7 @@ foreach ($detail as $i => $d) {
 }
 
 // Total
-$pdf->SetFont('helvetica', 'B', 9);
+$pdf->SetFont('times', 'B', 9);
 
 // Geser ke kanan agar sejajar subtotal
 $pdf->Cell(105, 7, 'TOTAL', 1, 0, 'R');

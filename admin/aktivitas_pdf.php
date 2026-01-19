@@ -115,62 +115,54 @@ $sql .= " ORDER BY waktu DESC";
 $activities = query($sql);
 $total_aktivitas = count($activities);
 
-// Create new PDF document
+// Inisialisasi TCPDF
 $pdf = new TCPDF('P', 'mm', 'A4', true, 'UTF-8', false);
-
-// Set document information
-$pdf->SetCreator('Sistem Manajemen');
-$pdf->SetAuthor('IPENK LEGEND');
-$pdf->SetTitle('Laporan Aktivitas');
-$pdf->SetSubject('Laporan Aktivitas Sistem');
-
-// Remove default header/footer
 $pdf->setPrintHeader(false);
 $pdf->setPrintFooter(false);
-
-// Set margins
 $pdf->SetMargins(10, 10, 10);
-$pdf->SetAutoPageBreak(TRUE, 15);
-
-// Add a page
 $pdf->AddPage();
+
+// Font
+$pdf->SetFont('times', '', 10);
 
 // Logo (kiri)
 $logoPath = __DIR__ . '/Logo-Ipenk.png';
 $pdf->Image($logoPath, 10, 10, 22); // x=10 (kiri), y=10, width=22
 
 // Posisi teks header (kanan logo)
-$pdf->SetXY(10, 15);
+$pdf->SetXY(10, 10);
 
-$pdf->SetFont('helvetica', 'B', 14);
+$pdf->SetFont('times', 'B', 14);
 $pdf->Cell(0, 6, 'IPENK LEGEND', 0, 1, 'C');
 
-$pdf->SetFont('helvetica', '', 9);
-$pdf->Cell(0, 5, 'Jl. Contoh No. 123, Kota Tasikmalaya', 0, 1, 'C');
-$pdf->Cell(0, 5, 'Telp: 0812-3456-7890', 0, 1, 'C');
+$pdf->SetFont('times', '', 9);
+$pdf->Cell(0, 5, 'Jl. Raya Cigereung No. 45, Tasikmalaya - Jawa Barat', 0, 1, 'C');
+$pdf->Cell(0, 5, 'Telp: 0812-3456-7890 | Email: admin@ipenklegend.com', 0, 1, 'C');
+
+// Tanggal cetak
+$pdf->SetFont('times', '', 9);
+$pdf->Cell(0, 5, 'Tanggal Cetak: ' . dateIndo(date('Y-m-d')) . ' | ' . date('H:i') . ' WIB', 0, 1, 'C');
 
 // Spasi ke bawah
-$pdf->Ln(10);
+$pdf->Ln(5);
 
 // Garis pemisah
 $y = $pdf->GetY();
 $pdf->Line(0, $y, 300, $y);
 $pdf->Ln(2);
 
-
-
-// Judul laporan
-$pdf->SetFont('helvetica', 'B', 12);
+// Judul Laporan
+$pdf->SetFont('times', 'B', 14);
 $pdf->Cell(0, 8, 'LAPORAN AKTIVITAS SISTEM', 0, 1, 'C');
+$pdf->Ln(3);
 
 // Periode laporan
-$pdf->SetFont('helvetica', '', 10);
-$pdf->Cell(0, 6, 'Periode: ' . dateIndo($filter_date_start) . ' s/d ' . dateIndo($filter_date_end), 0, 1, 'C');
-$pdf->Cell(0, 6, 'Dibuat: ' . dateIndo(date('Y-m-d')), 0, 1, 'C');
+$pdf->SetFont('times', '', 10);
+$pdf->Cell(0, 6, 'Periode: ' . dateIndo($filter_date_start) . ' sampai ' . dateIndo($filter_date_end), 0, 1, 'L');
 $pdf->Ln(5);
 
 // Informasi filter
-$pdf->SetFont('helvetica', '', 10);
+$pdf->SetFont('times', '', 10);
 $pdf->Cell(40, 5, 'Filter yang diterapkan:', 0, 0, 'L');
 if (empty($filter_types)) {
     $filter_text = 'Semua Jenis';
@@ -187,7 +179,7 @@ if (!empty($search)) {
 }
 
 $pdf->Cell(40, 5, 'Total Aktivitas:', 0, 0, 'L');
-$pdf->SetFont('helvetica', 'B', 9);
+$pdf->SetFont('times', 'B', 9);
 $pdf->Cell(0, 5, $total_aktivitas . ' aktivitas', 0, 1, 'L');
 
 $pdf->Ln(5);
@@ -203,7 +195,7 @@ foreach ($activities as $activity) {
 }
 
 if (!empty($type_counts)) {
-    $pdf->SetFont('helvetica', '', 9);
+    $pdf->SetFont('times', '', 9);
     $pdf->Cell(0, 5, 'Ringkasan per Kategori:', 0, 1, 'L');
 
     $row = 1;
@@ -217,11 +209,11 @@ if (!empty($type_counts)) {
 
 // Daftar aktivitas dalam tabel
 if (empty($activities)) {
-    $pdf->SetFont('helvetica', '', 10);
+    $pdf->SetFont('times', '', 10);
     $pdf->Cell(0, 10, 'Tidak ada aktivitas ditemukan untuk periode yang dipilih.', 0, 1, 'C');
 } else {
     // Header tabel
-    $pdf->SetFont('helvetica', 'B', 10);
+    $pdf->SetFont('times', 'B', 10);
     $pdf->SetFillColor(220, 220, 220);
 
     // Lebar kolom
@@ -236,7 +228,7 @@ if (empty($activities)) {
     $pdf->Cell($col_width_aktivitas, 8, 'Aktivitas & Detail', 1, 1, 'C', true);
 
     // Data aktivitas
-    $pdf->SetFont('helvetica', '', 9);
+    $pdf->SetFont('times', '', 9);
     $no = 1;
     $current_date = '';
 
@@ -248,13 +240,13 @@ if (empty($activities)) {
         if ($pdf->GetY() > 250) {
             $pdf->AddPage();
             // Header tabel di halaman baru
-            $pdf->SetFont('helvetica', 'B', 10);
+            $pdf->SetFont('times', 'B', 10);
             $pdf->SetFillColor(220, 220, 220);
             $pdf->Cell($col_width_no, 8, 'No', 1, 0, 'C', true);
             $pdf->Cell($col_width_tanggal, 8, 'Tanggal', 1, 0, 'C', true);
             $pdf->Cell($col_width_kategori, 8, 'Kategori', 1, 0, 'C', true);
             $pdf->Cell($col_width_aktivitas, 8, 'Aktivitas & Detail', 1, 1, 'C', true);
-            $pdf->SetFont('helvetica', '', 9);
+            $pdf->SetFont('times', '', 9);
         }
 
         // Warna untuk baris berdasarkan kategori

@@ -473,8 +473,13 @@ $petugas_finishing = query("SELECT * FROM petugas_finishing ORDER BY nama_petuga
 $id_produk = isset($_GET['id_produk']) ? (int)$_GET['id_produk'] : 0;
 $id_petugas_finishing = isset($_GET['id_petugas_finishing']) ? (int)$_GET['id_petugas_finishing'] : 0;
 $status = isset($_GET['status']) ? $_GET['status'] : 'all';
+
+
 $start_date = isset($_GET['start_date']) ? $_GET['start_date'] : '';
 $end_date = isset($_GET['end_date']) ? $_GET['end_date'] : '';
+
+$start_date_default = date('Y-m-01');
+$end_date_default   = date('Y-m-t');
 
 
 // Query untuk mengambil data kirim finishing

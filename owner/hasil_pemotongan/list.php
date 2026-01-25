@@ -3021,6 +3021,36 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
         });
     </script>
+
+    <script>
+        // Loading submit handler untuk semua modal menggunakan SweetAlert
+        document.addEventListener('DOMContentLoaded', function() {
+            function addSwalLoadingToForm(formId) {
+                var form = document.getElementById(formId);
+                if (form) {
+                    form.addEventListener('submit', function(e) {
+                        // Tampilkan SweetAlert loading
+                        Swal.fire({
+                            title: 'Menyimpan...',
+                            html: 'Mohon tunggu sebentar',
+                            allowOutsideClick: false,
+                            allowEscapeKey: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+                        // Form tetap submit ke server (tidak pakai e.preventDefault())
+                    });
+                }
+            }
+            
+            // Tambahkan loading ke semua form modal
+            addSwalLoadingToForm('formTanggalBordir');
+            addSwalLoadingToForm('formHasilBordir');
+            addSwalLoadingToForm('formTanggalPenjahitan');
+            addSwalLoadingToForm('formHasilPenjahitan');
+        });
+    </script>
 </body>
 
 </html>

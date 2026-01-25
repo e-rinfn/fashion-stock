@@ -4,6 +4,8 @@
 error_reporting(error_level: E_ALL);
 ini_set('display_errors', 1);
 
+$page_title = "DATA PRODUKSI";
+
 require_once '../includes/header.php';
 require_once '../../config/functions.php';
 
@@ -1249,41 +1251,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <?php include_once '../includes/sidebar.php'; ?>
     <!-- Sidebar End -->
 
-    <!-- [ Header Topbar ] start -->
-    <header class="pc-header">
-        <div class="header-wrapper">
-            <div class="me-auto pc-mob-drp">
-                <ul class="list-unstyled">
-                    <li class="pc-h-item pc-sidebar-collapse">
-                        <a href="#" class="pc-head-link ms-0" id="sidebar-hide">
-                            <i class="ti ti-menu-2"></i>
-                        </a>
-                    </li>
-                    <li class="pc-h-item pc-sidebar-popup">
-                        <a href="#" class="pc-head-link ms-0" id="mobile-collapse">
-                            <i class="ti ti-menu-2"></i>
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </header>
-    <!-- [ Header ] end -->
+    <?php include_once '../includes/navbar.php'; ?>
+
 
     <!-- [ Main Content ] start -->
     <div class="pc-container">
         <div class="pc-content">
             <div class="row">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2>Data Produksi</h2>
-                    <div class="btn-group">
-                        <div>
-                            <a href="new.php" class="btn btn-warning">
-                                <i class="ti ti-circle-plus"></i> Tambah Produksi
-                            </a>
-                        </div>
-                    </div>
-                </div>
+
 
                 <div class="row">
                     <!-- Filter Form -->
@@ -1292,7 +1267,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <!-- Baris 1: Filter Dropdown -->
                             <div class="row g-3 mb-3">
                                 <div class="col-md-3">
-                                    <label class="form-label">Filter Produk</label>
+                                    <label class="form-label">Produk</label>
                                     <select name="id_produk" class="form-select">
                                         <option value="0">Semua Produk</option>
                                         <?php foreach ($produk as $p): ?>
@@ -1304,7 +1279,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 </div>
 
                                 <div class="col-md-2">
-                                    <label class="form-label">Filter Pemotong</label>
+                                    <label class="form-label">Pemotong</label>
                                     <select name="id_pemotong" class="form-select">
                                         <option value="0">Semua Pemotong</option>
                                         <?php foreach ($pemotong as $pm): ?>
@@ -1316,7 +1291,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 </div>
 
                                 <div class="col-md-2">
-                                    <label class="form-label">Filter Bordir</label>
+                                    <label class="form-label">Bordir</label>
                                     <select name="id_bordir" class="form-select">
                                         <option value="0">Semua Bordir</option>
                                         <?php foreach ($bordir as $br): ?>
@@ -1328,7 +1303,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 </div>
 
                                 <div class="col-md-2">
-                                    <label class="form-label">Filter Penjahit</label>
+                                    <label class="form-label">Penjahit</label>
                                     <select name="id_penjahit" class="form-select">
                                         <option value="0">Semua Penjahit</option>
                                         <?php foreach ($penjahit as $pj): ?>
@@ -1340,7 +1315,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 </div>
 
                                 <div class="col-md-3">
-                                    <label class="form-label">Filter Status</label>
+                                    <label class="form-label">Status</label>
                                     <select name="status" class="form-select">
                                         <option value="all" <?= ($status == 'all') ? 'selected' : '' ?>>Semua Status</option>
                                         <option value="diproses" <?= ($status == 'diproses') ? 'selected' : '' ?>>Potong</option>
@@ -1385,8 +1360,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                             </a>
                                         <?php endif; ?>
 
-                                        <button type="button" class="btn btn-danger" id="btnPrintPDF">
-                                            <i class="ti ti-file-text"></i> Print PDF
+
+                                        <a href="print_laporan_produksi.php?
+                                                id_produk=<?= $id_produk ?>&
+                                                id_pemotong=<?= $id_pemotong ?>&
+                                                id_penjahit=<?= $id_penjahit ?>&
+                                                id_bordir=<?= $id_bordir ?>&
+                                                status=<?= $status ?>&
+                                                start_date=<?= urlencode($start_date) ?>&
+                                                end_date=<?= urlencode($end_date) ?>"
+                                            class="btn btn-danger" target="_blank">
+                                            <i class="ti ti-printer"></i> Cetak PDF
+                                        </a>
+
+                                        <!-- TAMBAHKAN TOMBOL INI -->
+                                        <button type="button" class="btn btn-success" id="btnExportExcel">
+                                            <i class="ti ti-file-analytics"></i> Export Excel
                                         </button>
                                     </div>
                                 </div>
@@ -1598,6 +1587,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     </div>
                 </div>
 
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="btn-group">
+                        <div>
+                            <a href="new.php" class="btn btn-warning">
+                                <i class="ti ti-circle-plus"></i> Tambah Produksi
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="card p-3">
                     <!-- Tampilkan pesan error atau success -->
                     <?php if (isset($_SESSION['error'])): ?>
@@ -1787,7 +1786,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                                                     <?php if ($is_diproses): ?>
                                                         <!-- Status: Diproses -->
-                                                        <button class="btn btn-sm btn-primary btn-input-tanggal-bordir"
+                                                        <button class="btn btn-sm btn-info btn-input-tanggal-bordir"
                                                             data-id="<?= $data['id'] ?>"
                                                             data-produk="<?= htmlspecialchars($data['produk']) ?>"
                                                             data-seri="<?= htmlspecialchars($data['seri']) ?>"
@@ -2317,7 +2316,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script> -->
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -2794,17 +2793,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 }, 3000);
             }
 
-            // Tombol Print PDF
-            document.getElementById('btnPrintPDF')?.addEventListener('click', function() {
+            // Setelah tombol Print PDF, tambahkan ini:
+            document.getElementById('btnExportExcel')?.addEventListener('click', function() {
                 const id_produk = document.querySelector('select[name="id_produk"]')?.value;
                 const status = document.querySelector('select[name="status"]')?.value;
                 const start_date = document.querySelector('input[name="start_date"]')?.value;
                 const end_date = document.querySelector('input[name="end_date"]')?.value;
+                const id_pemotong = document.querySelector('select[name="id_pemotong"]')?.value;
+                const id_penjahit = document.querySelector('select[name="id_penjahit"]')?.value;
+                const id_bordir = document.querySelector('select[name="id_bordir"]')?.value;
 
-                let url = 'print_laporan_produksi.php?id_produk=' + (id_produk || 0) +
+                let url = 'export_excel_produksi.php?id_produk=' + (id_produk || 0) +
                     '&status=' + (status || 'all') +
                     '&start_date=' + (start_date || '') +
-                    '&end_date=' + (end_date || '');
+                    '&end_date=' + (end_date || '') +
+                    '&id_pemotong=' + (id_pemotong || 0) +
+                    '&id_penjahit=' + (id_penjahit || 0) +
+                    '&id_bordir=' + (id_bordir || 0);
 
                 window.open(url, '_blank');
             });
@@ -2876,7 +2881,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <div class="input-group">
                     <input type="number" name="atk_jumlah[]" class="form-control atk-jumlah"
                         min="1" value="1" required>
-                    <span class="input-group-text">Pcs</span>
                 </div>
             </div>
             <div class="col-md-3">

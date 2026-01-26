@@ -131,6 +131,40 @@ if (!empty($params)) {
 
 // Proses pembayaran
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    // Edit Hutang
+    if (isset($_POST['edit_hutang'])) {
+        $id_hutang = intval($_POST['id_hutang']);
+        $total_upah_baru = floatval($_POST['total_upah']);
+
+        // Validasi
+        $detail_hutang = getDetailHutang($id_hutang);
+        
+        if (!$detail_hutang) {
+            $_SESSION['error'] = "Data hutang tidak ditemukan";
+        }  elseif ($total_upah_baru <= 0) {
+            $_SESSION['error'] = "Total upah harus lebih dari 0";
+        } else {
+            // Update hutang
+            $sql_update = "UPDATE hutang_upah 
+                          SET total_upah = ?, 
+                              sisa_hutang = ?,
+                              updated_at = NOW()
+                          WHERE id_hutang = ?";
+            
+            $stmt = $conn->prepare($sql_update);
+            $stmt->bind_param("ddi", $total_upah_baru, $total_upah_baru, $id_hutang);
+            
+            if ($stmt->execute()) {
+                $_SESSION['success'] = "Data hutang berhasil diupdate";
+            } else {
+                $_SESSION['error'] = "Gagal mengupdate data hutang: " . $conn->error;
+            }
+        }
+        
+        header("Location: hutang_upah.php?" . http_build_query($_GET));
+        exit();
+    }
+
     // Hapus Hutang (hanya yang sudah lunas)
     if (isset($_POST['hapus_hutang'])) {
         $id_hutang = intval($_POST['id_hutang']);
@@ -449,6 +483,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                             </td>
                                             <td class="text-center">
                                                 <div class="btn-group-actions">
+                                                    <button class="btn btn-sm btn-warning btn-edit"
+                                                        data-id="<?= $h['id_hutang'] ?>"
+                                                        data-nama="<?= htmlspecialchars($h['nama_karyawan'] ?? '-') ?>"
+                                                        data-jenis="<?= htmlspecialchars($h['jenis_karyawan']) ?>"
+                                                        data-total="<?= $h['total_upah'] ?>"
+                                                        data-dibayar="<?= $h['total_dibayar'] ?>"
+                                                        data-sisa="<?= $h['sisa_hutang'] ?>"
+                                                        title="<?= $h['total_dibayar'] > 0 ? 'Anda dapat mengubah total upah walaupun sudah ada pembayaran' : 'Edit Hutang' ?>">
+                                                        <i class="ti ti-edit"></i>
+                                                    </button>
                                                     <button class="btn btn-sm btn-primary btn-bayar"
                                                         data-id="<?= $h['id_hutang'] ?>"
                                                         data-nama="<?= htmlspecialchars($h['nama_karyawan'] ?? '-') ?>"
@@ -531,6 +575,54 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                         <button type="submit" name="bayar_hutang" class="btn btn-primary">Simpan Pembayaran</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Edit Hutang -->
+    <div class="modal fade" id="modalEditHutang" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="POST" id="formEditHutang">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Edit Hutang Upah</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="id_hutang" id="edit_id_hutang">
+
+                        <div class="mb-3">
+                            <label>Karyawan</label>
+                            <input type="text" class="form-control" id="edit_nama_karyawan" readonly>
+                        </div>
+
+                        <div class="mb-3">
+                            <label>Jenis Karyawan</label>
+                            <input type="text" class="form-control" id="edit_jenis_karyawan" readonly>
+                        </div>
+
+                        <div class="mb-3">
+                            <label>Total Dibayar</label>
+                            <input type="text" class="form-control" id="edit_total_dibayar" readonly>
+                            <small class="text-muted">Hutang hanya dapat diedit jika belum ada pembayaran</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label>Total Upah *</label>
+                            <input type="number" name="total_upah" class="form-control" id="edit_total_upah" min="1" step="0.01" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label>Sisa Hutang</label>
+                            <input type="text" class="form-control" id="edit_sisa_hutang_display" readonly>
+                            <small class="text-muted">Otomatis dihitung: Total Upah - Total Dibayar</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" name="edit_hutang" class="btn btn-warning">Update Hutang</button>
                     </div>
                 </form>
             </div>
@@ -722,6 +814,85 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 jumlahInput.value = ''; // Default isi dengan sisa hutang
 
                 modalBayar.show();
+            });
+        });
+
+        // Modal edit hutang
+        const modalEditHutang = new bootstrap.Modal(document.getElementById('modalEditHutang'));
+        
+        document.querySelectorAll('.btn-edit').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = this.dataset.id;
+                const nama = this.dataset.nama;
+                const jenis = this.dataset.jenis;
+                const total = parseFloat(this.dataset.total);
+                const dibayar = parseFloat(this.dataset.dibayar);
+                const sisa = parseFloat(this.dataset.sisa);
+
+                // Populate form
+                document.getElementById('edit_id_hutang').value = id;
+                document.getElementById('edit_nama_karyawan').value = nama;
+                
+                // Format jenis karyawan
+                const jenisText = jenis.charAt(0).toUpperCase() + jenis.slice(1);
+                document.getElementById('edit_jenis_karyawan').value = jenisText;
+                
+                document.getElementById('edit_total_dibayar').value = formatRupiah(dibayar);
+                document.getElementById('edit_total_upah').value = total;
+                document.getElementById('edit_sisa_hutang_display').value = formatRupiah(sisa);
+
+                modalEditHutang.show();
+            });
+        });
+
+        // Auto-calculate sisa hutang saat total upah berubah
+        document.getElementById('edit_total_upah').addEventListener('input', function() {
+            const totalUpah = parseFloat(this.value) || 0;
+            const totalDibayarText = document.getElementById('edit_total_dibayar').value;
+            const totalDibayar = parseFloat(totalDibayarText.replace(/[^0-9]/g, '')) || 0;
+            const sisaHutang = totalUpah - totalDibayar;
+            
+            document.getElementById('edit_sisa_hutang_display').value = formatRupiah(sisaHutang);
+        });
+
+        // SweetAlert loading saat submit form edit
+        document.getElementById('formEditHutang').addEventListener('submit', function(e) {
+            const totalUpah = parseFloat(document.getElementById('edit_total_upah').value) || 0;
+            const totalDibayarText = document.getElementById('edit_total_dibayar').value;
+            const totalDibayar = parseFloat(totalDibayarText.replace(/[^0-9]/g, '')) || 0;
+
+            // Validasi client-side
+            if (totalUpah <= 0) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Validasi Error',
+                    text: 'Total upah harus lebih dari 0',
+                    confirmButtonColor: '#3085d6'
+                });
+                return;
+            }
+
+            if (totalDibayar > 0 && totalUpah < totalDibayar) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Validasi Error',
+                    text: 'Total upah tidak boleh kurang dari total yang sudah dibayar',
+                    confirmButtonColor: '#3085d6'
+                });
+                return;
+            }
+
+            // Tampilkan loading
+            Swal.fire({
+                title: 'Menyimpan...',
+                html: 'Mohon tunggu sebentar',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
             });
         });
 

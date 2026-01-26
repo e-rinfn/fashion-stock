@@ -181,9 +181,14 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                     <div class="card">
                         <div class="card-header card-header-simple d-flex justify-content-between align-items-center">
                             <h6 class="mb-0">Data Bahan Baku</h6>
-                            <a href="<?= $base_url ?>/owner/bahan_baku/add.php" class="btn btn-success btn-sm">
-                                <i class="ti ti-plus"></i> Tambah
-                            </a>
+                            <div>
+                                <a href="print_master_data.php?type=bahan" class="btn btn-danger btn-sm" target="_blank">
+                                    <i class="ti ti-printer"></i> Cetak PDF
+                                </a>
+                                <a href="<?= $base_url ?>/owner/bahan_baku/add.php" class="btn btn-success btn-sm">
+                                    <i class="ti ti-plus"></i> Tambah
+                                </a>
+                            </div>
                         </div>
                         <div class="card-body">
                             <div class="table-responsive table-container">
@@ -239,9 +244,14 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                     <div class="card">
                         <div class="card-header card-header-simple d-flex justify-content-between align-items-center">
                             <h6 class="mb-0">Data Produk</h6>
-                            <a href="<?= $base_url ?>/owner/produk/add.php" class="btn btn-success btn-sm">
-                                <i class="ti ti-plus"></i> Tambah
-                            </a>
+                            <div>
+                                <a href="print_master_data.php?type=produk" class="btn btn-danger btn-sm" target="_blank">
+                                    <i class="ti ti-printer"></i> Cetak PDF
+                                </a>
+                                <a href="<?= $base_url ?>/owner/produk/add.php" class="btn btn-success btn-sm">
+                                    <i class="ti ti-plus"></i> Tambah
+                                </a>
+                            </div>
                         </div>
                         <div class="card-body">
                             <div class="table-responsive table-container">
@@ -297,9 +307,14 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                     <div class="card">
                         <div class="card-header card-header-simple d-flex justify-content-between align-items-center">
                             <h6 class="mb-0">Data Pemotong</h6>
-                            <a href="<?= $base_url ?>/owner/pemotong/add.php" class="btn btn-success btn-sm">
-                                <i class="ti ti-plus"></i> Tambah
-                            </a>
+                            <div>
+                                <a href="print_master_data.php?type=pemotong" class="btn btn-danger btn-sm" target="_blank">
+                                    <i class="ti ti-printer"></i> Cetak PDF
+                                </a>
+                                <a href="<?= $base_url ?>/owner/pemotong/add.php" class="btn btn-success btn-sm">
+                                    <i class="ti ti-plus"></i> Tambah
+                                </a>
+                            </div>
                         </div>
                         <div class="card-body">
                             <div class="table-responsive table-container">
@@ -353,9 +368,14 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                     <div class="card">
                         <div class="card-header card-header-simple d-flex justify-content-between align-items-center">
                             <h6 class="mb-0">Data Bordir</h6>
-                            <a href="<?= $base_url ?>/owner/petugas_bordir/add.php" class="btn btn-success btn-sm">
-                                <i class="ti ti-plus"></i> Tambah
-                            </a>
+                            <div>
+                                <a href="print_master_data.php?type=bordir" class="btn btn-danger btn-sm" target="_blank">
+                                    <i class="ti ti-printer"></i> Cetak PDF
+                                </a>
+                                <a href="<?= $base_url ?>/owner/petugas_bordir/add.php" class="btn btn-success btn-sm">
+                                    <i class="ti ti-plus"></i> Tambah
+                                </a>
+                            </div>
                         </div>
                         <div class="card-body">
                             <div class="table-responsive table-container">
@@ -409,9 +429,14 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                     <div class="card">
                         <div class="card-header card-header-simple d-flex justify-content-between align-items-center">
                             <h6 class="mb-0">Data Penjahit</h6>
-                            <a href="<?= $base_url ?>/owner/penjahit/add.php" class="btn btn-success btn-sm">
-                                <i class="ti ti-plus"></i> Tambah
-                            </a>
+                            <div>
+                                <a href="print_master_data.php?type=penjahit" class="btn btn-danger btn-sm" target="_blank">
+                                    <i class="ti ti-printer"></i> Cetak PDF
+                                </a>
+                                <a href="<?= $base_url ?>/owner/penjahit/add.php" class="btn btn-success btn-sm">
+                                    <i class="ti ti-plus"></i> Tambah
+                                </a>
+                            </div>
                         </div>
                         <div class="card-body">
                             <div class="table-responsive table-container">
@@ -465,9 +490,14 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                     <div class="card">
                         <div class="card-header card-header-simple d-flex justify-content-between align-items-center">
                             <h6 class="mb-0">Data Petugas Finishing</h6>
-                            <a href="<?= $base_url ?>/owner/petugas_finishing/add.php" class="btn btn-success btn-sm">
-                                <i class="ti ti-plus"></i> Tambah
-                            </a>
+                            <div>
+                                <a href="print_master_data.php?type=finishing" class="btn btn-danger btn-sm" target="_blank">
+                                    <i class="ti ti-printer"></i> Cetak PDF
+                                </a>
+                                <a href="<?= $base_url ?>/owner/petugas_finishing/add.php" class="btn btn-success btn-sm">
+                                    <i class="ti ti-plus"></i> Tambah
+                                </a>
+                            </div>
                         </div>
                         <div class="card-body">
                             <div class="table-responsive table-container">
@@ -521,9 +551,14 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                     <div class="card">
                         <div class="card-header card-header-simple d-flex justify-content-between align-items-center">
                             <h6 class="mb-0">Data Reseller</h6>
-                            <a href="<?= $base_url ?>/owner/reseller/add.php" class="btn btn-success btn-sm">
-                                <i class="ti ti-plus"></i> Tambah
-                            </a>
+                            <div>
+                                <a href="print_master_data.php?type=reseller" class="btn btn-danger btn-sm" target="_blank">
+                                    <i class="ti ti-printer"></i> Cetak PDF
+                                </a>
+                                <a href="<?= $base_url ?>/owner/reseller/add.php" class="btn btn-success btn-sm">
+                                    <i class="ti ti-plus"></i> Tambah
+                                </a>
+                            </div>
                         </div>
                         <div class="card-body">
                             <div class="table-responsive table-container">
@@ -577,9 +612,14 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                     <div class="card">
                         <div class="card-header card-header-simple d-flex justify-content-between align-items-center">
                             <h6 class="mb-0">Data Supplier</h6>
-                            <a href="<?= $base_url ?>/owner/supplier/add.php" class="btn btn-success btn-sm">
-                                <i class="ti ti-plus"></i> Tambah
-                            </a>
+                            <div>
+                                <a href="print_master_data.php?type=supplier" class="btn btn-danger btn-sm" target="_blank">
+                                    <i class="ti ti-printer"></i> Cetak PDF
+                                </a>
+                                <a href="<?= $base_url ?>/owner/supplier/add.php" class="btn btn-success btn-sm">
+                                    <i class="ti ti-plus"></i> Tambah
+                                </a>
+                            </div>
                         </div>
                         <div class="card-body">
                             <div class="table-responsive table-container">
@@ -633,9 +673,14 @@ $tarif_upah = query("SELECT * FROM tarif_upah ORDER BY jenis_tarif ASC, berlaku_
                     <div class="card">
                         <div class="card-header card-header-simple d-flex justify-content-between align-items-center">
                             <h6 class="mb-0">Data Tarif Upah</h6>
-                            <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalTambahTarif">
-                                <i class="ti ti-plus"></i> Tambah
-                            </button>
+                            <div>
+                                <a href="print_master_data.php?type=tarif" class="btn btn-danger btn-sm" target="_blank">
+                                    <i class="ti ti-printer"></i> Cetak PDF
+                                </a>
+                                <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalTambahTarif">
+                                    <i class="ti ti-plus"></i> Tambah
+                                </button>
+                            </div>
                         </div>
                         <div class="card-body">
                             <div class="table-responsive table-container">

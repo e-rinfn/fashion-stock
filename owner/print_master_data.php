@@ -125,12 +125,12 @@ switch ($type) {
         $html .= '<table>
         <thead>
             <tr>
-                <th width="5%">No</th>
-                <th width="35%">Nama Bahan</th>
-                <th width="15%">Stok (Roll)</th>
-                <th width="15%">Total (Meter)</th>
-                <th width="15%">Harga/Meter</th>
-                <th width="15%">Total Nilai</th>
+                <th width="8%">No</th>
+                <th width="30%">Nama Bahan</th>
+                <th width="12%">Stok (Roll)</th>
+                <th width="12%">Total (Meter)</th>
+                <th width="19%">Harga/Meter</th>
+                <th width="19%">Total Nilai</th>
             </tr>
         </thead>
         <tbody>';
@@ -169,12 +169,12 @@ switch ($type) {
         $html .= '<table>
         <thead>
             <tr>
-                <th width="5%">No</th>
-                <th width="35%">Nama Produk</th>
-                <th width="15%">Tipe</th>
-                <th width="15%">Stok</th>
-                <th width="15%">Harga/Pcs</th>
-                <th width="15%">Total Nilai</th>
+                <th width="8%">No</th>
+                <th width="32%">Nama Produk</th>
+                <th width="12%">Tipe</th>
+                <th width="12%">Stok</th>
+                <th width="18%">Harga/Pcs</th>
+                <th width="18%">Total Nilai</th>
             </tr>
         </thead>
         <tbody>';
@@ -213,10 +213,10 @@ switch ($type) {
         $html .= '<table>
         <thead>
             <tr>
-                <th width="5%">No</th>
-                <th width="35%">Nama</th>
-                <th width="25%">Kontak</th>
-                <th width="35%">Alamat</th>
+                <th width="8%">No</th>
+                <th width="30%">Nama</th>
+                <th width="22%">Kontak</th>
+                <th width="40%">Alamat</th>
             </tr>
         </thead>
         <tbody>';
@@ -242,10 +242,10 @@ switch ($type) {
         $html .= '<table>
         <thead>
             <tr>
-                <th width="5%">No</th>
-                <th width="30%">Nama Reseller</th>
-                <th width="20%">Kontak</th>
-                <th width="25%">Alamat</th>
+                <th width="8%">No</th>
+                <th width="27%">Nama Reseller</th>
+                <th width="18%">Kontak</th>
+                <th width="27%">Alamat</th>
                 <th width="20%">Tanggal Bergabung</th>
             </tr>
         </thead>
@@ -267,9 +267,9 @@ switch ($type) {
         $html .= '<table>
         <thead>
             <tr>
-                <th width="5%">No</th>
+                <th width="8%">No</th>
                 <th width="30%">Nama Supplier</th>
-                <th width="25%">Kontak</th>
+                <th width="22%">Kontak</th>
                 <th width="40%">Alamat</th>
             </tr>
         </thead>
@@ -290,11 +290,11 @@ switch ($type) {
         $html .= '<table>
         <thead>
             <tr>
-                <th width="5%">No</th>
-                <th width="25%">Jenis Tarif</th>
+                <th width="8%">No</th>
+                <th width="22%">Jenis Tarif</th>
                 <th width="20%">Tarif/Unit</th>
-                <th width="20%">Berlaku Sejak</th>
-                <th width="30%">Keterangan</th>
+                <th width="18%">Berlaku Sejak</th>
+                <th width="32%">Keterangan</th>
             </tr>
         </thead>
         <tbody>';

@@ -470,27 +470,19 @@ $produk = query("SELECT * FROM produk ORDER BY nama_produk");
 $petugas_finishing = query("SELECT * FROM petugas_finishing ORDER BY nama_petugas");
 
 // Cek filter yang diterapkan
-
 $id_produk = isset($_GET['id_produk']) ? (int)$_GET['id_produk'] : 0;
 $id_petugas_finishing = isset($_GET['id_petugas_finishing']) ? (int)$_GET['id_petugas_finishing'] : 0;
 $status = isset($_GET['status']) ? $_GET['status'] : 'all';
+
+
 $start_date = isset($_GET['start_date']) ? $_GET['start_date'] : '';
 $end_date = isset($_GET['end_date']) ? $_GET['end_date'] : '';
+
 $start_date_default = date('Y-m-01');
 $end_date_default   = date('Y-m-t');
 
-// PAGINATION
-$per_page_options = [10, 20, 50, 100, 'all'];
-$per_page = isset($_GET['per_page']) ? $_GET['per_page'] : 10;
-if (!in_array($per_page, $per_page_options)) {
-    $per_page = 10;
-}
-$page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
-
-
 
 // Query untuk mengambil data kirim finishing
-
 $sql = "SELECT 
             hk.*, 
             p.nama_produk, 
@@ -526,38 +518,12 @@ if (!empty($end_date)) {
 }
 
 // GROUP BY dengan kolom utama yang diperlukan untuk unique record
-
 $sql .= " GROUP BY hk.id_hasil_kirim_finishing, hk.tanggal_kirim_finishing, hk.id_produk, hk.total_kirim, hk.status_finishing, p.nama_produk, pet.nama_petugas";
+
 $sql .= " ORDER BY hk.tanggal_kirim_finishing DESC";
 
-// Hitung total data untuk paginasi
-$sql_count = "SELECT COUNT(DISTINCT hk.id_hasil_kirim_finishing) as total FROM hasil_kirim_finishing hk WHERE 1=1";
-if ($id_petugas_finishing > 0) {
-    $sql_count .= " AND hk.id_petugas_finishing = $id_petugas_finishing";
-}
-if ($status != 'all') {
-    $sql_count .= " AND hk.status_finishing = '$status'";
-}
-if (!empty($start_date)) {
-    $sql_count .= " AND hk.tanggal_kirim_finishing >= '$start_date'";
-}
-if (!empty($end_date)) {
-    $end_date_temp = $end_date . ' 23:59:59';
-    $sql_count .= " AND hk.tanggal_kirim_finishing <= '$end_date_temp'";
-}
-$result_count = $conn->query($sql_count);
-$total_rows = $result_count ? ($result_count->fetch_assoc()['total'] ?? 0) : 0;
-
-// Limit dan offset
-if ($per_page !== 'all') {
-    $offset = ($page - 1) * intval($per_page);
-    $sql .= " LIMIT $offset, $per_page";
-}
 
 $data_finishing = query($sql);
-
-// Hitung total halaman
-$total_pages = ($per_page === 'all' || $total_rows == 0) ? 1 : ceil($total_rows / intval($per_page));
 
 // Format tanggal untuk tampilan
 function formatDateIndo($date)
@@ -1086,20 +1052,6 @@ $total_upah_filtered = $total_hasil_finishing_filtered * $tarif_standar;
                 </div>
 
                 <div class="card p-3">
-                    <form method="get" class="mb-2 d-flex align-items-center gap-2">
-                        <!-- Pertahankan filter yang lain -->
-                        <input type="hidden" name="id_petugas_finishing" value="<?= htmlspecialchars($id_petugas_finishing) ?>">
-                        <input type="hidden" name="status" value="<?= htmlspecialchars($status) ?>">
-                        <input type="hidden" name="start_date" value="<?= htmlspecialchars($start_date) ?>">
-                        <input type="hidden" name="end_date" value="<?= htmlspecialchars($end_date) ?>">
-                        <label for="per_page" class="form-label mb-0 me-2">Tampilkan</label>
-                        <select name="per_page" id="per_page" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
-                            <?php foreach ($per_page_options as $opt): ?>
-                                <option value="<?= $opt ?>" <?= ($per_page == $opt) ? 'selected' : '' ?>><?= $opt === 'all' ? 'Semua' : $opt ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                        <span class="ms-2">data per halaman</span>
-                    </form>
                     <!-- Tampilkan pesan error atau success -->
                     <?php if (isset($_SESSION['error'])): ?>
                         <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -1275,24 +1227,6 @@ $total_upah_filtered = $total_hasil_finishing_filtered * $tarif_standar;
                             <?php endif; ?>
                         </table>
                     </div>
-                    <!-- PAGINATION -->
-                    <?php if ($total_pages > 1): ?>
-                        <nav aria-label="Page navigation">
-                            <ul class="pagination pagination-sm justify-content-center mt-3">
-                                <?php
-                                $query_params = $_GET;
-                                for ($i = 1; $i <= $total_pages; $i++):
-                                    $query_params['page'] = $i;
-                                    $query_params['per_page'] = $per_page;
-                                    $url = '?' . http_build_query($query_params);
-                                ?>
-                                    <li class="page-item <?= ($i == $page) ? 'active' : '' ?>">
-                                        <a class="page-link" href="<?= $url ?>"><?= $i ?></a>
-                                    </li>
-                                <?php endfor; ?>
-                            </ul>
-                        </nav>
-                    <?php endif; ?>
                 </div>
             </div>
         </div>

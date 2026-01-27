@@ -576,8 +576,28 @@ $produksi = query($sql);
 // PERSIAPAN DATA UNTUK DITAMPILKAN DI TABEL
 // ============================================================================
 
+// PAGINATION SETUP
+$per_page_options = [10, 20, 50, 100, 'all'];
+$per_page = isset($_GET['per_page']) && in_array($_GET['per_page'], array_map('strval', $per_page_options)) ? $_GET['per_page'] : 10;
+$page = isset($_GET['page']) && is_numeric($_GET['page']) && $_GET['page'] > 0 ? (int)$_GET['page'] : 1;
+
+// Hitung total data untuk paginasi
+$total_data = count($produksi);
+
+// Jika bukan 'all', lakukan slice data
+if ($per_page !== 'all') {
+    $per_page = (int)$per_page;
+    $offset = ($page - 1) * $per_page;
+    $produksi_paged = array_slice($produksi, $offset, $per_page);
+    $total_pages = ceil($total_data / $per_page);
+} else {
+    $produksi_paged = $produksi;
+    $total_pages = 1;
+    $page = 1;
+}
+
 $all_data = [];
-foreach ($produksi as $prod) {
+foreach ($produksi_paged as $prod) {
     // Dapatkan tarif upah
     $tarif_pemotong = getTarifUpah('pemotongan', $prod['tanggal_hasil_potong']);
     $tarif_bordir = !empty($prod['tanggal_hasil_bordir']) ?
@@ -1598,6 +1618,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 </div>
 
                 <div class="card p-3">
+                    <!-- Dropdown jumlah data per halaman -->
+                    <form method="get" class="mb-2 d-flex align-items-center gap-2" style="flex-wrap: wrap;">
+                        <!-- Pertahankan filter lain -->
+                        <?php foreach ($_GET as $k => $v): if (!in_array($k, ['per_page', 'page'])): ?>
+                                <input type="hidden" name="<?= htmlspecialchars($k) ?>" value="<?= htmlspecialchars($v) ?>">
+                        <?php endif;
+                        endforeach; ?>
+                        <label for="per_page" class="mb-0">Tampilkan</label>
+                        <select name="per_page" id="per_page" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+                            <?php foreach ($per_page_options as $opt): ?>
+                                <option value="<?= $opt ?>" <?= ($per_page == $opt) ? 'selected' : '' ?>><?= $opt === 'all' ? 'Semua' : $opt ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <span class="ms-1">data per halaman</span>
+                    </form>
                     <!-- Tampilkan pesan error atau success -->
                     <?php if (isset($_SESSION['error'])): ?>
                         <div class="alert alert-danger alert-dismissible fade show" role="alert">
@@ -1897,6 +1932,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <?php endif; ?>
                         </table>
                     </div>
+                    <!-- PAGINATION -->
+                    <?php if ($per_page !== 'all' && $total_pages > 1): ?>
+                        <nav aria-label="Paginasi" class="mt-3">
+                            <ul class="pagination justify-content-center pagination-sm mb-0">
+                                <?php
+                                $query_params = $_GET;
+                                for ($i = 1; $i <= $total_pages; $i++):
+                                    $query_params['page'] = $i;
+                                    $query_params['per_page'] = $per_page;
+                                    $url = '?' . http_build_query($query_params);
+                                ?>
+                                    <li class="page-item <?= ($i == $page) ? 'active' : '' ?>">
+                                        <a class="page-link" href="<?= $url ?>"><?= $i ?></a>
+                                    </li>
+                                <?php endfor; ?>
+                            </ul>
+                        </nav>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -3043,7 +3096,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     });
                 }
             }
-            
+
             // Tambahkan loading ke semua form modal
             addSwalLoadingToForm('formTanggalBordir');
             addSwalLoadingToForm('formHasilBordir');

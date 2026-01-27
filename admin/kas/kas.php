@@ -1094,6 +1094,7 @@ for ($i = $tahun_sekarang; $i >= $tahun_sekarang - 4; $i--) {
             <div class="modal-dialog">
                 <div class="modal-content">
                     <form method="POST" action="">
+                        <input type="hidden" name="tambah_transaksi" value="1">
                         <div class="modal-header">
                             <h5 class="modal-title" id="tambahModalLabel">Tambah Transaksi Kas</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -1157,6 +1158,7 @@ for ($i = $tahun_sekarang; $i >= $tahun_sekarang - 4; $i--) {
             <div class="modal-dialog">
                 <div class="modal-content">
                     <form method="POST" action="">
+                        <input type="hidden" name="edit_transaksi" value="1">
                         <input type="hidden" id="edit_id_transaksi" name="id_transaksi">
                         <div class="modal-header">
                             <h5 class="modal-title" id="editModalLabel">Edit Transaksi Kas</h5>

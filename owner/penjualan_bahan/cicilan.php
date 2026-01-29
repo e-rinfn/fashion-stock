@@ -45,7 +45,7 @@ if (isset($_FILES['bukti_pembayaran']) && $_FILES['bukti_pembayaran']['error'] =
             $newFileName = md5(time() . $fileName) . '.' . $fileExtension;
 
             // UNTUK LOKAL
-            $uploadFileDir = './bukti/';
+            $uploadFileDir = '../../bukti/';
 
             // UNTUK SERVER
             // $uploadFileDir = $_SERVER['DOCUMENT_ROOT'] . '/admin/penjualan/bukti/';
@@ -406,7 +406,7 @@ $total_cicilan = $cicilan_info['total'] ?? 0;
                                                                 <?php if ($c['bukti_pembayaran']): ?>
                                                                     <?php
                                                                     $ext = pathinfo($c['bukti_pembayaran'], PATHINFO_EXTENSION);
-                                                                    $fileUrl = "bukti/" . $c['bukti_pembayaran'];
+                                                                    $fileUrl = "../../bukti/" . $c['bukti_pembayaran'];
                                                                     ?>
                                                                     <?php if (in_array(strtolower($ext), ['jpg', 'jpeg', 'png'])): ?>
                                                                         <a href="<?= $fileUrl ?>" target="_blank">

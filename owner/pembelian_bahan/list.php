@@ -33,8 +33,13 @@ require_once '../../config/functions.php';
 $search = isset($_GET['search']) ? $conn->real_escape_string($_GET['search']) : '';
 $filter_supplier = isset($_GET['supplier']) ? intval($_GET['supplier']) : 0;
 $filter_bahan = isset($_GET['bahan']) ? $_GET['bahan'] : [];
-$filter_tanggal_awal = isset($_GET['tanggal_awal']) ? $_GET['tanggal_awal'] : '';
-$filter_tanggal_akhir = isset($_GET['tanggal_akhir']) ? $_GET['tanggal_akhir'] : '';
+
+// Default tanggal: 1 sampai akhir bulan ini
+$default_tanggal_awal = date('Y-m-01');
+$default_tanggal_akhir = date('Y-m-t');
+
+$filter_tanggal_awal = isset($_GET['tanggal_awal']) ? $_GET['tanggal_awal'] : $default_tanggal_awal;
+$filter_tanggal_akhir = isset($_GET['tanggal_akhir']) ? $_GET['tanggal_akhir'] : $default_tanggal_akhir;
 
 // Konversi filter_bahan ke array jika string
 if (!is_array($filter_bahan) && !empty($filter_bahan)) {

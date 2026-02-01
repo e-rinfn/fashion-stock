@@ -19,8 +19,13 @@ $produk_list = query("SELECT * FROM produk ORDER BY nama_produk");
 $search = isset($_GET['search']) ? $_GET['search'] : '';
 $id_supplier = isset($_GET['id_supplier']) ? intval($_GET['id_supplier']) : 0;
 $status = isset($_GET['status']) ? $_GET['status'] : 'all';
-$filter_tanggal_awal = isset($_GET['tanggal_awal']) ? $_GET['tanggal_awal'] : '';
-$filter_tanggal_akhir = isset($_GET['tanggal_akhir']) ? $_GET['tanggal_akhir'] : '';
+
+// Default tanggal: 1 sampai akhir bulan ini
+$default_tanggal_awal = date('Y-m-01');
+$default_tanggal_akhir = date('Y-m-t');
+
+$filter_tanggal_awal = isset($_GET['tanggal_awal']) ? $_GET['tanggal_awal'] : $default_tanggal_awal;
+$filter_tanggal_akhir = isset($_GET['tanggal_akhir']) ? $_GET['tanggal_akhir'] : $default_tanggal_akhir;
 $filter_produk = isset($_GET['produk']) ? $_GET['produk'] : [];
 
 // Konversi filter_produk ke array jika string

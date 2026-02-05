@@ -440,7 +440,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['simpan_hasil_potong_fi
                                                 <div class="input-group">
                                                     <span class="input-group-text">Rp</span>
                                                     <input type="number" name="upah_per_potongan" class="form-control"
-                                                        min="0" step="100" id="upahPerPotonganInput"
+                                                        min="0" id="upahPerPotonganInput"
                                                         value="<?= isset($_POST['upah_per_potongan']) ? $_POST['upah_per_potongan'] : '' ?>">
                                                 </div>
                                                 <small class="text-muted">Atau pilih tarif standar:</small>

@@ -1750,20 +1750,36 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                             </td>
                                             <td class="text-center"><?= $data['total_hasil'] ?> Pcs</td>
                                             <td>
-                                                <?= !empty($data['tanggal_kirim_bordir']) ? dateIndo($data['tanggal_kirim_bordir']) : '-' ?>
-                                            </td>
-                                            <td>
-                                                <?php if (!empty($data['bordir'])): ?>
-                                                    <?= htmlspecialchars($data['bordir']) ?>
+                                                <?php if ($data['tipe_produk'] == 'mukena'): ?>
+                                                    <span class="text-muted">-</span>
                                                 <?php else: ?>
-                                                    -
+                                                    <?= !empty($data['tanggal_kirim_bordir']) ? dateIndo($data['tanggal_kirim_bordir']) : '-' ?>
                                                 <?php endif; ?>
                                             </td>
                                             <td>
-                                                <?= !empty($data['tanggal_hasil_bordir']) ? dateIndo($data['tanggal_hasil_bordir']) : '-' ?>
+                                                <?php if ($data['tipe_produk'] == 'mukena'): ?>
+                                                    <span class="text-muted">-</span>
+                                                <?php else: ?>
+                                                    <?php if (!empty($data['bordir'])): ?>
+                                                        <?= htmlspecialchars($data['bordir']) ?>
+                                                    <?php else: ?>
+                                                        -
+                                                    <?php endif; ?>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <?php if ($data['tipe_produk'] == 'mukena'): ?>
+                                                    <span class="text-muted">-</span>
+                                                <?php else: ?>
+                                                    <?= !empty($data['tanggal_hasil_bordir']) ? dateIndo($data['tanggal_hasil_bordir']) : '-' ?>
+                                                <?php endif; ?>
                                             </td>
                                             <td class="text-center">
-                                                <?= !empty($data['total_hasil_bordir']) ? $data['total_hasil_bordir'] . ' Pcs' : '-' ?>
+                                                <?php if ($data['tipe_produk'] == 'mukena'): ?>
+                                                    <span class="text-muted">-</span>
+                                                <?php else: ?>
+                                                    <?= !empty($data['total_hasil_bordir']) ? $data['total_hasil_bordir'] . ' Pcs' : '-' ?>
+                                                <?php endif; ?>
                                             </td>
                                             <td>
                                                 <?= !empty($data['tanggal_kirim_jahit']) ? dateIndo($data['tanggal_kirim_jahit']) : '-' ?>
@@ -1819,58 +1835,66 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                                     }
                                                     ?>
 
+
                                                     <?php if ($is_diproses): ?>
                                                         <!-- Status: Diproses -->
-                                                        <button class="btn btn-sm btn-info btn-input-tanggal-bordir"
-                                                            data-id="<?= $data['id'] ?>"
-                                                            data-produk="<?= htmlspecialchars($data['produk']) ?>"
-                                                            data-seri="<?= htmlspecialchars($data['seri']) ?>"
-                                                            data-total-potong="<?= $data['total_hasil'] ?>"
-                                                            data-tanggal-potong="<?= $data['tanggal'] ?>"
-                                                            title="Input Tanggal Kirim Bordir">
-                                                            <i class="ti ti-calendar"></i>
-                                                        </button>
-
-                                                    <?php elseif ($is_bordir): ?>
-                                                        <!-- Status: Bordir -->
-
-                                                        <?php if ($has_tanggal_kirim_bordir && !$has_hasil_bordir): ?>
-                                                            <button class="btn btn-sm btn-success btn-input-hasil-bordir"
-                                                                data-id="<?= $data['id'] ?>"
-                                                                data-produk="<?= htmlspecialchars($data['produk']) ?>"
-                                                                data-seri="<?= htmlspecialchars($data['seri']) ?>"
-                                                                data-total-potong="<?= $data['total_hasil'] ?>"
-                                                                data-tanggal-potong="<?= $data['tanggal'] ?>"
-                                                                data-bordir="<?= $data['id_bordir'] ?>"
-                                                                data-nama-bordir="<?= htmlspecialchars($data['bordir']) ?>"
-                                                                data-tanggal-kirim="<?= $data['tanggal_kirim_bordir'] ?>"
-                                                                title="Input Hasil Bordir">
-                                                                <i class="ti ti-check"></i>
-                                                            </button>
-
-                                                        <?php endif; ?>
-
-                                                        <!-- Status: Penjahitan -->
-                                                        <?php if ($has_hasil_bordir && !$has_tanggal_kirim_jahit): ?>
+                                                        <?php if ($data['tipe_produk'] == 'mukena'): ?>
                                                             <button class="btn btn-sm btn-info btn-input-tanggal-penjahitan"
                                                                 data-id="<?= $data['id'] ?>"
                                                                 data-produk="<?= htmlspecialchars($data['produk']) ?>"
                                                                 data-seri="<?= htmlspecialchars($data['seri']) ?>"
                                                                 data-total-potong="<?= $data['total_hasil'] ?>"
-                                                                data-total-bordir="<?= $data['total_hasil_bordir'] ?? 0 ?>"
+                                                                data-total-bordir="0"
                                                                 data-tanggal-potong="<?= $data['tanggal'] ?>"
                                                                 title="Input Tanggal Kirim Jahit">
                                                                 <i class="ti ti-calendar"></i>
                                                             </button>
+                                                        <?php else: ?>
+                                                            <button class="btn btn-sm btn-info btn-input-tanggal-bordir"
+                                                                data-id="<?= $data['id'] ?>"
+                                                                data-produk="<?= htmlspecialchars($data['produk']) ?>"
+                                                                data-seri="<?= htmlspecialchars($data['seri']) ?>"
+                                                                data-total-potong="<?= $data['total_hasil'] ?>"
+                                                                data-tanggal-potong="<?= $data['tanggal'] ?>"
+                                                                title="Input Tanggal Kirim Bordir">
+                                                                <i class="ti ti-calendar"></i>
+                                                            </button>
                                                         <?php endif; ?>
 
+                                                    <?php elseif ($is_bordir): ?>
+                                                        <!-- Status: Bordir -->
+                                                        <?php if ($data['tipe_produk'] != 'mukena'): ?>
+                                                            <?php if ($has_tanggal_kirim_bordir && !$has_hasil_bordir): ?>
+                                                                <button class="btn btn-sm btn-success btn-input-hasil-bordir"
+                                                                    data-id="<?= $data['id'] ?>"
+                                                                    data-produk="<?= htmlspecialchars($data['produk']) ?>"
+                                                                    data-seri="<?= htmlspecialchars($data['seri']) ?>"
+                                                                    data-total-potong="<?= $data['total_hasil'] ?>"
+                                                                    data-tanggal-potong="<?= $data['tanggal'] ?>"
+                                                                    data-bordir="<?= $data['id_bordir'] ?>"
+                                                                    data-nama-bordir="<?= htmlspecialchars($data['bordir']) ?>"
+                                                                    data-tanggal-kirim="<?= $data['tanggal_kirim_bordir'] ?>"
+                                                                    title="Input Hasil Bordir">
+                                                                    <i class="ti ti-check"></i>
+                                                                </button>
+                                                            <?php endif; ?>
+
+                                                            <!-- Status: Penjahitan -->
+                                                            <?php if ($has_hasil_bordir && !$has_tanggal_kirim_jahit): ?>
+                                                                <button class="btn btn-sm btn-info btn-input-tanggal-penjahitan"
+                                                                    data-id="<?= $data['id'] ?>"
+                                                                    data-produk="<?= htmlspecialchars($data['produk']) ?>"
+                                                                    data-seri="<?= htmlspecialchars($data['seri']) ?>"
+                                                                    data-total-potong="<?= $data['total_hasil'] ?>"
+                                                                    data-total-bordir="<?= $data['total_hasil_bordir'] ?? 0 ?>"
+                                                                    data-tanggal-potong="<?= $data['tanggal'] ?>"
+                                                                    title="Input Tanggal Kirim Jahit">
+                                                                    <i class="ti ti-calendar"></i>
+                                                                </button>
+                                                            <?php endif; ?>
+                                                        <?php endif; ?>
 
                                                     <?php elseif ($is_penjahitan): ?>
-
-
-
-                                                        <!-- Dalam loop data produksi, temukan bagian tombol ini: -->
-
                                                         <?php if ($has_tanggal_kirim_jahit && !$has_hasil_jahit): ?>
                                                             <button class="btn btn-sm btn-success btn-input-hasil-penjahitan"
                                                                 data-id="<?= $data['id'] ?>"
@@ -1885,9 +1909,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                                                 title="Input Hasil Jahit">
                                                                 <i class="ti ti-check"></i>
                                                             </button>
-
                                                         <?php endif; ?>
-
                                                     <?php endif; ?>
 
                                                     <!-- TOMBOL PEMBATALAN BERDASARKAN TAHAP -->
@@ -2073,7 +2095,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                             <span class="input-group-text">Rp</span>
                                             <input type="number" name="upah_per_potongan_bordir_manual"
                                                 class="form-control" id="upah_per_potongan_bordir_manual"
-                                                min="0" step="100" value="" required>
+                                                min="0" value="" required>
                                         </div>
 
                                         <!-- PERBAIKAN: Tambah instruksi -->
@@ -2296,7 +2318,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                                     <span class="input-group-text">Rp</span>
                                                     <input type="number" name="upah_per_potongan_manual"
                                                         class="form-control" id="upah_per_potongan_manual"
-                                                        min="0" step="100" value="" required>
+                                                        min="0" value="" required>
                                                 </div>
                                                 <select class="form-control mt-1" id="tarif_penjahit_dropdown">
                                                     <option value="">-- Pilih Tarif Standar --</option>

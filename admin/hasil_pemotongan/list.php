@@ -2242,7 +2242,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 <label class="form-label">Total Hasil Jahit (Pcs) <span class="text-danger">*</span></label>
                                 <input type="number" name="total_hasil_jahit" class="form-control"
                                     min="1" max="" id="modal_hasil_total_jahit" required>
-                                <small class="text-muted">Maksimal: <span id="modal_hasil_max_total">0</span> Pcs</small>
+                                <!-- <small class="text-muted">Maksimal: <span id="modal_hasil_max_total">0</span> Pcs</small> -->
                             </div>
                         </div>
 
@@ -2619,14 +2619,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     document.getElementById('modal_hasil_nama_penjahit').value = namaPenjahit || '-';
 
                     // Set maksimal berdasarkan hasil bordir jika ada, jika tidak gunakan hasil potong
-                    const maxJahit = totalBordir > 0 ? totalBordir : totalPotong;
+                    // const maxJahit = totalBordir > 0 ? totalBordir : totalPotong;
 
-                    document.getElementById('modal_hasil_total_jahit').value = maxJahit;
-                    document.getElementById('modal_hasil_total_jahit').max = maxJahit;
+                    // document.getElementById('modal_hasil_total_jahit').value = maxJahit;
+                    // document.getElementById('modal_hasil_total_jahit').max = maxJahit;
 
                     // Tampilkan informasi sumber maksimal
-                    let sourceInfo = totalBordir > 0 ? 'berdasarkan hasil bordir' : 'berdasarkan hasil potong (tanpa bordir)';
-                    document.getElementById('modal_hasil_max_total').textContent = maxJahit + ' Pcs ' + sourceInfo;
+                    // let sourceInfo = totalBordir > 0 ? 'berdasarkan hasil bordir' : 'berdasarkan hasil potong (tanpa bordir)';
+                    // document.getElementById('modal_hasil_max_total').textContent = maxJahit + ' Pcs ' + sourceInfo;
 
                     document.getElementById('modal_hasil_tanggal_jahit').value = '<?= date('Y-m-d') ?>';
 

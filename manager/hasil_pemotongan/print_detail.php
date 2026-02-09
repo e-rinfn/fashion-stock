@@ -270,8 +270,9 @@ $produksi_html = '
             <th width="20%">Tahap</th>
             <th width="20%">Tanggal</th>
             <th width="30%">Pekerja</th>
-            <th width="15%">Hasil</th>
-            <th width="15%">Upah</th>
+            <th width="10%">Hasil</th>
+             <th width="10%">Upah/Pcs</th>
+            <th width="10%">Upah</th>
         </tr>
     </thead>
     <tbody>
@@ -279,8 +280,9 @@ $produksi_html = '
             <td width="20%" class=""><strong>Pemotongan</strong></td>
             <td width="20%" class="text-center">' . dateIndo($produksi['tanggal_hasil_potong']) . '</td>
             <td width="30%">' . htmlspecialchars($produksi['nama_pemotong']) . '</td>
-            <td width="15%" class="text-center">' . $produksi['total_hasil'] . ' pcs</td>
-            <td width="15%" class="text-right">' . formatRupiah($upah_pemotong) . '</td>
+            <td width="10%" class="text-center">' . $produksi['total_hasil'] . ' pcs</td>
+            <td width="10%" class="text-center">' . formatRupiah($upah_pemotong / $produksi['total_hasil']) . '</td>
+            <td width="10%" class="text-right">' . formatRupiah($upah_pemotong) . '</td>
         </tr>';
 
 if (!empty($produksi['nama_bordir']) || !empty($produksi['total_hasil_bordir'])) {
@@ -290,6 +292,7 @@ if (!empty($produksi['nama_bordir']) || !empty($produksi['total_hasil_bordir']))
             <td class="text-center">' . (!empty($produksi['tanggal_hasil_bordir']) ? dateIndo($produksi['tanggal_hasil_bordir']) : '-') . '</td>
             <td>' . (!empty($produksi['nama_bordir']) ? htmlspecialchars($produksi['nama_bordir']) : '-') . '</td>
             <td class="text-center">' . (!empty($produksi['total_hasil_bordir']) ? $produksi['total_hasil_bordir'] . ' pcs' : '-') . '</td>
+            <td width="10%" class="text-center">' . formatRupiah($upah_bordir / $produksi['total_hasil_bordir']) . '</td>
             <td class="text-right">' . (!empty($upah_bordir) ? formatRupiah($upah_bordir) : '-') . '</td>
         </tr>';
 }
@@ -301,6 +304,7 @@ if (!empty($produksi['nama_penjahit']) || !empty($produksi['total_hasil_jahit'])
             <td class="text-center">' . (!empty($produksi['tanggal_hasil_jahit']) ? dateIndo($produksi['tanggal_hasil_jahit']) : '-') . '</td>
             <td>' . (!empty($produksi['nama_penjahit']) ? htmlspecialchars($produksi['nama_penjahit']) : '-') . '</td>
             <td class="text-center">' . (!empty($produksi['total_hasil_jahit']) ? $produksi['total_hasil_jahit'] . ' pcs' : '-') . '</td>
+            <td width="10%" class="text-center">' . formatRupiah($upah_penjahit / $produksi['total_hasil_jahit']) . '</td>
             <td class="text-right">' . (!empty($upah_penjahit) ? formatRupiah($upah_penjahit) : '-') . '</td>
         </tr>';
 }
@@ -310,7 +314,7 @@ $total_hasil = $produksi['status_potong'] == 'selesai' ?
 
 $produksi_html .= '
         <tr style="background-color: #d4edda; font-weight: bold;">
-            <td colspan="3" class="text-center">TOTAL</td>
+            <td colspan="4" class="text-center">TOTAL</td>
             <td class="text-center">' . $total_hasil . ' pcs</td>
             <td class="text-right">' . formatRupiah($total_upah) . '</td>
         </tr>
@@ -343,7 +347,7 @@ if (!empty($detail)) {
                 <th width="5%">No</th>
                 <th width="65%">Bahan</th>
                 <th width="15%" class="text-center">Roll</th>
-                <th width="15%" class="text-right">Total M</th>
+                <th width="15%" class="text-right">Total Meter</th>
             </tr>
         </thead>
         <tbody>';
@@ -503,7 +507,7 @@ $timeline_html = '
 
 // Step 2: Bordir
 $step2_color = '#6c757d';
-$step2_status = 'MENUNGGU';
+$step2_status = '-';
 $step2_text = '-';
 
 if (!empty($produksi['nama_bordir']) || !empty($produksi['total_hasil_bordir'])) {

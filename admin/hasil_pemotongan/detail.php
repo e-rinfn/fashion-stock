@@ -817,7 +817,7 @@ switch ($produksi['status_potong']) {
                                                 <?php elseif ($produksi['status_potong'] == 'penjahitan' && empty($produksi['nama_bordir'])): ?>
                                                     <span class="badge bg-secondary">DILEWATKAN</span>
                                                 <?php else: ?>
-                                                    <span class="badge bg-secondary">MENUNGGU</span>
+                                                    <span class="badge bg-secondary">-</span>
                                                 <?php endif; ?>
                                             </div>
                                         </div>

@@ -1051,17 +1051,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
                 case 'tanggal_kirim_jahit':
                     // Batalkan tanggal kirim jahit dan penjahit
-                    $sql_update = "UPDATE hasil_potong_fix 
+                    // Cek tipe produk
+                    if ($tipe_produk == 'mukena') {
+                        $sql_update = "UPDATE hasil_potong_fix 
+            SET id_penjahit = NULL,
+                tanggal_kirim_jahit = NULL,
+                status_potong = 'diproses'
+            WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
+                        $success_msg = "Tanggal kirim jahit dan data penjahit berhasil dibatalkan. Status kembali ke 'Diproses'";
+                    } else {
+                        $sql_update = "UPDATE hasil_potong_fix 
             SET id_penjahit = NULL,
                 tanggal_kirim_jahit = NULL,
                 status_potong = 'bordir'
             WHERE id_hasil_potong_fix = $id_hasil_potong_fix";
-
+                        $success_msg = "Tanggal kirim jahit dan data penjahit berhasil dibatalkan. Status kembali ke 'Bordir'";
+                    }
                     if (!$conn->query($sql_update)) {
                         throw new Exception("Gagal membatalkan tanggal kirim jahit");
                     }
-
-                    $success_msg = "Tanggal kirim jahit dan data penjahit berhasil dibatalkan. Status kembali ke 'Bordir'";
                     break;
 
                 case 'hasil_bordir':
